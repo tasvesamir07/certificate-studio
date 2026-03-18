@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { isValidPhoneNumber } from 'libphonenumber-js';
@@ -161,6 +161,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
 
   return (
     <div className="profile-page">
+      <Toaster position="bottom-right" />
       <div className="back-button-container">
         <button className="profile-back-btn" onClick={() => navigate("/generate-certifcate")}>
           <svg viewBox="0 0 24 24" width="20" height="20">
