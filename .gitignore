@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+build/
+.DS_Store
+Thumbs.db
+
+# Server-specific
+server/fonts/*.ttf
+server/dynamic-fonts/
+server/uploads/
+
+# Client-specific
+client/dist/
+client/.env
+client/.env.production
