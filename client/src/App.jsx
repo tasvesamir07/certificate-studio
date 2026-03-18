@@ -1141,7 +1141,8 @@ function App() {
   const fetchPresets = useCallback(async () => {
     if (!isAuthenticated || !authUser) return;
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/api/auth/presets/${encodeURIComponent(authUser)}`);
+      const fetchPresetsUrl = buildApiUrl(API_BASE_URL, `api/auth/presets/${encodeURIComponent(authUser)}`);
+      const { data } = await axios.get(fetchPresetsUrl);
       setPresets(data);
     } catch (error) {
       console.error("Failed to fetch presets:", error);
@@ -1170,7 +1171,8 @@ function App() {
     setIsSaving(true);
 
     try {
-      await axios.post(`${API_BASE_URL}/api/auth/presets`, {
+      const savePresetUrl = buildApiUrl(API_BASE_URL, "api/auth/presets");
+      await axios.post(savePresetUrl, {
         email: authUser,
         presetType: type,
         presetName: presetName,
@@ -1229,7 +1231,8 @@ function App() {
     
     const toastId = toast.loading("Deleting preset...");
     try {
-      await axios.delete(`${API_BASE_URL}/api/auth/presets/${presetId}`);
+      const deletePresetUrl = buildApiUrl(API_BASE_URL, `api/auth/presets/${presetId}`);
+      await axios.delete(deletePresetUrl);
       toast.success("Preset deleted.", { id: toastId });
       
       if (type === 'message' && selectedMessagePresetId === presetId.toString()) {
