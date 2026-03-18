@@ -246,29 +246,37 @@ function setupFonts() {
  * Ensures a font is available locally and registered.
  * If not found, attempts to download it from Google Fonts.
  */
-async function ensureFont(family) {
+async function ensureFont(family, style = "normal", weight = "400") {
   if (!family || family.toLowerCase() === "sans-serif") return "sans-serif";
   
+  // Normalize family for lookup and storage
+  const variantSuffix = (style === "italic" ? " Italic" : "");
+  // We don't distinguish weight in the family name usually unless it's a specific font file
+  const fullRequestName = `${family}${variantSuffix}`;
+  
   // 1. Check local repo fonts (read-only)
-  const repoMatch = Array.from(availableFonts).find(f => f.toLowerCase() === family.toLowerCase());
+  const repoMatch = Array.from(availableFonts).find(f => f.toLowerCase() === fullRequestName.toLowerCase() || f.toLowerCase() === family.toLowerCase());
   if (repoMatch) return repoMatch;
 
   // 2. Check dynamic temp fonts (downloaded)
-  const normalizedFamily = family.toLowerCase().replace(/\s+/g, '-');
-  const tempFontPath = path.join(dynamicFontsDir, `${normalizedFamily}.ttf`);
+  const normalizedFile = fullRequestName.toLowerCase().replace(/\s+/g, '-');
+  const tempFontPath = path.join(dynamicFontsDir, `${normalizedFile}.ttf`);
   if (fs.existsSync(tempFontPath)) {
-    const familyName = family.replace(/[-_]/g, ' ');
-    GlobalFonts.registerFromPath(tempFontPath, familyName);
-    availableFonts.add(familyName);
-    return familyName;
+    GlobalFonts.registerFromPath(tempFontPath, fullRequestName);
+    availableFonts.add(fullRequestName);
+    return fullRequestName;
   }
 
-  console.log(`🔍 Font "${family}" not found. Attempting to fetch from Google Fonts...`);
+  console.log(`🔍 Font "${fullRequestName}" not found. Attempting to fetch from Google Fonts...`);
 
   try {
-    // 1. Fetch CSS from Google Fonts to get the .ttf URL
-    // We use a specific User-Agent to ensure we get a .ttf link (not woff2)
-    const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}`;
+    // 1. Fetch CSS from Google Fonts
+    // We try to request the specific variant if it's italic
+    let googleFontsUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}`;
+    if (style === "italic") {
+      googleFontsUrl += `:ital@1`;
+    }
+    
     const response = await axios.get(googleFontsUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -276,30 +284,33 @@ async function ensureFont(family) {
     });
 
     // 2. Extract .ttf URL using regex
+    // We look for the url() that matches the style if multiple are returned
     const ttfUrlMatch = response.data.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.ttf)\)/);
     if (!ttfUrlMatch) {
-      throw new Error(`Could not find .ttf URL for font "${family}" in Google Fonts CSS.`);
+      throw new Error(`Could not find .ttf URL for font "${fullRequestName}" in Google Fonts CSS.`);
     }
 
     const ttfUrl = ttfUrlMatch[1];
-    const fileName = `${family.replace(/\s+/g, '-')}.ttf`;
+    const fileName = `${normalizedFile}.ttf`;
     const fontPath = path.join(dynamicFontsDir, fileName);
 
     // 3. Download the .ttf file
-    console.log(`📥 Downloading font: ${family} from ${ttfUrl}`);
+    console.log(`📥 Downloading font: ${fullRequestName} from ${ttfUrl}`);
     const fontResponse = await axios.get(ttfUrl, { responseType: 'arraybuffer' });
     fs.writeFileSync(fontPath, fontResponse.data);
 
     // 4. Register the font
-    GlobalFonts.registerFromPath(fontPath, family);
-    availableFonts.add(family);
-    fontList.push({ family: family, file: fileName });
+    GlobalFonts.registerFromPath(fontPath, fullRequestName);
+    availableFonts.add(fullRequestName);
+    if (!fontList.find(f => f.family === fullRequestName)) {
+      fontList.push({ family: fullRequestName, file: fileName });
+    }
     
-    console.log(`✅ Dynamically loaded and cached font: ${family}`);
-    return family;
+    console.log(`✅ Dynamically loaded and cached font: ${fullRequestName}`);
+    return fullRequestName;
   } catch (err) {
-    console.error(`❌ Failed to fetch font "${family}": ${err.message}`);
-    return "sans-serif"; // Fallback
+    console.error(`❌ Failed to fetch font "${fullRequestName}": ${err.message}`);
+    return family; // Fallback to family name and hope canvas fakes it
   }
 }
 
@@ -1049,6 +1060,11 @@ const checkAccess = async (req, res, next) => {
 };
 // -----------------------------------------------------------
 
+const weightMap = {
+  bold: "700",
+  normal: "400",
+};
+
 const ALIGN_TO_X = {
   left: (x) => x,
   center: (x, width) => x + width / 2,
@@ -1235,44 +1251,25 @@ async function drawTextOnCanvas(
   const boxHeight = Math.max(1, Number(layout.height) || templateHeight);
   const fontSize = Math.max(8, Number(layout.fontSize) || 48);
 
-  const fontFamily = await ensureFont(layout.fontFamily);
-
   const align = layout.align || "center";
   const vAlign = layout.v_align || "middle";
   const fillStyle = layout.color || "#000000";
+  const numericWeight = weightMap[layout.fontWeight] || layout.fontWeight || "400";
+  let style = layout.fontStyle || "normal";
 
+  // Ensure font is loaded with correct variant if possible
+  const effectiveFontFamily = await ensureFont(layout.fontFamily, style, numericWeight);
 
   const appliedFontSize = fitFontSizeToBox(
     ctx,
     fullName,
-    fontFamily,
+    effectiveFontFamily,
     fontSize,
     boxWidth,
     boxHeight,
-    layout.fontWeight || "normal",
-    layout.fontStyle || "normal"
+    numericWeight,
+    style
   );
-
-
-
-  const weightMap = {
-    bold: "700",
-    normal: "400",
-  };
-  const numericWeight = weightMap[layout.fontWeight] || layout.fontWeight || "400";
-  let style = layout.fontStyle || "normal";
-
-  // Manual override for Libre Baskerville Italic
-  let effectiveFontFamily = fontFamily;
-  if (style === "italic" && fontFamily === "Libre Baskerville") {
-    if (availableFonts.has("Libre Baskerville Italic")) {
-      effectiveFontFamily = "Libre Baskerville Italic";
-      // We can reset style to normal since the font itself is italic, 
-      // but keeping it 'italic' is usually fine too. 
-      // Let's keep it clean since variable fonts might behave oddly.
-      style = "normal";
-    }
-  }
 
   console.log(
     `Drawing with: ${style} ${numericWeight} ${appliedFontSize}px "${effectiveFontFamily}", Color: ${fillStyle}`
