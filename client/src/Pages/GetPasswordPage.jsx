@@ -59,9 +59,13 @@ const GetPasswordPage = ({ navigate, defaultEmail = "", apiBaseUrl }) => {
     );
 
     try {
-      // API call uses the passed apiBaseUrl
+      const requestUrl = apiBaseUrl.replace(/\/+$/, "");
+      const verifyUrl = requestUrl.endsWith("/api") 
+        ? `${requestUrl}/auth/verify-purchase`.replace(/\/+/g, "/").replace(":/", "://")
+        : `${requestUrl}/api/auth/verify-purchase`.replace(/\/+/g, "/").replace(":/", "://");
+
       const response = await axios.post(
-        `${apiBaseUrl}/api/auth/verify-purchase`,
+        verifyUrl,
         {
           email: trimmedEmail,
           name: trimmedName,

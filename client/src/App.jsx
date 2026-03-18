@@ -168,14 +168,22 @@ const isValidEmail = (value = "") => EMAIL_REGEX.test(value.trim());
 // --- API URLs use the resolved base ---
 const API_BASE_URL = resolveApiBase();
 
-const API_FONTS_URL = `${API_BASE_URL}/api/fonts`.replace(
-  /^(https?:\/\/[^/]+)?\/{2,}/,
-  "$1/"
-);
-const API_SEND_URL = `${API_BASE_URL}/api/generate-and-send`.replace(
-  /^(https?:\/\/[^/]+)?\/{2,}/,
-  "$1/"
-);
+// Helper to build URLs without double /api or double slashes
+const buildApiUrl = (base, endpoint) => {
+  const normalizedBase = base.replace(/\/+$/, "");
+  const normalizedEndpoint = endpoint.replace(/^\/+/, "");
+  
+  // If endpoint starts with api/ and base already ends with api, merge them
+  if (normalizedEndpoint.startsWith("api/") && normalizedBase.endsWith("/api")) {
+      const baseWithoutApi = normalizedBase.slice(0, -4);
+      return `${baseWithoutApi}/${normalizedEndpoint}`.replace(/\/+/g, "/").replace(":/", "://");
+  }
+  
+  return `${normalizedBase}/${normalizedEndpoint}`.replace(/\/+/g, "/").replace(":/", "://");
+};
+
+const API_FONTS_URL = buildApiUrl(API_BASE_URL, "api/fonts");
+const API_SEND_URL = buildApiUrl(API_BASE_URL, "api/generate-and-send");
 // -------------------------------------
 
 const COLOR_SWATCHES = [

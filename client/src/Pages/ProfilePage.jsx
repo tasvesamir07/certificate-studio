@@ -33,8 +33,13 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
 
   const fetchProfile = async () => {
     if (!authUser) return;
+    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
+    const getProfileUrl = requestUrl.endsWith("/api") 
+      ? `${requestUrl}/auth/profile/${authUser}`.replace(/\/+/g, "/").replace(":/", "://")
+      : `${requestUrl}/api/auth/profile/${authUser}`.replace(/\/+/g, "/").replace(":/", "://");
+
     try {
-      const response = await axios.get(`${apiBaseUrl}/api/auth/profile/${authUser}`);
+      const response = await axios.get(getProfileUrl);
       setProfileData(response.data);
       setEditData({
         displayName: response.data.displayName || "",
@@ -76,7 +81,11 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     const toastId = toast.loading("Saving changes...");
 
     try {
-      const response = await axios.post(`${apiBaseUrl}/api/auth/update-profile`, {
+      const updateProfileUrl = requestUrl.endsWith("/api") 
+        ? `${requestUrl}/auth/update-profile`.replace(/\/+/g, "/").replace(":/", "://")
+        : `${requestUrl}/api/auth/update-profile`.replace(/\/+/g, "/").replace(":/", "://");
+
+      const response = await axios.post(updateProfileUrl, {
         email: authUser,
         displayName: editData.displayName,
         phone: editData.phone
@@ -120,8 +129,12 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     const toastId = toast.loading("Changing password...");
 
     try {
+      const changePasswordUrl = requestUrl.endsWith("/api") 
+        ? `${requestUrl}/auth/change-password`.replace(/\/+/g, "/").replace(":/", "://")
+        : `${requestUrl}/api/auth/change-password`.replace(/\/+/g, "/").replace(":/", "://");
+
       const response = await axios.post(
-        `${apiBaseUrl}/api/auth/change-password`,
+        changePasswordUrl,
         {
           email: authUser,
           currentPassword,

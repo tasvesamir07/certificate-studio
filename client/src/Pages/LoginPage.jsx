@@ -46,8 +46,12 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
     const toastId = toast.loading("Verifying credentials...");
 
     try {
-      // API call uses the passed apiBaseUrl
-      const response = await axios.post(`${apiBaseUrl}/api/auth/login`, {
+      const requestUrl = apiBaseUrl.replace(/\/+$/, "");
+      const loginUrl = requestUrl.endsWith("/api") 
+        ? `${requestUrl}/auth/login`.replace(/\/+/g, "/").replace(":/", "://")
+        : `${requestUrl}/api/auth/login`.replace(/\/+/g, "/").replace(":/", "://");
+
+      const response = await axios.post(loginUrl, {
         email: trimmedEmail,
         password: trimmedPassword,
       });
