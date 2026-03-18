@@ -7,6 +7,11 @@
   box-sizing: border-box;
 }
 
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
@@ -2854,4 +2859,199 @@ textarea {
 
 .theme-dark .plan-card li {
   color: #cbd5e1;
+}
+
+/* --- Mobile Responsiveness --- */
+
+/* Standard Tablets & Large Phones (max-width: 768px) */
+@media (max-width: 768px) {
+  .App {
+    padding: 10px;
+  }
+
+  .top-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    gap: 12px;
+    border-radius: 12px;
+  }
+
+  .nav-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-right {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .theme-dark .nav-right {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .main-layout {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .controls-panel {
+    flex: none;
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+    padding: 24px 16px;
+    border-radius: 16px;
+    overflow: visible;
+  }
+
+  .editor-panel {
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .preview-grid-panel {
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .preview-top-bar {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .preview-pill {
+    width: 100%;
+    font-size: 0.8rem;
+    padding: 8px 12px;
+    text-align: center;
+    border-radius: 8px;
+  }
+
+  .preview-side-toggle {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .side-toggle-button {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    font-size: 0.85rem;
+  }
+
+  /* Responsive 3D Preview */
+  .preview-container-3d {
+    overflow: hidden; /* Remove scroll, let JS handle fit */
+    padding: 10px 0;
+    justify-content: center;
+    width: 100%;
+    display: flex;
+    min-height: auto;
+  }
+
+  .preview-card-3d {
+    transform: scale(1); /* Scaling is now handled in JS via previewScale */
+    transform-origin: top center;
+    display: flex;
+    justify-content: center;
+    margin: 0 auto;
+  }
+
+  .preview-zoom-controls {
+    display: none; /* Zoom is harder to use on mobile, rely on browser zoom or fit-to-width */
+  }
+
+  /* Cards */
+  .login-card, 
+  .profile-card, 
+  .pricing-card, 
+  .forgot-password-card {
+    padding: 24px 16px;
+    margin: 10px auto;
+  }
+
+  .otp-input {
+    width: 40px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  /* Success Message */
+  .reset-success h1 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Narrower Phones (max-width: 480px) */
+@media (max-width: 480px) {
+  .nav-left .nav-link {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .nav-user {
+    font-size: 0.85rem;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-logout {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-card {
+    padding: 24px 20px;
+  }
+
+  .login-card h1, .profile-card h2 {
+    font-size: 1.5rem;
+  }
+
+  .floating-action-bar {
+    position: fixed;
+    bottom: 20px;
+    top: auto;
+    right: 20px;
+    left: 20px;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    padding: 10px;
+    border-radius: 50px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .theme-dark .floating-action-bar {
+    background: rgba(26, 26, 46, 0.9);
+    border-color: rgba(99, 102, 241, 0.2);
+  }
+
+  .action-button {
+    flex: 1;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+
+  /* Ensure inputs are easy to tap */
+  input, select, textarea, .purchase-btn, .login-button {
+    min-height: 48px;
+  }
 }

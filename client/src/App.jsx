@@ -643,6 +643,31 @@ function App() {
   const [isPreviewGridLoading, setIsPreviewGridLoading] = useState(false);
   const [previewSide, setPreviewSide] = useState("front"); // "front" or "back"
 
+  // --- Handle Resize for Responsive Zoom ---
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile && templateImageRef.current) {
+        const { naturalWidth, naturalHeight } = templateImageRef.current;
+        const maxMobileWidth = window.innerWidth - 40;
+        const autoScale = Math.min(DEFAULT_ZOOM_SCALE, maxMobileWidth / naturalWidth);
+        
+        // Only update if significantly different to avoid jitter
+        if (Math.abs(previewScale - autoScale) > 0.01) {
+          setPreviewScale(autoScale);
+          setTemplateSize({
+            width: Math.round(naturalWidth * autoScale),
+            height: Math.round(naturalHeight * autoScale),
+          });
+        }
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [previewScale]);
+  // -----------------------------------------
+
   const templateImageRef = useRef(null);
   const templateBackImageRef = useRef(null);
   const draggableRef = useRef(null);
@@ -717,11 +742,21 @@ function App() {
         };
         setTemplateSignature(signature);
 
-        setPreviewScale(DEFAULT_ZOOM_SCALE);
+        // --- Responsive Auto Zoom ---
+        const isMobile = window.innerWidth <= 768;
+        let initialScale = DEFAULT_ZOOM_SCALE;
+        
+        if (isMobile) {
+          const maxMobileWidth = window.innerWidth - 60; // padding/margin
+          initialScale = Math.min(DEFAULT_ZOOM_SCALE, maxMobileWidth / naturalWidth);
+        }
+        
+        setPreviewScale(initialScale);
         setTemplateSize({
-          width: Math.round(naturalWidth * DEFAULT_ZOOM_SCALE),
-          height: Math.round(naturalHeight * DEFAULT_ZOOM_SCALE),
+          width: Math.round(naturalWidth * initialScale),
+          height: Math.round(naturalHeight * initialScale),
         });
+        // ----------------------------
 
         toast.success("Template loaded.", { id: toastId });
 
@@ -3583,8 +3618,7 @@ function App() {
               <>
                 <div className="preview-top-bar">
                   <div className="preview-pill">
-                    Previewing: <strong>{previewName || "-"}</strong> (
-                    {templateNaturalWidth}x{templateNaturalHeight}px)
+                    Previewing: <strong>{previewName || "-"}</strong>
                   </div>
 
                   {templateBackURL && (
