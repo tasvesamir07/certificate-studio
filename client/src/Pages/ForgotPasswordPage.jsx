@@ -62,9 +62,10 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
 
     setIsLoading(true);
     const toastId = toast.loading("Sending OTP...");
-    const forgotPasswordUrl = normalizedApiBaseUrl.endsWith("/api") 
-      ? `${normalizedApiBaseUrl}/auth/forgot-password`.replace(/\/+/g, "/").replace(":/", "://")
-      : `${normalizedApiBaseUrl}/api/auth/forgot-password`.replace(/\/+/g, "/").replace(":/", "://");
+    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
+    const forgotPasswordUrl = requestUrl.endsWith("/api") 
+      ? `${requestUrl}/auth/forgot-password`.replace(/\/+/g, "/").replace(":/", "://")
+      : `${requestUrl}/api/auth/forgot-password`.replace(/\/+/g, "/").replace(":/", "://");
 
     try {
       await axios.post(forgotPasswordUrl, {
@@ -141,6 +142,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
     setIsLoading(true);
     const toastId = toast.loading("Verifying OTP...");
 
+    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
     try {
       const verifyOtpUrl = requestUrl.endsWith("/api") 
         ? `${requestUrl}/auth/verify-otp`.replace(/\/+/g, "/").replace(":/", "://")
@@ -181,6 +183,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
     setIsLoading(true);
     const toastId = toast.loading("Resetting password...");
 
+    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
     try {
       const resetPasswordUrl = requestUrl.endsWith("/api") 
         ? `${requestUrl}/auth/reset-password`.replace(/\/+/g, "/").replace(":/", "://")

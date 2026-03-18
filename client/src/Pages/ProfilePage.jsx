@@ -80,6 +80,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     setIsSaving(true);
     const toastId = toast.loading("Saving changes...");
 
+    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
     try {
       const updateProfileUrl = requestUrl.endsWith("/api") 
         ? `${requestUrl}/auth/update-profile`.replace(/\/+/g, "/").replace(":/", "://")
@@ -128,6 +129,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     setIsChanging(true);
     const toastId = toast.loading("Changing password...");
 
+    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
     try {
       const changePasswordUrl = requestUrl.endsWith("/api") 
         ? `${requestUrl}/auth/change-password`.replace(/\/+/g, "/").replace(":/", "://")
