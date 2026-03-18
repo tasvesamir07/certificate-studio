@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import axios from "axios";
+import { buildApiUrl } from "../utils/api";
 
 const GetPasswordPage = ({ navigate, defaultEmail = "", apiBaseUrl }) => {
   const [email, setEmail] = useState(defaultEmail || "");
@@ -59,10 +60,7 @@ const GetPasswordPage = ({ navigate, defaultEmail = "", apiBaseUrl }) => {
     );
 
     try {
-      const requestUrl = apiBaseUrl.replace(/\/+$/, "");
-      const verifyUrl = requestUrl.endsWith("/api") 
-        ? `${requestUrl}/auth/verify-purchase`.replace(/\/+/g, "/").replace(":/", "://")
-        : `${requestUrl}/api/auth/verify-purchase`.replace(/\/+/g, "/").replace(":/", "://");
+      const verifyUrl = buildApiUrl(apiBaseUrl, "api/auth/verify-purchase");
 
       const response = await axios.post(
         verifyUrl,

@@ -23,6 +23,7 @@ import ProfilePage from "./Pages/ProfilePage";
 import PricingPage from "./Pages/PricingPage";
 import GetPasswordPage from "./Pages/GetPasswordPage";
 import ForgotPasswordPage from "./Pages/ForgotPasswordPage";
+import { buildApiUrl } from "./utils/api";
 
 const normalizeBaseUrl = (base = "") =>
   base.trim().replace(/\s/g, "").replace(/\/+$/, "");
@@ -168,19 +169,7 @@ const isValidEmail = (value = "") => EMAIL_REGEX.test(value.trim());
 // --- API URLs use the resolved base ---
 const API_BASE_URL = resolveApiBase();
 
-// Helper to build URLs without double /api or double slashes
-const buildApiUrl = (base, endpoint) => {
-  const normalizedBase = base.replace(/\/+$/, "");
-  const normalizedEndpoint = endpoint.replace(/^\/+/, "");
-  
-  // If endpoint starts with api/ and base already ends with api, merge them
-  if (normalizedEndpoint.startsWith("api/") && normalizedBase.endsWith("/api")) {
-      const baseWithoutApi = normalizedBase.slice(0, -4);
-      return `${baseWithoutApi}/${normalizedEndpoint}`.replace(/\/+/g, "/").replace(":/", "://");
-  }
-  
-  return `${normalizedBase}/${normalizedEndpoint}`.replace(/\/+/g, "/").replace(":/", "://");
-};
+  // Handled by centralized buildApiUrl imported above
 
 const API_FONTS_URL = buildApiUrl(API_BASE_URL, "api/fonts");
 const API_SEND_URL = buildApiUrl(API_BASE_URL, "api/generate-and-send");
@@ -981,7 +970,8 @@ function App() {
 
     const toastId = toast.loading("Uploading image...");
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/upload-image`, formData, {
+      const uploadUrl = buildApiUrl(API_BASE_URL, "api/upload-image");
+      const response = await axios.post(uploadUrl, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -2099,7 +2089,8 @@ function App() {
       if (emailAttachmentType === "certificate") {
         // --- CLIENT-SIDE GENERATION FLOW ---
         try {
-          const verifyRes = await axios.post(`${API_BASE_URL}/api/auth/verify-purchase`, {
+          const verifyUrl = buildApiUrl(API_BASE_URL, "api/auth/verify-purchase");
+          const verifyRes = await axios.post(verifyUrl, {
             email: senderEmail,
             name: emailSettings.senderName || "User",
             phone: "00000000000" // Standard fallback since we don't collect phone in email pane
@@ -2174,7 +2165,8 @@ function App() {
             formData.append("recipientName", recipient.name);
             formData.append("recipientEmail", recipient.email);
 
-            await axios.post(`${API_BASE_URL}/api/send-client-generated`, formData, {
+            const sendUrl = buildApiUrl(API_BASE_URL, "api/send-client-generated");
+            await axios.post(sendUrl, formData, {
               headers: { "Content-Type": "multipart/form-data" },
             });
             successCount++;
@@ -2266,7 +2258,7 @@ function App() {
         // SSE Progress Tracking
         if (response.status === 202 && payload.jobId) {
           const jobId = payload.jobId;
-          const progressUrl = `${API_BASE_URL}/api/progress/${jobId}`;
+          const progressUrl = buildApiUrl(API_BASE_URL, `api/progress/${jobId}`);
           console.log("Starting SSE connection:", progressUrl);
 
           const eventSource = new EventSource(progressUrl);

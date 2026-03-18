@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import axios from "axios";
+import { buildApiUrl } from "../utils/api";
 
 const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
   // ... (Your existing LoginPage.jsx code) ...
@@ -46,10 +47,7 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
     const toastId = toast.loading("Verifying credentials...");
 
     try {
-      const requestUrl = apiBaseUrl.replace(/\/+$/, "");
-      const loginUrl = requestUrl.endsWith("/api") 
-        ? `${requestUrl}/auth/login`.replace(/\/+/g, "/").replace(":/", "://")
-        : `${requestUrl}/api/auth/login`.replace(/\/+/g, "/").replace(":/", "://");
+      const loginUrl = buildApiUrl(apiBaseUrl, "api/auth/login");
 
       const response = await axios.post(loginUrl, {
         email: trimmedEmail,

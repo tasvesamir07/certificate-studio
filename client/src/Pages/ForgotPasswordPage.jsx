@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import { Toaster, toast } from "react-hot-toast";
+import { buildApiUrl } from "../utils/api";
 
 const OTP_DURATION_SECONDS = 120; // 2 minutes
 
@@ -62,10 +63,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
 
     setIsLoading(true);
     const toastId = toast.loading("Sending OTP...");
-    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
-    const forgotPasswordUrl = requestUrl.endsWith("/api") 
-      ? `${requestUrl}/auth/forgot-password`.replace(/\/+/g, "/").replace(":/", "://")
-      : `${requestUrl}/api/auth/forgot-password`.replace(/\/+/g, "/").replace(":/", "://");
+    const forgotPasswordUrl = buildApiUrl(apiBaseUrl, "api/auth/forgot-password");
 
     try {
       await axios.post(forgotPasswordUrl, {
@@ -142,11 +140,8 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
     setIsLoading(true);
     const toastId = toast.loading("Verifying OTP...");
 
-    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
     try {
-      const verifyOtpUrl = requestUrl.endsWith("/api") 
-        ? `${requestUrl}/auth/verify-otp`.replace(/\/+/g, "/").replace(":/", "://")
-        : `${requestUrl}/api/auth/verify-otp`.replace(/\/+/g, "/").replace(":/", "://");
+      const verifyOtpUrl = buildApiUrl(apiBaseUrl, "api/auth/verify-otp");
 
       const response = await axios.post(verifyOtpUrl, {
         email: email.trim(),
@@ -183,11 +178,8 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
     setIsLoading(true);
     const toastId = toast.loading("Resetting password...");
 
-    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
     try {
-      const resetPasswordUrl = requestUrl.endsWith("/api") 
-        ? `${requestUrl}/auth/reset-password`.replace(/\/+/g, "/").replace(":/", "://")
-        : `${requestUrl}/api/auth/reset-password`.replace(/\/+/g, "/").replace(":/", "://");
+      const resetPasswordUrl = buildApiUrl(apiBaseUrl, "api/auth/reset-password");
 
       await axios.post(resetPasswordUrl, {
         email: email.trim(),

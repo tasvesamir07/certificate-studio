@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Toaster, toast } from "react-hot-toast";
+import { buildApiUrl } from "../utils/api";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { isValidPhoneNumber } from 'libphonenumber-js';
@@ -33,10 +34,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
 
   const fetchProfile = async () => {
     if (!authUser) return;
-    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
-    const getProfileUrl = requestUrl.endsWith("/api") 
-      ? `${requestUrl}/auth/profile/${authUser}`.replace(/\/+/g, "/").replace(":/", "://")
-      : `${requestUrl}/api/auth/profile/${authUser}`.replace(/\/+/g, "/").replace(":/", "://");
+    const getProfileUrl = buildApiUrl(apiBaseUrl, `api/auth/profile/${authUser}`);
 
     try {
       const response = await axios.get(getProfileUrl);
@@ -80,12 +78,9 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     setIsSaving(true);
     const toastId = toast.loading("Saving changes...");
 
-    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
-    try {
-      const updateProfileUrl = requestUrl.endsWith("/api") 
-        ? `${requestUrl}/auth/update-profile`.replace(/\/+/g, "/").replace(":/", "://")
-        : `${requestUrl}/api/auth/update-profile`.replace(/\/+/g, "/").replace(":/", "://");
+    const updateProfileUrl = buildApiUrl(apiBaseUrl, "api/auth/update-profile");
 
+    try {
       const response = await axios.post(updateProfileUrl, {
         email: authUser,
         displayName: editData.displayName,
@@ -129,12 +124,9 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     setIsChanging(true);
     const toastId = toast.loading("Changing password...");
 
-    const requestUrl = apiBaseUrl.replace(/\/+$/, "");
-    try {
-      const changePasswordUrl = requestUrl.endsWith("/api") 
-        ? `${requestUrl}/auth/change-password`.replace(/\/+/g, "/").replace(":/", "://")
-        : `${requestUrl}/api/auth/change-password`.replace(/\/+/g, "/").replace(":/", "://");
+    const changePasswordUrl = buildApiUrl(apiBaseUrl, "api/auth/change-password");
 
+    try {
       const response = await axios.post(
         changePasswordUrl,
         {
