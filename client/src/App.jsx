@@ -1129,8 +1129,11 @@ function App() {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
       window.localStorage.removeItem(AUTH_USER_KEY);
       window.localStorage.removeItem(AUTH_TOKEN_KEY);
+      // Force a full page reload to clear all React state (uploaded templates, excel data, etc.)
+      window.location.href = "/user/login";
+    } else {
+      navigate("/user/login");
     }
-    navigate("/user/login");
   }, [navigate]);
 
   const handleLoginSuccess = useCallback(
@@ -3737,15 +3740,30 @@ function App() {
             <h2>All Previews ({data.length})</h2>
 
             {!template ? (
-              <p className="data-panel-hint">Upload a template image first.</p>
+              <>
+                <p className="data-panel-hint">Upload a template image first.</p>
+                <button className="generate-previews-button" disabled>
+                  Generate Previews
+                </button>
+              </>
             ) : !data.length ? (
-              <p className="data-panel-hint">
-                Upload an Excel data file to see previews.
-              </p>
+              <>
+                <p className="data-panel-hint">
+                  Upload an Excel data file to see previews.
+                </p>
+                <button className="generate-previews-button" disabled>
+                  Generate Previews
+                </button>
+              </>
             ) : !isLayoutLocked ? (
-              <p className="data-panel-hint">
-                Lock your layout in Step 3 to generate all previews.
-              </p>
+              <>
+                <p className="data-panel-hint">
+                  Lock your layout in Step 3 to generate all previews.
+                </p>
+                <button className="generate-previews-button" disabled>
+                  Generate All {data.length} Previews
+                </button>
+              </>
             ) : isPreviewGridLoading ? (
               <button className="generate-previews-button" disabled>
                 Generating Previews...

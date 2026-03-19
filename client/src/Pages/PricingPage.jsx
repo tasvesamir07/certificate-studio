@@ -95,13 +95,18 @@ const PricingPage = ({ navigate }) => {
           {plans.map((plan) => (
             <div
               key={plan.title}
-              className="plan-card"
+              className={`plan-card ${plan.title.includes("6-Month") ? "popular-plan" : ""}`}
               style={{
-                border: `1px solid ${plan.accent}`,
-                background: plan.bg,
+                borderColor: plan.accent,
+                '--plan-accent': plan.accent,
               }}
             >
-              <h3 style={{ color: plan.accent }}>
+              {plan.title.includes("6-Month") && (
+                <div className="popular-badge" style={{ background: plan.accent, color: "#fff" }}>
+                  Most Popular
+                </div>
+              )}
+              <h3 style={{ color: plan.title.includes("6-Month") ? plan.accent : "inherit" }}>
                 {plan.title}
               </h3>
               <p className="price">
@@ -126,7 +131,8 @@ const PricingPage = ({ navigate }) => {
                   )
                 }
               >
-                Continue to Purchase
+                <span className="purchase-btn-text">Continue to Purchase</span>
+                <span className="purchase-btn-arrow">→</span>
               </button>
             </div>
           ))}
