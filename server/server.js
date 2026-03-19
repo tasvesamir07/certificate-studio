@@ -39,7 +39,32 @@ const port = process.env.PORT || 5000;
 const pendingEmailJobs = new Map();
 const pendingPurchaseJobs = new Map();
 const activeJobs = new Map(); // New: Track active email sending jobs
-const MAX_UPLOAD_BYTES = 9 * 1024 * 1024; // Stay under 10MB first-gen limit
+const sharedFileStore = new Map(); // New: Store shared files temporarily
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // Increased to 100MB
+
+// -------------------------------------------
+
+const rejectIfTooLarge = (req, res, next) => {
+  const lengthHeader = req.headers["content-length"];
+  const contentLength = lengthHeader ? parseInt(lengthHeader, 10) : 0;
+  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
+    return res.status(413).send({
+      message:
+        "Uploads over ~100MB are not supported on this server. Please reduce the total size of your template/data/attachments and try again.",
+    });
+  }
+  return next();
+};
+const CLIENT_BASE_URL =
+  process.env.CLIENT_BASE_URL || process.env.PUBLIC_BASE_URL || null;
+
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    exposedHeaders: ["Content-Type", "Content-Disposition"],
+  })
+);
 
 // --- SSE Endpoint for Real-time Progress ---
 app.get("/api/progress/:id", (req, res) => {
@@ -61,7 +86,7 @@ app.get("/api/progress/:id", (req, res) => {
       processed: job.processed,
       total: job.total,
       successCount: job.successCount,
-      failureCount: job.failureCount
+      failureCount: job.failureCount,
     });
   } else {
     sendUpdate({ status: "not_found" });
@@ -84,7 +109,7 @@ app.get("/api/progress/:id", (req, res) => {
       total: currentJob.total,
       successCount: currentJob.successCount,
       failureCount: currentJob.failureCount,
-      payload: currentJob.payload // Send final payload on completion
+      payload: currentJob.payload, // Send final payload on completion
     });
 
     if (currentJob.status === "completed" || currentJob.status === "failed") {
@@ -101,35 +126,13 @@ app.get("/api/progress/:id", (req, res) => {
 });
 // -------------------------------------------
 
-const rejectIfTooLarge = (req, res, next) => {
-  const lengthHeader = req.headers["content-length"];
-  const contentLength = lengthHeader ? parseInt(lengthHeader, 10) : 0;
-  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
-    return res.status(413).send({
-      message:
-        "Uploads over ~9MB are not supported on this server. Please reduce the total size of your template/data/attachments and try again.",
-    });
-  }
-  return next();
-};
-const CLIENT_BASE_URL =
-  process.env.CLIENT_BASE_URL || process.env.PUBLIC_BASE_URL || null;
-
-app.use(
-  cors({
-    origin: true,
-    credentials: true,
-    exposedHeaders: ["Content-Type", "Content-Disposition"],
-  })
-);
-
 // Health check endpoint
 app.get("/", (req, res) => {
   res.send({ status: "ok", message: "Certificate Generator API is running." });
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "150mb" }));
+app.use(express.urlencoded({ extended: true, limit: "150mb" }));
 
 // --- POSTGRES CONFIGURATION ---
 const pool = new Pool({
@@ -152,10 +155,9 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: {
-    fileSize: 25 * 1024 * 1024,
-    // Allow enough files for template + data + up to 10 shared attachments
-    files: 15,
-    fields: 50,
+    fileSize: 100 * 1024 * 1024, // Increased to 100MB for video/audio (though SMTP may limit to 25-50MB)
+    files: 20,
+    fields: 100,
   },
 });
 
@@ -431,6 +433,21 @@ const getClientBaseUrl = (req) => {
     return `${protocol}://localhost:3000`;
   }
   return `${protocol}://${host}`;
+};
+
+/**
+ * Fixes filename encoding issues common with multer and non-ASCII characters.
+ * Re-reads the string as UTF-8 from the mangled bytes.
+ */
+const fixFilenameEncoding = (filename = "") => {
+  if (!filename) return "";
+  try {
+    // If the filename contains characters that look like mangled UTF-8 (e.g. à¦œà§ à¦²à¦¾à¦‡),
+    // we attempt to fix it. This is a common workaround for multer/busboy.
+    return Buffer.from(filename, 'binary').toString('utf8');
+  } catch (err) {
+    return filename;
+  }
 };
 
 const generateTransactionId = () =>
@@ -1192,6 +1209,7 @@ const chunkArray = (arr = [], size = 1) => {
 };
 
 const NAME_TOKEN_REGEX = /{{\s*name\s*}}|{\s*name\s*}/gi;
+const EMAIL_TOKEN_REGEX = /{{\s*email\s*}}|{\s*email\s*}/gi;
 const DEFAULT_EMAIL_TEMPLATE = `Hi {name},
 
 Congratulations! Your certificate is attached.
@@ -1199,10 +1217,13 @@ Congratulations! Your certificate is attached.
 Warmly,
 Your Certificate Team`;
 
-const buildEmailBodies = (template = "", name = "") => {
+const buildEmailBodies = (template = "", name = "", email = "") => {
   const safeName = name || "";
+  const safeEmail = email || "";
   const baseTemplate = template?.toString() || DEFAULT_EMAIL_TEMPLATE;
-  const populated = baseTemplate.replace(NAME_TOKEN_REGEX, safeName);
+  const populated = baseTemplate
+    .replace(NAME_TOKEN_REGEX, safeName)
+    .replace(EMAIL_TOKEN_REGEX, safeEmail);
   return {
     text: populated,
     html: populated.replace(/\r?\n/g, "<br />"),
@@ -1411,125 +1432,15 @@ const sendEmailBatch = async (job = {}) => {
   const templateHasNameToken = NAME_TOKEN_REGEX.test(templateCopy);
   NAME_TOKEN_REGEX.lastIndex = 0;
 
-  const sharedAttachmentsForAll =
-    (attachmentMode === "shared" || attachmentMode === "none") &&
-    recipients.length > 1;
-
-  if (sharedAttachmentsForAll) {
-    const attachments =
-      attachmentMode === "shared"
-        ? sharedAttachmentFiles.map((file) => ({
-          filename: file.originalname,
-          content: file.buffer,
-          contentType: file.mimetype,
-        }))
-        : [];
-
-    const bodies = buildEmailBodies(
-      templateCopy,
-      templateHasNameToken ? "there" : ""
-    );
-
-    const batches = chunkArray(recipients, MAX_BCC_BATCH);
-    let successCount = 0;
-    const failures = [];
-
-    for (const batch of batches) {
-      try {
-        await transporter.sendMail({
-          from: formattedFrom,
-          to: formattedFrom,
-          bcc: batch.map((recipient) => recipient.email),
-          subject,
-          text: bodies.text,
-          html: bodies.html,
-          attachments,
-        });
-        successCount += batch.length;
-        console.log(
-          `[OK] Sent shared email batch of ${batch.length} via BCC (total so far: ${successCount}/${recipients.length}).`
-        );
-      } catch (error) {
-        console.error("BCC batch send failed:", error.message || error);
-
-        if (error?.code === "EAUTH" || error?.responseCode === 535) {
-          return {
-            error: {
-              status: 400,
-              message:
-                "Email provider rejected the credentials. Please verify the email address, selected service, and app password.",
-            },
-          };
-        }
-
-        if (
-          error?.responseCode === 550 ||
-          error?.code === "EENVELOPE" ||
-          error?.code === "EADDRNOTAVAIL" ||
-          error?.code === "ENOTFOUND"
-        ) {
-          return {
-            error: {
-              status: 400,
-              message:
-                "Address not found for one or more recipients. Please verify the emails and try again.",
-            },
-          };
-        }
-
-        failures.push(
-          ...batch.map((recipient) => ({
-            name: recipient.name,
-            email: recipient.email,
-            reason: getBounceReason(error),
-          }))
-        );
-      }
-
-      // Update Progress
-      if (jobId && activeJobs.has(jobId)) {
-        const currentJob = activeJobs.get(jobId);
-        currentJob.successCount = successCount;
-        currentJob.failureCount = failures.length;
-        currentJob.processed = successCount + failures.length;
-      }
-    }
-
-    const status = failures.length
-      ? successCount
-        ? "partial_failure"
-        : "failed"
-      : "success";
-
-    const payload = {
-      message:
-        status === "success"
-          ? `Emails sent successfully to all ${recipients.length} recipients via BCC batches of up to ${MAX_BCC_BATCH}.`
-          : status === "partial_failure"
-            ? `Some batches failed (${failures.length}/${recipients.length}). First error: ${failures[0].reason}`
-            : `All batches failed. First error: ${failures[0]?.reason || "Unknown error"
-            }`,
-      status,
-      successCount,
-      failureCount: failures.length,
-      missingEmailCount: missingEmailRecipients.length || 0,
-      totalRows: totalRows || recipients.length,
-      attempted: recipients.length,
-      failures,
-      sentAsBcc: true,
-      batchSize: MAX_BCC_BATCH,
-    };
-
-    const httpStatus = failures.length === 0 ? 200 : successCount ? 207 : 400;
-    return { payload, httpStatus };
-  }
-
+  // Always send emails individually to support placeholders like {name}
+  // even for shared attachments. The user specifically requested to avoid BCC.
   const failures = [];
   let successCount = 0;
 
+
   for (const recipient of recipients) {
     try {
-      const bodies = buildEmailBodies(templateCopy, recipient.name);
+      const bodies = buildEmailBodies(templateCopy, recipient.name, recipient.email);
       const safeName = sanitizeFileName(recipient.name, "certificate");
       let attachments = [];
 
@@ -2157,10 +2068,61 @@ app.post(
   }
 );
 
+// --- SHARED FILE OPTIMIZATION ENDPOINTS ---
 app.post(
-  "/api/send-client-generated",
+  "/api/upload-shared",
   checkAccess,
-  upload.single("certificate"),
+  upload.array("attachments"),
+  async (req, res) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).send({ message: "No files provided." });
+      }
+
+      const sharedBatchId = uuidv4();
+      const files = req.files.map((file) => ({
+        filename: fixFilenameEncoding(file.originalname),
+        content: file.buffer,
+        contentType: file.mimetype,
+      }));
+
+      sharedFileStore.set(sharedBatchId, files);
+
+      // Auto-cleanup after 1 hour (fallback)
+      setTimeout(() => {
+        if (sharedFileStore.has(sharedBatchId)) {
+          sharedFileStore.delete(sharedBatchId);
+          console.log(`[CMS] Auto-cleaned shared batch: ${sharedBatchId}`);
+        }
+      }, 60 * 60 * 1000);
+
+      console.log(
+        `[CMS] Uploaded shared batch: ${sharedBatchId} (${files.length} files)`
+      );
+      return res.status(200).send({ sharedBatchId });
+    } catch (error) {
+      console.error("Shared upload failed:", error);
+      return res
+        .status(500)
+        .send({ message: "Failed to upload shared files." });
+    }
+  }
+);
+
+app.post("/api/cleanup-shared", checkAccess, async (req, res) => {
+  const { sharedBatchId } = req.body;
+  if (sharedBatchId && sharedFileStore.has(sharedBatchId)) {
+    sharedFileStore.delete(sharedBatchId);
+    console.log(`[CMS] Cleaned shared batch: ${sharedBatchId}`);
+  }
+  return res.status(200).send({ status: "success" });
+});
+// -------------------------------------------
+
+app.post(
+  "/api/send-single",
+  checkAccess,
+  upload.array("attachments"),
   async (req, res, next) => {
     try {
       const emailService = (req.body.emailService || "").trim();
@@ -2178,12 +2140,6 @@ app.post(
         });
       }
 
-      if (!req.file) {
-        return res.status(400).send({
-          message: "Certificate file is required.",
-        });
-      }
-
       const transporter = nodemailer.createTransport({
         service: emailService,
         auth: {
@@ -2195,31 +2151,40 @@ app.post(
       const formattedFrom = senderName
         ? `"${senderName}" <${emailUser}>`
         : emailUser;
-      
-      const bodies = buildEmailBodies(emailTemplate, recipientName);
-      
-      const originalName = req.file.originalname || "certificate.pdf";
-      const contentType = req.file.mimetype || "application/pdf";
+
+      const bodies = buildEmailBodies(emailTemplate, recipientName, recipientEmail);
+
+      let attachments = (req.files || []).map((file) => {
+        // Fix encoding for the originalname
+        const fixedName = fixFilenameEncoding(file.originalname);
+        return {
+          filename: fixedName,
+          content: file.buffer,
+          contentType: file.mimetype,
+        };
+      });
+
+      // Check for shared batch files
+      const sharedBatchId = req.body.sharedBatchId;
+      if (sharedBatchId && sharedFileStore.has(sharedBatchId)) {
+        const sharedFiles = sharedFileStore.get(sharedBatchId);
+        attachments = [...attachments, ...sharedFiles];
+      }
 
       await transporter.sendMail({
         from: formattedFrom,
         to: recipientEmail,
-        subject: emailSubject || "Your Certificate",
+        subject: emailSubject || "Update from Certificate Studio",
         text: bodies.text,
         html: bodies.html,
-        attachments: [
-          {
-            filename: originalName,
-            content: req.file.buffer,
-            contentType,
-          },
-        ],
+        attachments,
       });
 
+      console.log(`[CMS] Single email sent to: ${recipientEmail} with ${attachments.length} attachments.`);
       return res.status(200).send({ status: "success", message: `Sent to ${recipientEmail}` });
     } catch (error) {
-      console.error(`Failed to send pre-generated cert to ${req.body.recipientEmail}:`, error.message);
-      
+      console.error(`Failed to send single email to ${req.body.recipientEmail}:`, error.message);
+
       let reason = getBounceReason(error);
       if (error?.code === "EAUTH" || error?.responseCode === 535) {
         reason = "Invalid credentials. Verify your email and app password.";

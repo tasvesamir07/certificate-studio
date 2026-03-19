@@ -233,44 +233,46 @@ const fitFontSizeToBox = (
 ) => {
   let size = Math.max(MIN_DYNAMIC_FONT_SIZE, Number(desiredSize) || 0);
   const safeText = text?.toString() || "";
-  const iterations = 12;
+  const iterations = 10;
 
   for (let i = 0; i < iterations; i++) {
     ctx.font = `${fontStyle} ${fontWeight} ${size}px "${fontFamily}"`;
     const metrics = ctx.measureText(safeText);
-    const ascent = metrics.actualBoundingBoxAscent || size * 0.8;
-    const descent = metrics.actualBoundingBoxDescent || size * 0.2;
+    
+    // Calculate precise width & height based on bounding box
     const left = Math.abs(metrics.actualBoundingBoxLeft || 0);
     const right = Math.abs(metrics.actualBoundingBoxRight || 0);
     const width = left + right || metrics.width || 0;
+    
+    // For height, use ascent + descent, but we'll be slightly more lenient
+    // to allow a better fit if flourishes are extreme but the "core" text is small.
+    const ascent = metrics.actualBoundingBoxAscent || size * 0.8;
+    const descent = metrics.actualBoundingBoxDescent || size * 0.2;
     const height = ascent + descent;
 
-    const allowedWidth =
-      Math.max(1, boxWidth - GOLDEN_BORDER_PADDING * 2) * FONT_FIT_PADDING;
-    const allowedHeight = Math.max(1, boxHeight) * FONT_FIT_PADDING;
+    const allowedWidth = Math.max(1, boxWidth);
+    const allowedHeight = Math.max(1, boxHeight);
 
     const widthRatio = width ? allowedWidth / width : 1;
     const heightRatio = height ? allowedHeight / height : 1;
+    
+    // We prioritize width but don't want to overflow height.
+    // However, if height is the limiting factor, we check if we can push it a bit more.
     const ratio = Math.min(widthRatio, heightRatio);
 
-    if (ratio >= 1) {
+    if (ratio >= 0.98 && ratio <= 1.02) {
       break;
     }
 
     const nextSize = Math.max(
       MIN_DYNAMIC_FONT_SIZE,
-      Math.floor(size * Math.max(0.1, ratio))
+      Math.floor(size * ratio)
     );
 
-    if (nextSize >= size) {
-      size = Math.max(MIN_DYNAMIC_FONT_SIZE, size - 1);
-    } else {
-      size = nextSize;
-    }
+    if (nextSize === size) break;
+    size = nextSize;
 
-    if (size <= MIN_DYNAMIC_FONT_SIZE) {
-      break;
-    }
+    if (size <= MIN_DYNAMIC_FONT_SIZE) break;
   }
 
   return size;
@@ -357,7 +359,13 @@ const drawCertificateToCanvas = async (
     if (document.fonts?.load) {
       const fontSpec = `${fontStyle} ${fontWeight} ${desiredFontSize}px "${activeFontFamily}"`;
       try {
-        await document.fonts.load(fontSpec);
+        // First check if already loaded
+        if (!document.fonts.check(fontSpec)) {
+          // If not loaded, request it and wait
+          await document.fonts.load(fontSpec);
+          // Small extra wait for some browsers to process the layout
+          await new Promise(r => setTimeout(r, 50)); 
+        }
       } catch (err) {
         console.warn("Font load warning for certificate drawing:", err);
       }
@@ -384,17 +392,17 @@ const drawCertificateToCanvas = async (
     const metrics = ctx.measureText(fullName);
     const ascent = metrics.actualBoundingBoxAscent || 0;
     const descent = metrics.actualBoundingBoxDescent || 0;
+    const actualTextHeight = ascent + descent;
 
     let anchorY;
+    ctx.textBaseline = "alphabetic";
+
     if (v_align === "top") {
-      ctx.textBaseline = "top";
-      anchorY = y;
+      anchorY = y + ascent;
     } else if (v_align === "bottom") {
-      ctx.textBaseline = "bottom";
-      anchorY = y + height;
+      anchorY = y + height - descent;
     } else {
-      ctx.textBaseline = "middle";
-      anchorY = y + height / 2;
+      anchorY = y + (height - actualTextHeight) / 2 + ascent;
     }
 
     ctx.save();
@@ -520,7 +528,11 @@ const drawCertificateToCanvasThumbnail = async (
     if (document.fonts?.load) {
       const fontSpec = `${fontStyle} ${fontWeight} ${desiredFontSize}px "${activeFontFamily}"`;
       try {
-        await document.fonts.load(fontSpec);
+        if (!document.fonts.check(fontSpec)) {
+          await document.fonts.load(fontSpec);
+          // Small extra wait for thumbnails as they often run in parallel
+          await new Promise(r => setTimeout(r, 20));
+        }
       } catch (err) {
         console.warn("Font load warning for thumbnail drawing:", err);
       }
@@ -556,12 +568,7 @@ const drawCertificateToCanvasThumbnail = async (
       anchorY = y + height / 2;
     }
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, width, height);
-    ctx.clip();
     ctx.fillText(fullName, anchorX, anchorY);
-    ctx.restore();
   }
 
   return canvas.toDataURL("image/jpeg", 0.75);
@@ -601,6 +608,8 @@ function App() {
     template: "",
     signature: "",
   });
+
+  const [serverFonts, setServerFonts] = useState([]);
 
   const [isSending, setIsSending] = useState(false);
   const [emailSummary, setEmailSummary] = useState(null);
@@ -664,6 +673,53 @@ function App() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [previewScale]);
+
+  // --- Fetch Server Fonts & Inject @font-face ---
+  useEffect(() => {
+    const fetchFonts = async () => {
+      try {
+        const response = await axios.get(API_FONTS_URL);
+        const fonts = response.data || [];
+        setServerFonts(fonts);
+
+        // Inject @font-face for each server font
+        const styleId = 'server-fonts-styles';
+        let styleTag = document.getElementById(styleId);
+        if (!styleTag) {
+          styleTag = document.createElement('style');
+          styleTag.id = styleId;
+          document.head.appendChild(styleTag);
+        }
+
+        let css = '';
+        fonts.forEach(font => {
+          // Construct URL to the font file on our server
+          const fontUrl = `${API_BASE_URL}/api/fonts/${encodeURIComponent(font.file)}`;
+          css += `
+            @font-face {
+              font-family: "${font.family}";
+              src: url("${fontUrl}");
+              font-weight: normal;
+              font-style: normal;
+            }
+          `;
+        });
+        styleTag.textContent = css;
+        
+        // Pre-load them so they are ready for the canvas
+        if (document.fonts?.load) {
+          fonts.forEach(font => {
+            document.fonts.load(`16px "${font.family}"`);
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch server fonts:", err);
+      }
+    };
+
+    fetchFonts();
+  }, [API_FONTS_URL, API_BASE_URL]);
+  // ----------------------------------------------
   // -----------------------------------------
 
   const templateImageRef = useRef(null);
@@ -952,6 +1008,29 @@ function App() {
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + tag.length + 2, end + tag.length + 2);
+    }, 0);
+  };
+
+  const insertPlaceholder = (placeholder, targetId = "emailTemplate") => {
+    const textarea = document.getElementById(targetId);
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const valueKey = targetId === "emailTemplate" ? "template" : "signature";
+    const text = emailSettings[valueKey] || "";
+
+    const before = text.substring(0, start);
+    const after = text.substring(end);
+
+    const newText = `${before}{${placeholder}}${after}`;
+    setEmailSettings((prev) => ({ ...prev, [valueKey]: newText }));
+
+    // Defer setting selection back to ensure render happened
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + placeholder.length + 2;
+      textarea.setSelectionRange(newPos, newPos);
     }, 0);
   };
 
@@ -1776,11 +1855,25 @@ function App() {
 
       if (cancelled) return;
 
-      canvas.width = Math.max(1, Math.round(width * pixelRatio));
-      canvas.height = Math.max(1, Math.round(height * pixelRatio));
-      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      // Buffers to allow flourishes/scripts to bleed outside the logical box in the UI
+      const vBuffer = Math.round(height * 0.4); // 40% vertical buffer
+      const hBuffer = Math.round(width * 0.1);  // 10% horizontal buffer
+      
+      canvas.width = Math.max(1, Math.round((width + hBuffer * 2) * pixelRatio));
+      canvas.height = Math.max(1, Math.round((height + vBuffer * 2) * pixelRatio));
+      
+      // Position larger canvas with negative offsets so the text remains logically centered in the box
+      canvas.style.position = 'absolute';
+      canvas.style.top = `-${vBuffer * previewScale}px`;
+      canvas.style.left = `-${hBuffer * previewScale}px`;
+      canvas.style.width = `${(width + hBuffer * 2) * previewScale}px`;
+      canvas.style.height = `${(height + vBuffer * 2) * previewScale}px`;
 
-      ctx.clearRect(0, 0, width, height);
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      ctx.clearRect(0, 0, width + hBuffer * 2, height + vBuffer * 2);
+
+      // Translate context to account for buffer when drawing
+      ctx.translate(hBuffer, vBuffer);
 
       const fontWeight = layout.fontWeight || "normal";
       const fontStyle = layout.fontStyle || "normal";
@@ -1807,24 +1900,27 @@ function App() {
         anchorX = width;
       }
 
+      // PIXEL PERFECT VERTICAL CENTERING
+      // We ignore standard textBaselines which vary by browser and font.
+      // Instead, we measure the actual inked pixels (bounding box) and offset manually.
+      const metrics = ctx.measureText(previewName || "Your Name Here");
+      const ascent = metrics.actualBoundingBoxAscent || 0;
+      const descent = metrics.actualBoundingBoxDescent || 0;
+      const actualTextHeight = ascent + descent;
+      
       let anchorY;
+      ctx.textBaseline = "alphabetic"; // Use a stable baseline
+
       if (layout.v_align === "top") {
-        ctx.textBaseline = "top";
-        anchorY = 0;
+        anchorY = ascent;
       } else if (layout.v_align === "bottom") {
-        ctx.textBaseline = "bottom";
-        anchorY = height;
+        anchorY = height - descent;
       } else {
-        ctx.textBaseline = "middle";
-        anchorY = height / 2;
+        // Middle: Center the bounding box within the box height
+        anchorY = (height - actualTextHeight) / 2 + ascent;
       }
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, width, height);
-      ctx.clip();
       ctx.fillText(previewName || "Your Name Here", anchorX, anchorY);
-      ctx.restore();
     };
 
     drawPreview();
@@ -2142,76 +2238,116 @@ function App() {
     const toastId = toast.loading(`Sending ${totalRecipients} ${emailNoun}...`);
 
     try {
-      if (emailAttachmentType === "certificate") {
-        // --- CLIENT-SIDE GENERATION FLOW ---
-        try {
-          const verifyUrl = buildApiUrl(API_BASE_URL, "api/auth/verify-purchase");
-          const verifyRes = await axios.post(verifyUrl, {
-            email: senderEmail,
-            name: emailSettings.senderName || "User",
-            phone: "00000000000" // Standard fallback since we don't collect phone in email pane
+      // 1. Verify Purchase/Access
+      try {
+        const verifyUrl = buildApiUrl(API_BASE_URL, "api/auth/verify-purchase");
+        const verifyRes = await axios.post(verifyUrl, {
+          email: senderEmail,
+          name: emailSettings.senderName || "User",
+          phone: "00000000000", // Standard fallback
+        });
+        if (
+          verifyRes.data.status === "payment_pending" &&
+          verifyRes.data.paymentUrl
+        ) {
+          setEmailSummary({
+            timestamp: new Date().toLocaleString(),
+            status: "payment_pending",
           });
-          if (verifyRes.data.status === "payment_pending" && verifyRes.data.paymentUrl) {
-            setEmailSummary({
-              timestamp: new Date().toLocaleString(),
-              status: "payment_pending"
-            });
-            toast.success("Redirecting to payment to complete your purchase before sending.", { id: toastId });
-            window.location.href = verifyRes.data.paymentUrl;
-            return;
-          }
-        } catch (verifyErr) {
-          throw new Error(verifyErr.response?.data?.message || "Payment verification failed.");
+          toast.success(
+            "Redirecting to payment to complete your purchase before sending.",
+            { id: toastId }
+          );
+          window.location.href = verifyRes.data.paymentUrl;
+          return;
         }
+      } catch (verifyErr) {
+        throw new Error(
+          verifyErr.response?.data?.message || "Payment verification failed."
+        );
+      }
 
-        let excelTargets = [];
-        if (emailReadyRows.length && dataFile) {
-          excelTargets = emailReadyRows.map(row => {
+      // 2. Prepare Recipients
+      let excelTargets = [];
+      if (emailReadyRows.length && dataFile) {
+        excelTargets = emailReadyRows
+          .map((row) => {
             const name = toTitleCase(getCellValue(row, "Name") || "");
             const email = (getCellValue(row, "Email") || "").toString().trim();
             return { name, email };
-          }).filter(r => r.name && isValidEmail(r.email));
-        }
+          })
+          .filter((r) => r.name && isValidEmail(r.email));
+      }
 
-        let recipients = [...excelTargets, ...manualTargets];
-        if (skipDuplicates) {
-          const seenEmails = new Set();
-          recipients = recipients.filter(r => {
-            const lowerEmail = r.email.toLowerCase();
-            if (seenEmails.has(lowerEmail)) return false;
-            seenEmails.add(lowerEmail);
-            return true;
+      let recipients = [...excelTargets, ...manualTargets];
+      if (skipDuplicates) {
+        const seenEmails = new Set();
+        recipients = recipients.filter((r) => {
+          const lowerEmail = r.email.toLowerCase();
+          if (seenEmails.has(lowerEmail)) return false;
+          seenEmails.add(lowerEmail);
+          return true;
+        });
+      }
+
+      if (!recipients.length) {
+        throw new Error("No valid recipients found with both Name and Email.");
+      }
+
+      // Check if total shared attachments exceed 25MB (common email provider limit)
+      if (emailAttachmentType === "shared" && sharedAttachmentFiles.length > 0) {
+        const totalSize = sharedAttachmentFiles.reduce((acc, file) => acc + (file?.size || 0), 0);
+        if (totalSize > 25 * 1024 * 1024) {
+          toast(
+            "Caution: Your attachments exceed 25MB. Many email providers (like Gmail) may reject these emails.",
+            { icon: "⚠️", duration: 6000 }
+          );
+        }
+      }
+
+      const fullMessage = emailSettings.signature
+        ? `${templateMessage}\n\n${emailSettings.signature}`
+        : templateMessage;
+
+      let successCount = 0;
+      let failures = [];
+      let sharedBatchId = null;
+
+      setIsSending(true);
+
+      // 3. Upload Shared Files Once (if applicable)
+      if (emailAttachmentType === "shared" && sharedAttachmentFiles.length > 0) {
+        toast.loading("Uploading shared attachments once...", { id: toastId });
+        try {
+          const uploadFormData = new FormData();
+          sharedAttachmentFiles.forEach((file) => {
+            if (file) uploadFormData.append("attachments", file);
           });
+          const uploadUrl = buildApiUrl(API_BASE_URL, "api/upload-shared");
+          const uploadRes = await axios.post(uploadUrl, uploadFormData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          sharedBatchId = uploadRes.data.sharedBatchId;
+        } catch (uploadErr) {
+          throw new Error(
+            "Failed to pre-upload shared attachments. " +
+              (uploadErr.response?.data?.message || uploadErr.message)
+          );
         }
+      }
 
-        if (!recipients.length) {
-          throw new Error("No valid recipients found with both Name and Email.");
-        }
-
-        const fullMessage = emailSettings.signature
-          ? `${templateMessage}\n\n${emailSettings.signature}`
-          : templateMessage;
-
-        let successCount = 0;
-        let failures = [];
-        
-        setIsSending(true);
+      // 4. Sending Loop
+      try {
         for (let i = 0; i < recipients.length; i++) {
           const recipient = recipients[i];
           const pct = Math.round((i / recipients.length) * 100);
-          toast.loading(`Generating & Sending... ${i}/${recipients.length} (${pct}%)`, { id: toastId });
+          toast.loading(`Sending... ${i}/${recipients.length} (${pct}%)`, {
+            id: toastId,
+          });
           setSendProgress({ processed: i, total: recipients.length });
 
           try {
-            const pdfBlob = await generateCertificatePDF(
-              templateImageRef.current,
-              layout,
-              recipient.name,
-              { drawName: true },
-              templateBackImageRef.current
-            );
             const formData = new FormData();
-            formData.append("certificate", pdfBlob, `${sanitizeFileBaseName(recipient.name, "certificate")}.pdf`);
             formData.append("emailService", service);
             formData.append("emailUser", senderEmail);
             formData.append("emailPass", password);
@@ -2221,7 +2357,27 @@ function App() {
             formData.append("recipientName", recipient.name);
             formData.append("recipientEmail", recipient.email);
 
-            const sendUrl = buildApiUrl(API_BASE_URL, "api/send-client-generated");
+            if (sharedBatchId) {
+              formData.append("sharedBatchId", sharedBatchId);
+            }
+
+            // Handle Personalized Certificate
+            if (emailAttachmentType === "certificate") {
+              const pdfBlob = await generateCertificatePDF(
+                templateImageRef.current,
+                layout,
+                recipient.name,
+                { drawName: true },
+                templateBackImageRef.current
+              );
+              formData.append(
+                "attachments",
+                pdfBlob,
+                `${sanitizeFileBaseName(recipient.name, "certificate")}.pdf`
+              );
+            }
+
+            const sendUrl = buildApiUrl(API_BASE_URL, "api/send-single");
             await axios.post(sendUrl, formData, {
               headers: { "Content-Type": "multipart/form-data" },
             });
@@ -2231,165 +2387,49 @@ function App() {
             failures.push({
               name: recipient.name,
               email: recipient.email,
-              reason: err.response?.data?.message || err.message || "Failed to send"
+              reason:
+                err.response?.data?.message || err.message || "Failed to send",
             });
           }
         }
-
-        setSendProgress(null);
-        setIsSending(false);
-        
-        const finalStatus = failures.length ? (successCount ? "partial_failure" : "failed") : "success";
-        setEmailSummary({
-          timestamp: new Date().toLocaleString(),
-          status: finalStatus,
-          successCount,
-          failureCount: failures.length,
-          attempted: recipients.length,
-          failures
-        });
-
-        if (finalStatus === "success") {
-          toast.success(`Successfully sent ${successCount} emails.`, { id: toastId });
-        } else {
-          toast.error(`Sent ${successCount} emails, but ${failures.length} failed.`, { id: toastId });
-        }
-
-      } else {
-        // --- EXISTING BACKEND BATCH FLOW (Shared Attachments) ---
-        const formData = new FormData();
-
-        if (emailReadyRows.length && dataFile) {
-          formData.append("dataFile", dataFile);
-        }
-
-        formData.append("attachmentMode", emailAttachmentType);
-
-        sharedAttachmentFiles.forEach((file) => {
-          if (file) {
-            formData.append("sharedAttachment", file);
+      } finally {
+        // 5. Cleanup Shared Files
+        if (sharedBatchId) {
+          try {
+            const cleanupUrl = buildApiUrl(API_BASE_URL, "api/cleanup-shared");
+            await axios.post(cleanupUrl, { sharedBatchId });
+          } catch (cleanupErr) {
+            console.error("Cleanup failed:", cleanupErr);
           }
-        });
-
-        formData.append("emailService", service);
-        formData.append("emailUser", senderEmail);
-        formData.append("emailPass", password);
-        formData.append("senderName", emailSettings.senderName || "");
-        formData.append("emailSubject", subject);
-
-        const fullMessage = emailSettings.signature
-          ? `${templateMessage}\n\n${emailSettings.signature}`
-          : templateMessage;
-
-        formData.append("emailTemplate", fullMessage);
-        formData.append("manualRecipients", JSON.stringify(manualTargets));
-        formData.append("personalizeWithNames", "true");
-        formData.append("skipDuplicates", skipDuplicates ? "true" : "false");
-
-        // Start the job
-        const response = await axios.post(API_SEND_URL, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-
-        const payload = response?.data || {};
-
-        // Payment Redirect
-        if (payload.status === "payment_pending" && payload.paymentUrl) {
-          setEmailSummary({
-            timestamp: new Date().toLocaleString(),
-            status: "payment_pending",
-            ...payload,
-          });
-          toast.success(
-            payload?.message ||
-            "Redirecting to payment to complete your purchase before sending.",
-            {
-              id: toastId,
-            }
-          );
-          window.location.href = payload.paymentUrl;
-          return;
         }
+      }
 
-        // SSE Progress Tracking
-        if (response.status === 202 && payload.jobId) {
-          const jobId = payload.jobId;
-          const progressUrl = buildApiUrl(API_BASE_URL, `api/progress/${jobId}`);
-          console.log("Starting SSE connection:", progressUrl);
+      setSendProgress(null);
+      setIsSending(false);
 
-          const eventSource = new EventSource(progressUrl);
+      const finalStatus = failures.length
+        ? successCount
+          ? "partial_failure"
+          : "failed"
+        : "success";
+      setEmailSummary({
+        timestamp: new Date().toLocaleString(),
+        status: finalStatus,
+        successCount,
+        failureCount: failures.length,
+        attempted: recipients.length,
+        failures,
+      });
 
-          eventSource.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data);
-
-              if (data.status === 'running') {
-                setSendProgress({ processed: data.processed, total: data.total });
-                const pct = Math.round((data.processed / data.total) * 100);
-                toast.loading(`Sending... ${data.processed}/${data.total} (${pct}%)`, { id: toastId });
-              } else if (data.status === 'completed' || data.status === 'failed') {
-                eventSource.close();
-                setSendProgress(null);
-                setIsSending(false);
-
-                const finalPayload = data.payload || {};
-                const hasFailures = (finalPayload.failureCount || 0) > 0;
-                const finalStatus = finalPayload.status || (hasFailures ? "partial_failure" : "success");
-
-                setEmailSummary({
-                  timestamp: new Date().toLocaleString(),
-                  status: finalStatus,
-                  ...finalPayload,
-                });
-
-                if (finalStatus === "success" || data.status === 'completed') {
-                  toast.success(finalPayload?.message || "Emails sent successfully.", { id: toastId });
-                } else {
-                  const firstFailure = finalPayload.failures?.[0];
-                  const reason = firstFailure?.reason || finalPayload?.message;
-                  toast.error(reason || "Some emails failed.", { id: toastId });
-                }
-              }
-            } catch (err) {
-              console.error("SSE Parse Error:", err);
-            }
-          };
-
-          eventSource.onerror = (err) => {
-            console.error("SSE Error:", err);
-            eventSource.close();
-            setIsSending(false);
-            setSendProgress(null);
-          };
-
-          return; // Wait for SSE to finish
-        }
-
-        // Fallback for synchronous/immediate response
-        const hasFailures = (payload.failureCount || 0) > 0;
-        const status =
-          payload.status || (hasFailures ? "partial_failure" : "success");
-
-        setEmailSummary({
-          timestamp: new Date().toLocaleString(),
-          status,
-          ...payload,
+      if (finalStatus === "success") {
+        toast.success(`Successfully sent ${successCount} emails.`, {
+          id: toastId,
         });
-
-        if (status === "success") {
-          toast.success(payload?.message || "Emails sent successfully.", {
-            id: toastId,
-          });
-        } else {
-          const firstFailure = payload.failures?.[0];
-          const reason = firstFailure?.reason || payload?.message;
-          toast.error(
-            reason || "Some emails failed. Please review the invalid addresses.",
-            {
-              id: toastId,
-            }
-          );
-        }
+      } else {
+        toast.error(
+          `Sent ${successCount} emails, but ${failures.length} failed.`,
+          { id: toastId }
+        );
       }
     } catch (error) {
       const message =
@@ -2732,6 +2772,7 @@ function App() {
               <div className="font-picker-wrapper">
                 <FontPicker
                   activeFontFamily={layout?.fontFamily || "Montserrat"}
+                  serverFonts={serverFonts}
                   onChange={(nextFont) => {
                     setLayout((prev) => ({ ...prev, fontFamily: nextFont.family }));
                   }}
@@ -3261,6 +3302,27 @@ function App() {
                       onChange={(e) => handleImageUpload(e, "emailTemplate")}
                     />
                   </label>
+                  <div className="divider" style={{ width: "1px", background: "#ccc", margin: "0 5px" }} />
+                  <div className="placeholder-buttons" style={{ display: "inline-flex", gap: "5px" }}>
+                    <button
+                      type="button"
+                      onClick={() => insertPlaceholder("name", "emailTemplate")}
+                      className="format-btn placeholder-btn"
+                      title="Insert Name Placeholder"
+                      style={{ fontSize: '12px', fontWeight: 'bold', color: '#6366f1' }}
+                    >
+                      {`{name}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertPlaceholder("email", "emailTemplate")}
+                      className="format-btn placeholder-btn"
+                      title="Insert Email Placeholder"
+                      style={{ fontSize: '12px', fontWeight: 'bold', color: '#6366f1' }}
+                    >
+                      {`{email}`}
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   id="emailTemplate"
@@ -3369,6 +3431,27 @@ function App() {
                       onChange={(e) => handleImageUpload(e, "emailSignature")}
                     />
                   </label>
+                  <div className="divider" style={{ width: "1px", background: "#ccc", margin: "0 5px" }} />
+                  <div className="placeholder-buttons" style={{ display: "inline-flex", gap: "5px" }}>
+                    <button
+                      type="button"
+                      onClick={() => insertPlaceholder("name", "emailSignature")}
+                      className="format-btn placeholder-btn"
+                      title="Insert Name Placeholder"
+                      style={{ fontSize: '12px', fontWeight: 'bold', color: '#6366f1' }}
+                    >
+                      {`{name}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertPlaceholder("email", "emailSignature")}
+                      className="format-btn placeholder-btn"
+                      title="Insert Email Placeholder"
+                      style={{ fontSize: '12px', fontWeight: 'bold', color: '#6366f1' }}
+                    >
+                      {`{email}`}
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   id="emailSignature"
@@ -3663,7 +3746,7 @@ function App() {
                 <div className="preview-container-3d">
                   <div className={`preview-card-3d ${previewSide === "back" ? "is-flipped" : ""}`}>
                     {/* Front Face */}
-                    <div className="preview-face-3d front">
+                    <div className={`preview-face-3d front ${previewSide !== "back" ? "active" : ""}`}>
                       <div
                         className="editor-canvas"
                         style={{
@@ -3677,6 +3760,7 @@ function App() {
                         {layout ? (
                           <Rnd
                             bounds="parent"
+                            dragHandleClassName="draggable-text-box"
                             position={{
                               x: layout.x * previewScale,
                               y: layout.y * previewScale,
@@ -3721,7 +3805,7 @@ function App() {
                     </div>
 
                     {/* Back Face */}
-                    <div className="preview-face-3d back">
+                    <div className={`preview-face-3d back ${previewSide === "back" ? "active" : ""}`}>
                       {templateBackURL && (
                         <div
                           className="editor-canvas"

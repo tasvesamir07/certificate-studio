@@ -243,3 +243,36 @@
   background: rgba(99, 102, 241, 0.2);
   color: #818cf8;
 }
+
+.error-hint {
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 8px;
+  font-style: italic;
+  text-align: center;
+}
+
+.font-loader-span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner-mini {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: font-spin 0.6s linear infinite;
+}
+
+@keyframes font-spin {
+  to { transform: rotate(360deg); }
+}
+
+.load-external button:disabled {
+  opacity: 0.8;
+  cursor: wait;
+}
