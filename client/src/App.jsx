@@ -6,8 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { useDropzone } from "react-dropzone";
-import Draggable from "react-draggable";
-import { ResizableBox } from "react-resizable";
+import { Rnd } from "react-rnd";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import { saveAs } from "file-saver";
@@ -17,7 +16,6 @@ import { jsPDF } from "jspdf";
 import FontPicker from './components/FontPicker';
 
 import "./App.css";
-import "react-resizable/css/styles.css";
 import LoginPage from "./Pages/LoginPage";
 import ProfilePage from "./Pages/ProfilePage";
 import PricingPage from "./Pages/PricingPage";
@@ -220,8 +218,8 @@ const CANVAS_TEXT_ALIGN = {
   right: "right",
 };
 const MIN_DYNAMIC_FONT_SIZE = 8;
-const FONT_FIT_PADDING = 0.9;
-const GOLDEN_BORDER_PADDING = 20;
+const FONT_FIT_PADDING = 1.0;
+const GOLDEN_BORDER_PADDING = 0;
 
 const fitFontSizeToBox = (
   ctx,
@@ -674,6 +672,7 @@ function App() {
   const textMeasureContextRef = useRef(null);
   const previewCanvasRef = useRef(null);
   const templateNaturalSizeRef = useRef(DEFAULT_TEMPLATE_SIZE);
+  const resizeStartLayoutRef = useRef(null);
   const savedLayoutsRef = useRef({});
   const templateNaturalWidth =
     templateNaturalSizeRef.current.width || DEFAULT_TEMPLATE_SIZE.width;
@@ -1424,8 +1423,15 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  const handleResizeStart = useCallback(() => {
+    resizeStartLayoutRef.current = layout ? { ...layout } : null;
+  }, [layout]);
+
   const handleResize = useCallback(
-    (_, { size }) => {
+    (_, direction, ref, delta, position) => {
+      const startLayout = resizeStartLayoutRef.current;
+      if (!startLayout) return;
+
       setLayout((prev) => {
         if (!prev) return prev;
 
@@ -1435,27 +1441,39 @@ function App() {
         const templateHeight =
           templateNaturalSizeRef.current.height || DEFAULT_TEMPLATE_SIZE.height;
 
-        const proposedWidth = Math.round((size.width || 0) / safeScale);
-        const proposedHeight = Math.round((size.height || 0) / safeScale);
-
+        // Calculate natural dimensions based on start state + delta for maximum precision
         const nextWidth = Math.min(
           templateWidth,
-          Math.max(MIN_LAYOUT_WIDTH, proposedWidth)
+          Math.max(MIN_LAYOUT_WIDTH, startLayout.width + Math.round(delta.width / safeScale))
         );
         const nextHeight = Math.min(
           templateHeight,
-          Math.max(MIN_LAYOUT_HEIGHT, proposedHeight)
+          Math.max(MIN_LAYOUT_HEIGHT, startLayout.height + Math.round(delta.height / safeScale))
         );
+
+        const nextX = Math.round((position.x || 0) / safeScale);
+        const nextY = Math.round((position.y || 0) / safeScale);
 
         const maxX = Math.max(0, templateWidth - nextWidth);
         const maxY = Math.max(0, templateHeight - nextHeight);
+
+        // Dynamic font scaling: Use the maximum scale factor between width and height growth
+        const widthScale = nextWidth / (startLayout.width || 1);
+        const heightScale = nextHeight / (startLayout.height || 1);
+        const scaleFactor = Math.max(widthScale, heightScale);
+
+        const nextFontSize = Math.max(
+          MIN_DYNAMIC_FONT_SIZE,
+          Math.round(startLayout.fontSize * scaleFactor)
+        );
 
         return {
           ...prev,
           width: nextWidth,
           height: nextHeight,
-          x: Math.min(Math.max(0, prev.x), maxX),
-          y: Math.min(Math.max(0, prev.y), maxY),
+          fontSize: nextFontSize,
+          x: Math.min(Math.max(0, nextX), maxX),
+          y: Math.min(Math.max(0, nextY), maxY),
         };
       });
     },
@@ -3657,56 +3675,45 @@ function App() {
                         }}
                       >
                         {layout ? (
-                          <Draggable
-                            nodeRef={draggableRef}
+                          <Rnd
                             bounds="parent"
                             position={{
                               x: layout.x * previewScale,
                               y: layout.y * previewScale,
                             }}
+                            size={{
+                              width: Math.max(1, layout.width * previewScale),
+                              height: Math.max(1, layout.height * previewScale),
+                            }}
                             onDrag={handleDrag}
-                            onStop={handleDrag}
-                            disabled={isLayoutLocked}
+                            onResizeStart={handleResizeStart}
+                            onResize={handleResize}
+                            disableDragging={isLayoutLocked}
+                            enableResizing={isLayoutLocked ? false : {
+                              top: true, right: true, bottom: true, left: true,
+                              topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
+                            }}
+                            minWidth={Math.max(1, MIN_LAYOUT_WIDTH * previewScale)}
+                            minHeight={Math.max(1, MIN_LAYOUT_HEIGHT * previewScale)}
+                            maxWidth={templateSize.width}
+                            maxHeight={templateSize.height}
                           >
                             <div
-                              ref={draggableRef}
+                              className={`draggable-text-box ${isLayoutLocked ? "locked" : ""}`}
                               style={{
-                                display: "inline-block",
+                                width: "100%",
+                                height: "100%",
+                                justifyContent: getJustifyContent(),
+                                alignItems: getAlignItems(),
                               }}
                             >
-                              <ResizableBox
-                                width={Math.max(1, layout.width * previewScale)}
-                                height={Math.max(1, layout.height * previewScale)}
-                                onResizeStop={handleResize}
-                                minConstraints={[
-                                  Math.max(1, MIN_LAYOUT_WIDTH * previewScale),
-                                  Math.max(1, MIN_LAYOUT_HEIGHT * previewScale),
-                                ]}
-                                maxConstraints={[
-                                  templateSize.width,
-                                  templateSize.height,
-                                ]}
-                                resizeHandles={isLayoutLocked ? [] : ["s", "e", "se"]}
-                              >
-                                <div
-                                  className={`draggable-text-box ${isLayoutLocked ? "locked" : ""
-                                    }`}
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    justifyContent: getJustifyContent(),
-                                    alignItems: getAlignItems(),
-                                  }}
-                                >
-                                  <canvas
-                                    ref={previewCanvasRef}
-                                    className="preview-text-canvas"
-                                    aria-label="Certificate name preview"
-                                  />
-                                </div>
-                              </ResizableBox>
+                              <canvas
+                                ref={previewCanvasRef}
+                                className="preview-text-canvas"
+                                aria-label="Certificate name preview"
+                              />
                             </div>
-                          </Draggable>
+                          </Rnd>
                         ) : (
                           <h3 className="layout-placeholder">Preparing layout box...</h3>
                         )}
