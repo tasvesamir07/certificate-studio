@@ -142,30 +142,36 @@ const sanitizeFileBaseName = (value = "", fallback = "certificate") => {
 
 const stripExtension = (filename = "") => filename.replace(/\.[^/.]+$/, "");
 
-const getCellValue = (row = {}, columnName = "") => {
-  if (!row || !columnName) return "";
+const getCellKeyAndValue = (row = {}, columnName = "") => {
+  if (!row || !columnName) return { key: null, value: "" };
   if (Object.prototype.hasOwnProperty.call(row, columnName)) {
-    return row[columnName];
+    return { key: columnName, value: row[columnName] };
   }
 
   const normalizedColumn = columnName.toString().trim().toLowerCase();
   const keys = Object.keys(row);
 
-  // 1. Try exact normalized match first
   let resolvedKey = keys.find(
     (key) => key?.toString().trim().toLowerCase() === normalizedColumn
   );
 
-  // 2. If no exact match and seeking "name" or "email", try substring match
-  if (typeof resolvedKey === "undefined" && (normalizedColumn === "name" || normalizedColumn === "email")) {
+  if (
+    typeof resolvedKey === "undefined" &&
+    (normalizedColumn === "name" || normalizedColumn === "email")
+  ) {
     resolvedKey = keys.find((key) => {
       const k = key?.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, "");
       return k.includes(normalizedColumn);
     });
   }
 
-  return typeof resolvedKey === "undefined" ? "" : row[resolvedKey];
+  return typeof resolvedKey === "undefined"
+    ? { key: null, value: "" }
+    : { key: resolvedKey, value: row[resolvedKey] };
 };
+
+const getCellValue = (row = {}, columnName = "") =>
+  getCellKeyAndValue(row, columnName).value;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 const isValidEmail = (value = "") => EMAIL_REGEX.test(value.trim());
@@ -265,22 +271,21 @@ const fitFontSizeToBox = (
     const heightRatio = height ? allowedHeight / height : 1;
     
     // We prioritize width but don't want to overflow height.
-    // However, if height is the limiting factor, we check if we can push it a bit more.
     const ratio = Math.min(widthRatio, heightRatio);
 
-    if (ratio >= 0.98 && ratio <= 1.02) {
+    // If it fits or is within 2% margin, stop shrinking.
+    if (ratio >= 0.98) {
       break;
     }
 
+    // Shrink-only logic: never grow beyond the current size
     const nextSize = Math.max(
       MIN_DYNAMIC_FONT_SIZE,
       Math.floor(size * ratio)
     );
 
-    if (nextSize === size) break;
+    if (nextSize >= size) break;
     size = nextSize;
-
-    if (size <= MIN_DYNAMIC_FONT_SIZE) break;
   }
 
   return size;
@@ -379,7 +384,7 @@ const drawCertificateToCanvas = async (
       }
     }
 
-    const appliedFontSize = options.skipAutoFit ? desiredFontSize : fitFontSizeToBox(
+    const appliedFontSize = fitFontSizeToBox(
       ctx,
       fullName,
       activeFontFamily,
@@ -485,99 +490,36 @@ const drawCertificateToCanvasThumbnail = async (
   fullName,
   options = {}
 ) => {
-  const { drawName = true, thumbnailWidth = PREVIEW_THUMBNAIL_WIDTH } = options;
+  const { thumbnailWidth = PREVIEW_THUMBNAIL_WIDTH } = options;
   const { naturalWidth: templateWidth, naturalHeight: templateHeight } =
     templateImage;
 
+  // 1. Render at FULL HIGH-RES on an off-screen canvas first
+  // This is the "Bomb-Proof" way to ensure the thumbnail is EXACTLY the same
+  // as the high-res one (no rounding errors, no font mismatches).
+  const highResCanvas = document.createElement("canvas");
+  await drawCertificateToCanvas(
+    highResCanvas,
+    templateImage,
+    fullLayout,
+    fullName,
+    { drawName: true, ...options }
+  );
+
+  // 2. Set thumbnail dimensions
   const scaleRatio = thumbnailWidth / templateWidth;
   const thumbnailHeight = templateHeight * scaleRatio;
-
   canvas.width = thumbnailWidth;
   canvas.height = thumbnailHeight;
 
+  // 3. Draw the high-res result onto our smaller thumbnail canvas
   const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new Error("Could not get 2D context");
-  }
+  if (!ctx) throw new Error("Could not get thumbnail context");
 
-  ctx.drawImage(templateImage, 0, 0, thumbnailWidth, thumbnailHeight);
-
-  if (drawName) {
-    if (!fullLayout) {
-      throw new Error("A layout is required to draw recipient names.");
-    }
-
-    const scaledLayout = {
-      x: fullLayout.x * scaleRatio,
-      y: fullLayout.y * scaleRatio,
-      width: fullLayout.width * scaleRatio,
-      height: fullLayout.height * scaleRatio,
-      fontSize: fullLayout.fontSize * scaleRatio,
-      fontFamily: fullLayout.fontFamily,
-      color: fullLayout.color,
-      align: fullLayout.align,
-      v_align: fullLayout.v_align,
-    };
-
-    const { x, y, width, height, fontSize, fontFamily, color, align, v_align } =
-      scaledLayout;
-
-    // Scale font weight/style passed from original layout? No, they are strings.
-    const fontWeight = fullLayout.fontWeight || "normal";
-    const fontStyle = fullLayout.fontStyle || "normal";
-
-    const desiredFontSize = Math.max(
-      MIN_DYNAMIC_FONT_SIZE,
-      Math.round(fontSize) || 0
-    );
-    const activeFontFamily = fontFamily || "sans-serif";
-
-    // Ensure font is loaded before measuring or drawing
-    if (document.fonts?.load) {
-      const fontSpec = `${fontStyle} ${fontWeight} ${desiredFontSize}px "${activeFontFamily}"`;
-      try {
-        if (!document.fonts.check(fontSpec)) {
-          await document.fonts.load(fontSpec);
-          // Small extra wait for thumbnails as they often run in parallel
-          await new Promise(r => setTimeout(r, 20));
-        }
-      } catch (err) {
-        console.warn("Font load warning for thumbnail drawing:", err);
-      }
-    }
-
-    const appliedFontSize = options.skipAutoFit ? desiredFontSize : fitFontSizeToBox(
-      ctx,
-      fullName,
-      activeFontFamily,
-      desiredFontSize,
-      width,
-      height,
-      fontWeight,
-      fontStyle
-    );
-
-    ctx.font = `${fontStyle} ${fontWeight} ${appliedFontSize}px "${activeFontFamily}"`;
-    ctx.fillStyle = color || "#000000";
-    ctx.textAlign = CANVAS_TEXT_ALIGN[align] || "center";
-
-    const anchorX =
-      align === "left" ? x : align === "right" ? x + width : x + width / 2;
-
-    let anchorY;
-    if (v_align === "top") {
-      ctx.textBaseline = "top";
-      anchorY = y;
-    } else if (v_align === "bottom") {
-      ctx.textBaseline = "bottom";
-      anchorY = y + height;
-    } else {
-      ctx.textBaseline = "middle";
-      anchorY = y + height / 2;
-    }
-
-    ctx.fillText(fullName, anchorX, anchorY);
-  }
+  // Use smooth scaling
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(highResCanvas, 0, 0, thumbnailWidth, thumbnailHeight);
 
   return canvas.toDataURL("image/jpeg", 0.75);
 };
@@ -593,6 +535,7 @@ function App() {
   const [dataFile, setDataFile] = useState(null);
   const [data, setData] = useState([]);
   const [sheetName, setSheetName] = useState("");
+  const [originalExcelKeys, setOriginalExcelKeys] = useState([]);
 
   const [layout, setLayout] = useState(null);
   const [templateSignature, setTemplateSignature] = useState("");
@@ -628,6 +571,22 @@ function App() {
     createManualRecipient(),
   ]);
   const [isManualGenerating, setIsManualGenerating] = useState(false);
+
+  const prepareRowsForExport = useCallback(
+    (rows) => {
+      if (!originalExcelKeys || originalExcelKeys.length === 0) return rows;
+      return rows.map((r) => {
+        const cleanRow = {};
+        originalExcelKeys.forEach((key) => {
+          if (Object.prototype.hasOwnProperty.call(r, key)) {
+            cleanRow[key] = r[key];
+          }
+        });
+        return cleanRow;
+      });
+    },
+    [originalExcelKeys]
+  );
 
   const [emailAttachmentType, setEmailAttachmentType] = useState("certificate");
   const [sharedAttachmentFiles, setSharedAttachmentFiles] = useState([]);
@@ -703,15 +662,15 @@ function App() {
         }
 
         let css = '';
-        fonts.forEach(font => {
+        fonts.forEach(f => {
           // Construct URL to the font file on our server
-          const fontUrl = `${API_BASE_URL}/api/fonts/${encodeURIComponent(font.file)}`;
           css += `
             @font-face {
-              font-family: "${font.family}";
-              src: url("${fontUrl}");
+              font-family: "${f.family}";
+              src: url("${buildApiUrl(API_BASE_URL, `api/fonts/${f.file}`)}") format("truetype");
               font-weight: normal;
               font-style: normal;
+              font-display: block;
             }
           `;
         });
@@ -741,6 +700,14 @@ function App() {
   const templateNaturalSizeRef = useRef(DEFAULT_TEMPLATE_SIZE);
   const resizeStartLayoutRef = useRef(null);
   const savedLayoutsRef = useRef({});
+  const stopSendingRef = useRef(false);
+
+  const handleStopSending = () => {
+    stopSendingRef.current = true;
+    toast("Stopping... finishing current email then halting.", {
+      icon: "🛑",
+    });
+  };
   const templateNaturalWidth =
     templateNaturalSizeRef.current.width || DEFAULT_TEMPLATE_SIZE.width;
   const templateNaturalHeight =
@@ -922,20 +889,29 @@ function App() {
           return;
         }
 
+        const keys = jsonData.length > 0 ? Object.keys(jsonData[0]) : [];
+        setOriginalExcelKeys(keys);
+
         const namesData = jsonData
           .map((row) => {
-            const formatted = toTitleCase(getCellValue(row, "Name") || "");
-            if (!formatted) return null;
+            const nameMatch = getCellKeyAndValue(row, "Name");
+            const emailMatch = getCellKeyAndValue(row, "Email");
 
-            const emailValue = (getCellValue(row, "Email") || "")
-              .toString()
-              .trim();
+            const formattedName = toTitleCase(nameMatch.value || "");
+            if (!formattedName) return null;
 
-            return {
-              ...row,
-              Name: formatted,
-              Email: emailValue,
-            };
+            const emailValue = (emailMatch.value || "").toString().trim();
+
+            const newRow = { ...row };
+            // Update the ACTUAL original keys if they exist
+            if (nameMatch.key) newRow[nameMatch.key] = formattedName;
+            if (emailMatch.key) newRow[emailMatch.key] = emailValue;
+
+            // Also keep Name/Email for internal app logic
+            newRow.Name = formattedName;
+            newRow.Email = emailValue;
+
+            return newRow;
           })
           .filter(Boolean);
 
@@ -1827,7 +1803,7 @@ function App() {
       toast("No missing emails to download.");
       return;
     }
-    const ws = XLSX.utils.json_to_sheet(rowsMissingEmails);
+    const ws = XLSX.utils.json_to_sheet(prepareRowsForExport(rowsMissingEmails));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Missing Emails");
     const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -1869,7 +1845,9 @@ function App() {
       return;
     }
 
-    const ws = XLSX.utils.json_to_sheet(rowsWithDuplicateEmails);
+    const ws = XLSX.utils.json_to_sheet(
+      prepareRowsForExport(rowsWithDuplicateEmails)
+    );
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Duplicate Emails");
     const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -1912,15 +1890,23 @@ function App() {
       Math.round(layout.fontSize) || 0
     );
     const fontFamily = layout.fontFamily || "sans-serif";
-    const fontSpec = `${desiredFontSize}px "${fontFamily}"`;
+    const fontWeight = layout.fontWeight || "normal";
+    const fontStyle = layout.fontStyle || "normal";
+    
+    // FIX: Include style and weight in fontSpec for proper loading
+    const fontSpec = `${fontStyle} ${fontWeight} ${desiredFontSize}px "${fontFamily}"`;
+    
     const pixelRatio =
       typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
     let cancelled = false;
 
     const drawPreview = async () => {
+      // 1. Ensure font is fully loaded
       if (document.fonts?.load) {
         try {
-          await document.fonts.load(fontSpec);
+          if (!document.fonts.check(fontSpec)) {
+            await document.fonts.load(fontSpec);
+          }
         } catch (err) {
           console.warn("Font preview load warning:", err);
         }
@@ -1929,13 +1915,13 @@ function App() {
       if (cancelled) return;
 
       // Buffers to allow flourishes/scripts to bleed outside the logical box in the UI
-      const vBuffer = Math.round(height * 0.4); // 40% vertical buffer
-      const hBuffer = Math.round(width * 0.1);  // 10% horizontal buffer
+      // We keep these for UI smoothness, but add a CLIPPING RECT inside to match the PDF
+      const vBuffer = Math.round(height * 0.4); 
+      const hBuffer = Math.round(width * 0.1);  
       
       canvas.width = Math.max(1, Math.round((width + hBuffer * 2) * pixelRatio));
       canvas.height = Math.max(1, Math.round((height + vBuffer * 2) * pixelRatio));
       
-      // Position larger canvas with negative offsets so the text remains logically centered in the box
       canvas.style.position = 'absolute';
       canvas.style.top = `-${vBuffer * previewScale}px`;
       canvas.style.left = `-${hBuffer * previewScale}px`;
@@ -1945,17 +1931,24 @@ function App() {
       ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       ctx.clearRect(0, 0, width + hBuffer * 2, height + vBuffer * 2);
 
-      // Translate context to account for buffer when drawing
+      // Translate context to account for buffer
       ctx.translate(hBuffer, vBuffer);
 
-      const fontWeight = layout.fontWeight || "normal";
-      const fontStyle = layout.fontStyle || "normal";
+      // We now use auto-fitting in the preview as well to guarantee perfect WYSIWYG
+      // between the preview canvas and the final PDF/Thumbnail outputs.
+      const appliedFontSize = fitFontSizeToBox(
+        ctx,
+        previewName || "Your Name Here",
+        fontFamily,
+        desiredFontSize,
+        width,
+        height,
+        fontWeight,
+        fontStyle
+      );
 
-      // In the designer preview, we respect the user's chosen font size literally.
-      // We only use auto-fitting for the final batch generation or if explicitly requested.
-      const appliedFontSize = desiredFontSize;
-
-      ctx.font = `${fontStyle} ${fontWeight} ${appliedFontSize}px "${fontFamily}"`;
+      const appliedFontSpec = `${fontStyle} ${fontWeight} ${appliedFontSize}px "${fontFamily}"`;
+      ctx.font = appliedFontSpec;
       ctx.fillStyle = layout.color || "#000000";
       ctx.textAlign = CANVAS_TEXT_ALIGN[layout.align] || "center";
 
@@ -1986,7 +1979,15 @@ function App() {
         anchorY = (height - actualTextHeight) / 2 + ascent;
       }
 
+      // ADD CLIPPING to match final certificate behavior
+      ctx.save();
+      ctx.beginPath();
+      // Clipping box: from 0,0 to width,height in the translated coordinate system
+      ctx.rect(0, 0, width, height);
+      ctx.clip();
+      
       ctx.fillText(previewName || "Your Name Here", anchorX, anchorY);
+      ctx.restore();
     };
 
     drawPreview();
@@ -1994,7 +1995,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [layout, previewName, previewSide, templateURL]);
+  }, [layout, previewName, previewSide, templateURL, previewScale]);
 
 
 
@@ -2200,6 +2201,24 @@ function App() {
     }
   };
 
+  // --- Pre-load Help for Perfect Rendering ---
+  const preloadAllFonts = async (fontsToLoad = []) => {
+    const targets = fontsToLoad.length ? fontsToLoad : serverFonts; // Use serverFonts if no specific fonts are passed
+    if (!targets.length) return;
+
+    try {
+      const fontPromises = targets.map((f) => {
+        const family = typeof f === "string" ? f : f.family;
+        return document.fonts.load(`16px "${family}"`);
+      });
+      await Promise.all(fontPromises);
+      // Small safety buffer after parallel loads
+      await new Promise((r) => setTimeout(r, 100));
+    } catch (err) {
+      console.warn("Font preloading partially failed:", err);
+    }
+  };
+
   const handleGenerateAndSend = async () => {
     if (isSending) return;
 
@@ -2301,39 +2320,10 @@ function App() {
     setSendProgress(null);
 
     const emailNoun = `personalized email${totalRecipients === 1 ? "" : "s"}`;
-    const toastId = toast.loading(`Sending ${totalRecipients} ${emailNoun}...`);
+    const toastId = toast.loading(`Preparing to send ${emailNoun}...`);
 
     try {
-      // 1. Verify Purchase/Access
-      try {
-        const verifyUrl = buildApiUrl(API_BASE_URL, "api/auth/verify-purchase");
-        const verifyRes = await axios.post(verifyUrl, {
-          email: senderEmail,
-          name: emailSettings.senderName || "User",
-          phone: "00000000000", // Standard fallback
-        });
-        if (
-          verifyRes.data.status === "payment_pending" &&
-          verifyRes.data.paymentUrl
-        ) {
-          setEmailSummary({
-            timestamp: new Date().toLocaleString(),
-            status: "payment_pending",
-          });
-          toast.success(
-            "Redirecting to payment to complete your purchase before sending.",
-            { id: toastId }
-          );
-          window.location.href = verifyRes.data.paymentUrl;
-          return;
-        }
-      } catch (verifyErr) {
-        throw new Error(
-          verifyErr.response?.data?.message || "Payment verification failed."
-        );
-      }
-
-      // 2. Prepare Recipients
+      // 1. Prepare Recipients
       let excelTargets = [];
       if (emailReadyRows.length && dataFile) {
         excelTargets = emailReadyRows
@@ -2404,6 +2394,7 @@ function App() {
       let sharedBatchId = null;
 
       setIsSending(true);
+      stopSendingRef.current = false;
 
       // 3. Upload Shared Files Once (if applicable)
       if (emailAttachmentType === "shared" && sharedAttachmentFiles.length > 0) {
@@ -2426,60 +2417,123 @@ function App() {
         }
       }
 
-      // 4. Sending Loop
-      try {
-        for (let i = 0; i < toSend.length; i++) {
-          const recipient = toSend[i];
-          const pct = Math.round((i / toSend.length) * 100);
-          toast.loading(`Sending... ${i}/${toSend.length} (${pct}%)`, {
-            id: toastId,
-          });
-          setSendProgress({ processed: i, total: toSend.length });
+      // 4. Sending Loop (Optimized with Concurrency)
+      const CONCURRENCY_LIMIT = 10;
+      let nextIndex = 0;
+      let processedCount = 0; // Keep for toast update outside workers
+
+      // Define constants for values that don't change per recipient
+      const emailService = service;
+      const emailUser = senderEmail;
+      const emailPass = password;
+      const senderName = emailSettings.senderName || "";
+      const emailSubject = subject;
+      const emailTemplate = fullMessage;
+      const attachmentMode = emailAttachmentType; // Renamed for clarity
+      const personalizeWithNames = true; // Based on original `drawName: true`
+      const API_SEND_SINGLE_URL = buildApiUrl(API_BASE_URL, "api/send-single");
+
+      const sendNext = async (workerId) => {
+        while (true) {
+          // 1. Get the next index safely
+          let i;
+          if (nextIndex < toSend.length) {
+            i = nextIndex++;
+          } else {
+            break;
+          }
+
+          if (i >= toSend.length || stopSendingRef.current) break;
+
+          // 2. CRITICAL: Create a private local snapshot of this recipient's data
+          // This ensures that even if nextIndex or other variables change,
+          // this worker lane is "locked" to this specific person.
+          const recipientSnapshot = { ...toSend[i] };
+          const { name: rName, email: rEmail } = recipientSnapshot;
 
           try {
             const formData = new FormData();
-            formData.append("emailService", service);
-            formData.append("emailUser", senderEmail);
-            formData.append("emailPass", password);
-            formData.append("senderName", emailSettings.senderName || "");
-            formData.append("emailSubject", subject);
-            formData.append("emailTemplate", fullMessage);
-            formData.append("recipientName", recipient.name);
-            formData.append("recipientEmail", recipient.email);
+            formData.append("emailService", emailService);
+            formData.append("emailUser", emailUser);
+            formData.append("emailPass", emailPass);
+            formData.append("senderName", senderName);
+            formData.append("emailSubject", emailSubject);
+            formData.append("emailTemplate", emailTemplate);
+            formData.append("recipientName", rName);
+            formData.append("recipientEmail", rEmail);
 
-            if (sharedBatchId) {
-              formData.append("sharedBatchId", sharedBatchId);
-            }
-
-            // Handle Personalized Certificate
-            if (emailAttachmentType === "certificate") {
+            if (attachmentMode === "certificate") {
+              // Generate certificate using the name from our snapshot
               const pdfBlob = await generateCertificatePDF(
                 templateImageRef.current,
                 layout,
-                recipient.name,
-                { drawName: true },
+                rName,
+                { drawName: personalizeWithNames },
                 templateBackImageRef.current
               );
-              formData.append(
-                "attachments",
-                pdfBlob,
-                `${sanitizeFileBaseName(recipient.name, "certificate")}.pdf`
-              );
+              formData.append("attachments", pdfBlob, `${sanitizeFileBaseName(rName, "certificate")}.pdf`);
+            } else if (attachmentMode === "shared" && sharedBatchId) {
+              formData.append("sharedBatchId", sharedBatchId);
             }
 
-            const sendUrl = buildApiUrl(API_BASE_URL, "api/send-single");
-            await axios.post(sendUrl, formData, {
+            // Send to the email from our snapshot
+            await axios.post(API_SEND_SINGLE_URL, formData, {
               headers: { "Content-Type": "multipart/form-data" },
             });
+
             successCount++;
-          } catch (err) {
-            console.error(`Failed to send to ${recipient.email}:`, err);
+          } catch (error) {
+            const reason = error.response?.data?.message || error.message || "Unknown error";
             failures.push({
-              name: recipient.name,
-              email: recipient.email,
-              reason:
-                err.response?.data?.message || err.message || "Failed to send",
+              name: rName,
+              email: rEmail,
+              reason: reason,
             });
+          } finally {
+            processedCount++;
+            const pct = Math.round((processedCount / toSend.length) * 100);
+            toast.loading(
+              `Sending... ${processedCount}/${toSend.length} (${pct}%)`,
+              {
+                id: toastId,
+              }
+            );
+            setSendProgress({
+              processed: processedCount,
+              total: toSend.length,
+            });
+          }
+        }
+      };
+
+      try {
+        const workers = Array.from(
+          { length: Math.min(CONCURRENCY_LIMIT, toSend.length) },
+          (_, idx) => sendNext(idx + 1)
+        );
+        await Promise.all(workers);
+
+        if (stopSendingRef.current) {
+          toast("Sending stopped by user.", { id: toastId, icon: "⚠️" });
+          const stoppedRemaining = [...toSend.slice(nextIndex), ...remaining];
+          if (stoppedRemaining.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(
+              prepareRowsForExport(stoppedRemaining)
+            );
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Stopped Remaining");
+            const excelBuffer = XLSX.write(wb, {
+              bookType: "xlsx",
+              type: "array",
+            });
+            const dataBlob = new Blob([excelBuffer], {
+              type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            });
+            saveAs(dataBlob, `stopped-remaining-${Date.now()}.xlsx`);
+            toast.success(
+              `Downloaded ${stoppedRemaining.length} remaining recipients.`,
+              { icon: "📥" }
+            );
           }
         }
       } finally {
@@ -2575,7 +2629,7 @@ function App() {
         templateImage,
         layout,
         previewLabel,
-        { drawName: true, skipAutoFit: true },
+        { drawName: true },
         templateBackImageRef.current
       );
 
@@ -2609,6 +2663,7 @@ function App() {
 
     setIsPreviewGridLoading(true);
     setPreviewImages([]);
+
     const toastId = toast.loading(`Generating ${data.length} previews...`, {
       duration: 10000,
     });
@@ -3724,6 +3779,16 @@ function App() {
                 >
                   {sendButtonLabel}
                 </button>
+
+                {isSending && (
+                  <button
+                    className="stop-button"
+                    onClick={handleStopSending}
+                    type="button"
+                  >
+                    <span>Stop Sending</span>
+                  </button>
+                )}
               </div>
               {lastGenerationInfo && (
                 <div className="generation-summary">

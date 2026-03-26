@@ -568,7 +568,8 @@ app.post("/api/auth/verify-purchase", async (req, res) => {
         ? new Date(existingUser.access_expires_at)
         : null;
 
-      if (expiresAt && expiresAt > new Date()) {
+      // Only block if they aren't explicitly forcing a renewal
+      if (expiresAt && expiresAt > new Date() && !req.body.forceRenew) {
         await client.query("ROLLBACK");
         return res.status(200).send({
           message:
@@ -678,7 +679,7 @@ app.post("/api/auth/login", async (req, res) => {
 
   try {
     const userQuery =
-      "SELECT u.id, u.password_hash, ua.access_expires_at FROM users u JOIN user_access ua ON u.id = ua.user_id WHERE u.email = $1";
+      "SELECT u.id, u.display_name, u.password_hash, ua.access_expires_at, ua.is_active FROM users u JOIN user_access ua ON u.id = ua.user_id WHERE u.email = $1";
     const result = await pool.query(userQuery, [email]);
 
     if (result.rows.length === 0) {
@@ -687,7 +688,7 @@ app.post("/api/auth/login", async (req, res) => {
         .send({ message: "Invalid email or access has expired." });
     }
 
-    const { password_hash, access_expires_at } = result.rows[0];
+    const { id, display_name, password_hash, access_expires_at, is_active } = result.rows[0];
 
     // 1. Verify Password
     const passwordMatch = await bcrypt.compare(password, password_hash);
@@ -698,10 +699,42 @@ app.post("/api/auth/login", async (req, res) => {
     // 2. Check Access Expiration
     const expiryDate = new Date(access_expires_at);
     if (expiryDate < new Date()) {
-      await pool.query(
-        "UPDATE user_access SET is_active = FALSE WHERE user_id = $1",
-        [result.rows[0].id]
-      );
+      if (is_active) {
+        // Set to inactive so we don't spam the user every time they fail to log in
+        await pool.query(
+          "UPDATE user_access SET is_active = FALSE WHERE user_id = $1",
+          [id]
+        );
+        
+        // Send expiration email
+        try {
+          const transporter = nodemailer.createTransport({
+            service: PURCHASE_EMAIL_SERVICE,
+            auth: {
+              user: PURCHASE_EMAIL_USER,
+              pass: PURCHASE_EMAIL_PASS,
+            },
+          });
+          const baseUrl = getClientBaseUrl(req);
+          
+          await transporter.sendMail({
+            from: PURCHASE_EMAIL_USER,
+            to: email,
+            subject: "Your Certificate Studio Subscription Has Expired",
+            html: `
+              <h1>Subscription Expired</h1>
+              <p>Hi ${display_name ? display_name.split(' ')[0] : 'there'},</p>
+              <p>Your subscription to Certificate Studio expired on <strong>${expiryDate.toDateString()}</strong>.</p>
+              <p>To continue using our services, please renew your subscription by logging in or visiting the pricing page.</p>
+              <p><a href="${baseUrl}/pricing">Renew Subscription Now</a></p>
+            `
+          });
+          console.log(`Expiration email sent to: ${email}`);
+        } catch (emailErr) {
+          console.error("Failed to send expiration email:", emailErr.message);
+        }
+      }
+
       return res.status(401).send({
         message: "Your access has expired. Please renew via the pricing page.",
       });
@@ -780,7 +813,11 @@ app.get("/api/auth/profile/:email", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT email, display_name as \"displayName\", phone FROM users WHERE email = $1",
+      `SELECT u.email, u.display_name as "displayName", u.phone, 
+              ua.access_expires_at as "accessExpiresAt", ua.is_active as "isActive" 
+       FROM users u 
+       LEFT JOIN user_access ua ON u.id = ua.user_id 
+       WHERE u.email = $1`,
       [trimmedEmail]
     );
 
@@ -2225,9 +2262,8 @@ const completePurchaseAfterPayment = async (tranId) => {
   const { email, name, days } = pending;
   const client = await pool.connect();
   const displayName = (name || email || "").split("@")[0] || "Member";
-  const newExpiresAt = new Date();
   const durationDays = parseInt(days, 10) || ACCESS_PERIOD_DAYS;
-  newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
+  let newExpiresAt = new Date();
 
   let isNewUser = false;
   let tempPassword = null;
@@ -2237,12 +2273,26 @@ const completePurchaseAfterPayment = async (tranId) => {
 
     const userResult = await client.query(
       `
-        SELECT u.id FROM users u WHERE u.email = $1
+        SELECT u.id, ua.access_expires_at 
+        FROM users u 
+        LEFT JOIN user_access ua ON u.id = ua.user_id
+        WHERE u.email = $1
       `,
       [email]
     );
 
     let userId = userResult.rows[0]?.id;
+
+    if (userId && userResult.rows[0]?.access_expires_at) {
+      const currentExpiry = new Date(userResult.rows[0].access_expires_at);
+      if (currentExpiry > new Date()) {
+        // If renewing early, add days to the current expiration date
+        newExpiresAt = currentExpiry;
+      }
+    }
+    
+    // Add the purchased days
+    newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
 
     if (!userId) {
       // --- NEW USER: generate temp password ---

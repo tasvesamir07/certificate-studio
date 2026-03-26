@@ -151,6 +151,28 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     }
   };
 
+  const handleRenew = async () => {
+    const toastId = toast.loading("Preparing renewal session...");
+    const verifyUrl = buildApiUrl(apiBaseUrl, "api/auth/verify-purchase");
+    try {
+      const response = await axios.post(verifyUrl, {
+        email: authUser,
+        name: profileData.displayName || "User",
+        phone: profileData.phone || "00000000000",
+        forceRenew: true
+      });
+      if (response.data.status === "payment_pending" && response.data.paymentUrl) {
+        toast.success("Redirecting to secure payment gateway...", { id: toastId });
+        window.location.href = response.data.paymentUrl;
+      } else {
+        toast.error(response.data.message || "Unable to start renewal.", { id: toastId });
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || "Failed to start renewal.";
+      toast.error(message, { id: toastId });
+    }
+  };
+
   return (
     <div className="profile-page">
       <Toaster position="bottom-right" />
@@ -238,6 +260,43 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
           ) : (
             <input type="text" value={profileData.phone || "Not provided"} readOnly />
           )}
+        </div>
+      </div>
+
+      <div className="profile-card subscription-card" style={{ borderLeft: "4px solid #6d28d9" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+          <div>
+            <h2 style={{ marginBottom: "8px" }}>Subscription Plan</h2>
+            <p style={{ margin: "0 0 12px 0", color: "#4b5563" }}>
+              <strong>Current Plan:</strong> {profileData.isActive ? "Premium Access" : "Inactive / Expired"}
+            </p>
+            <p style={{ margin: 0, color: "#4b5563", display: "flex", alignItems: "center", gap: "6px" }}>
+              <strong>Status:</strong> 
+              {profileData.isActive && new Date(profileData.accessExpiresAt) > new Date() ? (
+                 <span style={{ color: "#059669", background: "#d1fae5", padding: "2px 8px", borderRadius: "12px", fontSize: "0.85rem", fontWeight: "600" }}>Active until {new Date(profileData.accessExpiresAt).toLocaleDateString()}</span>
+              ) : (
+                 <span style={{ color: "#dc2626", background: "#fee2e2", padding: "2px 8px", borderRadius: "12px", fontSize: "0.85rem", fontWeight: "600" }}>Expired</span>
+              )}
+            </p>
+          </div>
+          <button 
+            onClick={handleRenew} 
+            style={{
+              padding: "10px 20px", 
+              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              color: "#fff", 
+              border: "none", 
+              borderRadius: "10px", 
+              fontWeight: 700, 
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+              transition: "transform 0.2s"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+            onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}
+          >
+            Renew Subscription
+          </button>
         </div>
       </div>
 

@@ -4,7 +4,7 @@
   "description": "Certificate generator backend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "nodemon server.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.48",
@@ -24,6 +24,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "nodemon": "^3.1.14",
     "supertest": "^7.1.4"
   },
   "engines": {
