@@ -1591,6 +1591,103 @@ h2::after {
   text-align: left;
 }
 
+.grid-toggle-button {
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: white;
+  color: #6366f1;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.grid-toggle-button:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.05);
+  border-color: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.1);
+}
+
+.grid-toggle-button.active {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+
+.preview-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.designer-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100; /* Above template but below potential floating UI */
+  background-image: 
+    linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+  background-size: var(--grid-size, 20px) var(--grid-size, 20px);
+}
+
+.theme-dark .designer-grid {
+  background-image: 
+    linear-gradient(to right, rgba(129, 140, 248, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(129, 140, 248, 0.2) 1px, transparent 1px);
+}
+
+.center-snap-line-v,
+.center-snap-line-h {
+  position: absolute;
+  background-color: rgba(99, 102, 241, 0.3);
+  pointer-events: none;
+  z-index: 101;
+  transition: all 0.2s ease;
+}
+
+.center-snap-line-v {
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.center-snap-line-h {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.center-snap-line-v.active,
+.center-snap-line-h.active {
+  background-color: #6366f1;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+}
+
+.center-snap-line-v.active { width: 2px; }
+.center-snap-line-h.active { height: 2px; }
+
+.theme-dark .center-snap-line-v,
+.theme-dark .center-snap-line-h {
+  background-color: rgba(129, 140, 248, 0.3);
+}
+
+.theme-dark .center-snap-line-v.active,
+.theme-dark .center-snap-line-h.active {
+  background-color: #818cf8;
+  box-shadow: 0 0 10px rgba(129, 140, 248, 0.8);
+}
+
 /* --- END FIX --- */
 
 

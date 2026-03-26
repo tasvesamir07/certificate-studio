@@ -420,7 +420,6 @@ const ENFORCE_PAYMENT_BEFORE_SEND =
   (process.env.ENFORCE_PAYMENT_BEFORE_SEND || "false")
     .toString()
     .toLowerCase() !== "false";
-const MAX_BCC_BATCH = parseInt(process.env.MAX_BCC_BATCH, 10) || 80;
 
 // getServerBaseUrl is defined at the top now
 
@@ -1237,9 +1236,21 @@ const getColumnValue = (row = {}, columnName = "") => {
   }
 
   const normalizedColumn = columnName.toString().trim().toLowerCase();
-  const resolvedKey = Object.keys(row).find(
+  const keys = Object.keys(row);
+
+  // 1. Try exact normalized match first
+  let resolvedKey = keys.find(
     (key) => key?.toString().trim().toLowerCase() === normalizedColumn
   );
+
+  // 2. If no exact match and seeking "name" or "email", try substring match
+  if (typeof resolvedKey === "undefined" && (normalizedColumn === "name" || normalizedColumn === "email")) {
+    resolvedKey = keys.find((key) => {
+      const k = key?.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      return k.includes(normalizedColumn);
+    });
+  }
+
   return typeof resolvedKey === "undefined" ? "" : row[resolvedKey];
 };
 

@@ -105,11 +105,10 @@ const resolveApiBase = () => {
 const toTitleCase = (value = "") => {
   return value
     .toString()
-    .trim()
-    .replace(/\s+/g, " ")
     .toLowerCase()
-    .replace(/(^|[\s-/])([a-z0-9\u00c0-\u024f])/g, (match, boundary, char) => {
-      return boundary + char.toUpperCase();
+    .replace(/[\p{L}\p{N}]+/gu, (word) => {
+      const [first = "", ...rest] = word;
+      return first.toUpperCase() + rest.join("");
     });
 };
 
@@ -119,18 +118,13 @@ const formatNameInput = (value = "") => {
   let capitalizeNext = true;
 
   for (const char of collapsed) {
-    if (char === " ") {
-      result += char;
-      capitalizeNext = true;
-      continue;
-    }
-
-    if (/[a-z]/i.test(char)) {
+    if (/[a-z0-9\u00c0-\u024f]/i.test(char)) {
       result += capitalizeNext ? char.toUpperCase() : char;
+      capitalizeNext = false;
     } else {
       result += char;
+      capitalizeNext = true;
     }
-    capitalizeNext = false;
   }
 
   return result;
@@ -155,9 +149,21 @@ const getCellValue = (row = {}, columnName = "") => {
   }
 
   const normalizedColumn = columnName.toString().trim().toLowerCase();
-  const resolvedKey = Object.keys(row).find(
+  const keys = Object.keys(row);
+
+  // 1. Try exact normalized match first
+  let resolvedKey = keys.find(
     (key) => key?.toString().trim().toLowerCase() === normalizedColumn
   );
+
+  // 2. If no exact match and seeking "name" or "email", try substring match
+  if (typeof resolvedKey === "undefined" && (normalizedColumn === "name" || normalizedColumn === "email")) {
+    resolvedKey = keys.find((key) => {
+      const k = key?.toString().trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      return k.includes(normalizedColumn);
+    });
+  }
+
   return typeof resolvedKey === "undefined" ? "" : row[resolvedKey];
 };
 
@@ -205,6 +211,7 @@ const LAYOUT_STORAGE_KEY = "certificate-designer-layouts";
 const MAX_MANUAL_RECIPIENTS = 5;
 const DEFAULT_ZOOM_SCALE = 0.35;
 const PREVIEW_THUMBNAIL_WIDTH = 300;
+const MAX_BATCH_SIZE = 100;
 
 const createManualRecipient = () => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -218,6 +225,7 @@ const CANVAS_TEXT_ALIGN = {
   right: "right",
 };
 const MIN_DYNAMIC_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 1000; // Prevent runaway scaling
 const FONT_FIT_PADDING = 1.0;
 const GOLDEN_BORDER_PADDING = 0;
 
@@ -371,7 +379,7 @@ const drawCertificateToCanvas = async (
       }
     }
 
-    const appliedFontSize = fitFontSizeToBox(
+    const appliedFontSize = options.skipAutoFit ? desiredFontSize : fitFontSizeToBox(
       ctx,
       fullName,
       activeFontFamily,
@@ -442,7 +450,7 @@ const generateCertificatePDF = async (
     templateImage,
     layout,
     fullName,
-    { drawName: true }
+    { drawName: true, ...options }
   );
 
   // 2. Create PDF with same dimensions
@@ -538,7 +546,7 @@ const drawCertificateToCanvasThumbnail = async (
       }
     }
 
-    const appliedFontSize = fitFontSizeToBox(
+    const appliedFontSize = options.skipAutoFit ? desiredFontSize : fitFontSizeToBox(
       ctx,
       fullName,
       activeFontFamily,
@@ -591,6 +599,9 @@ function App() {
 
   const [previewName, setPreviewName] = useState("");
   const [isLayoutLocked, setIsLayoutLocked] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [isSnapXActive, setIsSnapXActive] = useState(false);
+  const [isSnapYActive, setIsSnapYActive] = useState(false);
 
   const [templateSize, setTemplateSize] = useState(DEFAULT_TEMPLATE_SIZE);
   const [previewScale, setPreviewScale] = useState(DEFAULT_ZOOM_SCALE);
@@ -1446,6 +1457,64 @@ function App() {
         const maxX = Math.max(0, templateWidth - prev.width);
         const maxY = Math.max(0, templateHeight - prev.height);
 
+        // Snap detection threshold (10 raw pixels)
+        const snapThreshold = 10;
+
+        // X-axis (Vertical Center Line)
+        const centerX = nextX + prev.width / 2;
+        const templateCenterX = templateWidth / 2;
+        setIsSnapXActive(Math.abs(centerX - templateCenterX) < snapThreshold);
+
+        // Y-axis (Horizontal Center Line)
+        const centerY = nextY + prev.height / 2;
+        const templateCenterY = templateHeight / 2;
+        setIsSnapYActive(Math.abs(centerY - templateCenterY) < snapThreshold);
+
+        return {
+          ...prev,
+          x: Math.min(Math.max(0, nextX), maxX),
+          y: Math.min(Math.max(0, nextY), maxY),
+        };
+      });
+    },
+    [previewScale]
+  );
+
+  const handleDragStop = useCallback(
+    (_, data) => {
+      setLayout((prev) => {
+        if (!prev) return prev;
+
+        const scale = previewScale || 1;
+        const templateWidth =
+          templateNaturalSizeRef.current.width || DEFAULT_TEMPLATE_SIZE.width;
+        const templateHeight =
+          templateNaturalSizeRef.current.height || DEFAULT_TEMPLATE_SIZE.height;
+
+        let nextX = Math.round(data.x / scale);
+        let nextY = Math.round(data.y / scale);
+        const maxX = Math.max(0, templateWidth - prev.width);
+        const maxY = Math.max(0, templateHeight - prev.height);
+
+        const snapThreshold = 10;
+
+        // Snap X to center
+        const centerX = nextX + prev.width / 2;
+        const templateCenterX = templateWidth / 2;
+        if (Math.abs(centerX - templateCenterX) < snapThreshold) {
+          nextX = templateCenterX - prev.width / 2;
+        }
+
+        // Snap Y to center
+        const centerY = nextY + prev.height / 2;
+        const templateCenterY = templateHeight / 2;
+        if (Math.abs(centerY - templateCenterY) < snapThreshold) {
+          nextY = templateCenterY - prev.height / 2;
+        }
+
+        setIsSnapXActive(false);
+        setIsSnapYActive(false);
+
         return {
           ...prev,
           x: Math.min(Math.max(0, nextX), maxX),
@@ -1537,13 +1606,16 @@ function App() {
         const maxY = Math.max(0, templateHeight - nextHeight);
 
         // Dynamic font scaling: Use the maximum scale factor between width and height growth
-        const widthScale = nextWidth / (startLayout.width || 1);
-        const heightScale = nextHeight / (startLayout.height || 1);
+        const widthScale = nextWidth / (Math.max(1, startLayout.width));
+        const heightScale = nextHeight / (Math.max(1, startLayout.height));
         const scaleFactor = Math.max(widthScale, heightScale);
 
-        const nextFontSize = Math.max(
-          MIN_DYNAMIC_FONT_SIZE,
-          Math.round(startLayout.fontSize * scaleFactor)
+        const nextFontSize = Math.min(
+          MAX_FONT_SIZE,
+          Math.max(
+            MIN_DYNAMIC_FONT_SIZE,
+            Math.round(startLayout.fontSize * scaleFactor)
+          )
         );
 
         return {
@@ -1878,16 +1950,9 @@ function App() {
       const fontWeight = layout.fontWeight || "normal";
       const fontStyle = layout.fontStyle || "normal";
 
-      const appliedFontSize = fitFontSizeToBox(
-        ctx,
-        previewName || "Your Name Here",
-        fontFamily,
-        desiredFontSize,
-        width,
-        height,
-        fontWeight,
-        fontStyle
-      );
+      // In the designer preview, we respect the user's chosen font size literally.
+      // We only use auto-fitting for the final batch generation or if explicitly requested.
+      const appliedFontSize = desiredFontSize;
 
       ctx.font = `${fontStyle} ${fontWeight} ${appliedFontSize}px "${fontFamily}"`;
       ctx.fillStyle = layout.color || "#000000";
@@ -2294,6 +2359,33 @@ function App() {
         throw new Error("No valid recipients found with both Name and Email.");
       }
 
+      // --- Split Logic: Limit to MAX_BATCH_SIZE ---
+      let toSend = recipients;
+      let remaining = [];
+      if (recipients.length > MAX_BATCH_SIZE) {
+        toSend = recipients.slice(0, MAX_BATCH_SIZE);
+        remaining = recipients.slice(MAX_BATCH_SIZE);
+        toast(`Batch limit reached: Only the first ${MAX_BATCH_SIZE} will be sent. The rest will be provided for download.`, {
+          icon: "⚡",
+          duration: 6000,
+        });
+
+        // --- Trigger Download for Remaining Recipients IMMEDIATELY ---
+        const ws = XLSX.utils.json_to_sheet(remaining.map(r => ({
+          Name: r.name,
+          Email: r.email
+        })));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Remaining Recipients");
+        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        const dataBlob = new Blob([excelBuffer], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        saveAs(dataBlob, `remaining-recipients-${Date.now()}.xlsx`);
+        toast.success(`Remaining ${remaining.length} recipients downloaded.`, { icon: "📥" });
+      }
+      // --------------------------------------------
+
       // Check if total shared attachments exceed 25MB (common email provider limit)
       if (emailAttachmentType === "shared" && sharedAttachmentFiles.length > 0) {
         const totalSize = sharedAttachmentFiles.reduce((acc, file) => acc + (file?.size || 0), 0);
@@ -2338,13 +2430,13 @@ function App() {
 
       // 4. Sending Loop
       try {
-        for (let i = 0; i < recipients.length; i++) {
-          const recipient = recipients[i];
-          const pct = Math.round((i / recipients.length) * 100);
-          toast.loading(`Sending... ${i}/${recipients.length} (${pct}%)`, {
+        for (let i = 0; i < toSend.length; i++) {
+          const recipient = toSend[i];
+          const pct = Math.round((i / toSend.length) * 100);
+          toast.loading(`Sending... ${i}/${toSend.length} (${pct}%)`, {
             id: toastId,
           });
-          setSendProgress({ processed: i, total: recipients.length });
+          setSendProgress({ processed: i, total: toSend.length });
 
           try {
             const formData = new FormData();
@@ -2485,7 +2577,7 @@ function App() {
         templateImage,
         layout,
         previewLabel,
-        { drawName: true },
+        { drawName: true, skipAutoFit: true },
         templateBackImageRef.current
       );
 
@@ -2784,6 +2876,7 @@ function App() {
                 type="number"
                 name="fontSize"
                 min="8"
+                max={MAX_FONT_SIZE}
                 value={layout?.fontSize ?? ""}
                 onChange={handleLayoutChange}
                 disabled={!layout || isLayoutLocked}
@@ -2921,8 +3014,7 @@ function App() {
               </div>
 
               <button
-                className={`confirm-layout-button ${isLayoutLocked ? "locked" : ""
-                  }`}
+                className={`confirm-layout-button ${isLayoutLocked ? "locked" : ""}`}
                 onClick={() => {
                   setIsLayoutLocked(!isLayoutLocked);
                   setPreviewImages([]);
@@ -3465,11 +3557,11 @@ function App() {
 
                 {/* Combined Email Preview */}
                 {(emailSettings.template || emailSettings.signature) && (
-                  <div className="email-preview-container" style={{ marginTop: "15px", padding: "16px", border: "1px solid #e2e8f0", borderRadius: "12px", background: "#ffffff", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+                  <div className="email-preview-container" style={{ marginTop: "15px", padding: "16px", border: "1px solid #e2e8f0", borderRadius: "12px", background: "#ffffff", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", width: "100%", boxSizing: "border-box" }}>
                     <p style={{ margin: "0 0 8px", fontSize: "0.85rem", color: "#64748b", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Email Preview</p>
                     <div
                       className="email-content-preview"
-                      style={{ fontFamily: "sans-serif", fontSize: "14px", lineHeight: "1.5", color: "#334155" }}
+                      style={{ fontFamily: "sans-serif", fontSize: "14px", lineHeight: "1.5", color: "#334155", overflowWrap: "anywhere", wordBreak: "break-word", width: "100%" }}
                     >
                       <div dangerouslySetInnerHTML={{ __html: (emailSettings.template || "").replace(/\n/g, "<br/>") }} />
 
@@ -3725,22 +3817,33 @@ function App() {
                     Previewing: <strong>{previewName || "-"}</strong>
                   </div>
 
-                  {templateBackURL && (
-                    <div className="preview-side-toggle">
-                      <button
-                        className={`side-toggle-button ${previewSide === "front" ? "active" : ""}`}
-                        onClick={() => setPreviewSide("front")}
-                      >
-                        Front Side
-                      </button>
-                      <button
-                        className={`side-toggle-button ${previewSide === "back" ? "active" : ""}`}
-                        onClick={() => setPreviewSide("back")}
-                      >
-                        Back Side
-                      </button>
-                    </div>
-                  )}
+                  <div className="preview-top-actions">
+                    <button
+                      className={`grid-toggle-button canvas-mode ${showGrid ? "active" : ""}`}
+                      onClick={() => setShowGrid(!showGrid)}
+                      disabled={!template}
+                      title={showGrid ? "Hide Grid" : "Show Grid"}
+                    >
+                      {showGrid ? "Hide Grid" : "Show Grid"}
+                    </button>
+
+                    {templateBackURL && (
+                      <div className="preview-side-toggle">
+                        <button
+                          className={`side-toggle-button ${previewSide === "front" ? "active" : ""}`}
+                          onClick={() => setPreviewSide("front")}
+                        >
+                          Front Side
+                        </button>
+                        <button
+                          className={`side-toggle-button ${previewSide === "back" ? "active" : ""}`}
+                          onClick={() => setPreviewSide("back")}
+                        >
+                          Back Side
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="preview-container-3d">
@@ -3758,9 +3861,23 @@ function App() {
                         }}
                       >
                         {layout ? (
-                          <Rnd
-                            bounds="parent"
+                          <>
+                            {showGrid && (
+                              <div
+                                className="designer-grid"
+                                style={{ "--grid-size": `${20 * previewScale}px` }}
+                              />
+                            )}
+                            {showGrid && (
+                              <>
+                                <div className={`center-snap-line-v ${isSnapXActive ? "active" : ""}`} />
+                                <div className={`center-snap-line-h ${isSnapYActive ? "active" : ""}`} />
+                              </>
+                            )}
+                            <Rnd
+                              bounds="parent"
                             dragHandleClassName="draggable-text-box"
+                            onDragStop={handleDragStop}
                             position={{
                               x: layout.x * previewScale,
                               y: layout.y * previewScale,
@@ -3798,7 +3915,8 @@ function App() {
                               />
                             </div>
                           </Rnd>
-                        ) : (
+                        </>
+                      ) : (
                           <h3 className="layout-placeholder">Preparing layout box...</h3>
                         )}
                       </div>
