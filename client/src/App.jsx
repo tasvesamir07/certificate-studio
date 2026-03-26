@@ -932,6 +932,7 @@ function App() {
               .trim();
 
             return {
+              ...row,
               Name: formatted,
               Email: emailValue,
             };
@@ -2339,7 +2340,7 @@ function App() {
           .map((row) => {
             const name = toTitleCase(getCellValue(row, "Name") || "");
             const email = (getCellValue(row, "Email") || "").toString().trim();
-            return { name, email };
+            return { ...row, name, email };
           })
           .filter((r) => r.name && isValidEmail(r.email));
       }
@@ -2371,10 +2372,7 @@ function App() {
         });
 
         // --- Trigger Download for Remaining Recipients IMMEDIATELY ---
-        const ws = XLSX.utils.json_to_sheet(remaining.map(r => ({
-          Name: r.name,
-          Email: r.email
-        })));
+        const ws = XLSX.utils.json_to_sheet(remaining);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Remaining Recipients");
         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
