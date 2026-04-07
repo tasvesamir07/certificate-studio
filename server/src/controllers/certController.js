@@ -364,13 +364,31 @@ const sendSingle = async (req, res) => {
       content: fs.readFileSync(f.path),
       contentType: f.mimetype
     }));
-    const remoteMailAttachments = remoteAttachments
-      .filter((attachment) => attachment?.url)
-      .map((attachment) => ({
-        filename: attachment.filename || "attachment",
-        path: attachment.url,
-        contentType: attachment.contentType || attachment.content_type,
-      }));
+    const remoteMailAttachments = [];
+    for (const attachment of remoteAttachments.filter((a) => a?.url)) {
+      try {
+        const response = await axios.get(attachment.url, {
+          responseType: "arraybuffer",
+          timeout: 30000,
+        });
+        remoteMailAttachments.push({
+          filename: attachment.filename || "attachment",
+          content: Buffer.from(response.data),
+          contentType:
+            attachment.contentType ||
+            attachment.content_type ||
+            response.headers["content-type"] ||
+            "application/octet-stream",
+        });
+      } catch (dlErr) {
+        const statusCode = dlErr?.response?.status;
+        throw new Error(
+          statusCode === 401 || statusCode === 403
+            ? "Attachment file has expired or is no longer accessible. Please re-upload and try again."
+            : `Failed to download attachment: ${dlErr.message}`
+        );
+      }
+    }
 
     await transporter.sendMail({
       from: senderName ? `"${senderName}" <${emailUser}>` : emailUser,

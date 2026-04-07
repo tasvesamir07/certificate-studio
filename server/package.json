@@ -4,7 +4,9 @@
   "description": "Certificate generator backend",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "legacy": "nodemon server.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.48",

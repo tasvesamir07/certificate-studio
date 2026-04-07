@@ -2484,15 +2484,39 @@ app.post(
         };
       });
 
-      const remoteMailAttachments = remoteAttachments
-        .filter((attachment) => attachment?.url)
-        .map((attachment) => ({
-          filename: fixFilenameEncoding(
-            attachment.filename || sanitizeFileName(recipientName, "attachment")
-          ),
-          path: attachment.url,
-          contentType: attachment.contentType || attachment.content_type,
-        }));
+      // Pre-download remote attachments instead of letting nodemailer fetch URLs
+      // (avoids cryptic "Invalid status code 401" when Cloudinary URLs expire)
+      const remoteMailAttachments = [];
+      for (const attachment of remoteAttachments.filter((a) => a?.url)) {
+        try {
+          const response = await axios.get(attachment.url, {
+            responseType: "arraybuffer",
+            timeout: 30000,
+          });
+          remoteMailAttachments.push({
+            filename: fixFilenameEncoding(
+              attachment.filename || sanitizeFileName(recipientName, "attachment")
+            ),
+            content: Buffer.from(response.data),
+            contentType:
+              attachment.contentType ||
+              attachment.content_type ||
+              response.headers["content-type"] ||
+              "application/octet-stream",
+          });
+        } catch (dlErr) {
+          const statusCode = dlErr?.response?.status;
+          console.error(
+            `[CMS] Failed to download remote attachment (${statusCode || "network error"}):`,
+            attachment.url
+          );
+          throw new Error(
+            statusCode === 401 || statusCode === 403
+              ? "Attachment file has expired or is no longer accessible. Please re-upload the attachment and try again."
+              : `Failed to download attachment: ${dlErr.message}`
+          );
+        }
+      }
 
       attachments = [...attachments, ...remoteMailAttachments];
 
