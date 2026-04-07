@@ -1,5 +1,11 @@
 {
     "version": 2,
+    "crons": [
+        {
+            "path": "/api/attachments/cleanup-expired",
+            "schedule": "0 3 * * *"
+        }
+    ],
     "builds": [
         {
             "src": "client/package.json",

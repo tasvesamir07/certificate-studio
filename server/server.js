@@ -151,15 +151,220 @@ const pool = new Pool({
 });
 // ------------------------------
 
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, os.tmpdir());
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
 const upload = multer({
   storage,
   limits: {
-    fileSize: 100 * 1024 * 1024, // Increased to 100MB for video/audio (though SMTP may limit to 25-50MB)
+    fileSize: 100 * 1024 * 1024,
     files: 20,
     fields: 100,
   },
 });
+
+/**
+ * Utility to cleanup uploaded files after the request is finished.
+ */
+const cleanupReqFiles = (req) => {
+  const files = req.files;
+  if (!files) return;
+
+  const paths = [];
+  if (Array.isArray(files)) {
+    files.forEach(f => paths.push(f.path));
+  } else {
+    Object.values(files).forEach(fileArr => {
+      fileArr.forEach(f => paths.push(f.path));
+    });
+  }
+
+  paths.forEach(p => {
+    if (p && fs.existsSync(p)) {
+      fs.unlink(p, (err) => {
+        if (err) console.error("Cleanup error:", err);
+      });
+    }
+  });
+};
+
+const parseJsonArrayField = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_error) {
+    return [];
+  }
+};
+
+const sanitizePublicIdSegment = (value = "", fallback = "attachment") => {
+  const cleaned = stripExtension(value)
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+
+  return cleaned || fallback;
+};
+
+const destroyRemoteAttachments = async (attachments = []) => {
+  const uniqueAssets = [];
+  const seen = new Set();
+
+  attachments.forEach((attachment) => {
+    const publicId = (attachment?.publicId || attachment?.public_id || "").trim();
+    const resourceType =
+      (attachment?.resourceType || attachment?.resource_type || "raw").trim() ||
+      "raw";
+    if (!publicId) return;
+
+    const key = `${resourceType}:${publicId}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    uniqueAssets.push({ publicId, resourceType });
+  });
+
+  if (!uniqueAssets.length) return [];
+
+  return Promise.allSettled(
+    uniqueAssets.map((asset) =>
+      cloudinary.uploader.destroy(asset.publicId, {
+        resource_type: asset.resourceType,
+        invalidate: true,
+      })
+    )
+  );
+};
+
+const TEMP_ATTACHMENT_TAG = "certificate-studio-temp";
+const DEFAULT_ATTACHMENT_CLEANUP_MAX_AGE = (
+  process.env.ATTACHMENT_CLEANUP_MAX_AGE || "2d"
+).trim();
+
+const isAuthorizedCronRequest = (req) => {
+  const cronSecret = (process.env.CRON_SECRET || "").trim();
+  if (!cronSecret) {
+    return process.env.NODE_ENV !== "production";
+  }
+
+  const authHeader = (req.get("authorization") || "").trim();
+  return authHeader === `Bearer ${cronSecret}`;
+};
+
+const cleanupExpiredRemoteAttachments = async ({
+  maxAge = DEFAULT_ATTACHMENT_CLEANUP_MAX_AGE,
+  maxBatches = 10,
+} = {}) => {
+  const deleted = [];
+  let batchCount = 0;
+  let nextCursor = undefined;
+
+  while (batchCount < maxBatches) {
+    let search = cloudinary.search
+      .expression(
+        `tags=${TEMP_ATTACHMENT_TAG} AND resource_type=raw AND type=upload AND uploaded_at<${maxAge}`
+      )
+      .sort_by("uploaded_at", "asc")
+      .max_results(100);
+
+    if (nextCursor) {
+      search = search.next_cursor(nextCursor);
+    }
+
+    const result = await search.execute();
+
+    const resources = Array.isArray(result?.resources) ? result.resources : [];
+    if (!resources.length) {
+      return {
+        deletedCount: deleted.length,
+        deletedPublicIds: deleted,
+        nextCursor: null,
+      };
+    }
+
+    const publicIds = resources
+      .map((resource) => resource.public_id)
+      .filter(Boolean);
+
+    if (!publicIds.length) {
+      return {
+        deletedCount: deleted.length,
+        deletedPublicIds: deleted,
+        nextCursor: result?.next_cursor || null,
+      };
+    }
+
+    await cloudinary.api.delete_resources(publicIds, {
+      resource_type: "raw",
+      type: "upload",
+    });
+
+    deleted.push(...publicIds);
+    batchCount += 1;
+    nextCursor = result?.next_cursor;
+
+    if (!nextCursor) {
+      break;
+    }
+  }
+
+  return {
+    deletedCount: deleted.length,
+    deletedPublicIds: deleted,
+    nextCursor: nextCursor || null,
+  };
+};
+
+const buildAttachmentUploadSignature = ({
+  filename = "attachment.pdf",
+  purpose = "certificate",
+} = {}) => {
+  if (
+    !process.env.CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY ||
+    !process.env.CLOUDINARY_API_SECRET
+  ) {
+    throw new Error("Cloudinary is not configured for attachment uploads.");
+  }
+
+  const safePurpose = purpose === "shared" ? "shared" : "certificate";
+  const folder = `certificate-studio/email-attachments/${safePurpose}`;
+  const publicId = `${Date.now()}-${Math.round(
+    Math.random() * 1e9
+  )}-${sanitizePublicIdSegment(filename)}`;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const paramsToSign = {
+    folder,
+    public_id: publicId,
+    tags: `${TEMP_ATTACHMENT_TAG},certificate-studio-${safePurpose}`,
+    timestamp,
+  };
+
+  return {
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    folder,
+    publicId,
+    resourceType: "raw",
+    tags: paramsToSign.tags,
+    signature: cloudinary.utils.api_sign_request(
+      paramsToSign,
+      process.env.CLOUDINARY_API_SECRET
+    ),
+    timestamp,
+    uploadUrl: `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload`,
+  };
+};
 
 
 const os = require("os"); // Added os module
@@ -1495,7 +1700,7 @@ const sendEmailBatch = async (job = {}) => {
       if (attachmentMode === "shared" && sharedAttachmentFiles.length > 0) {
         attachments = sharedAttachmentFiles.map((file) => ({
           filename: file.originalname,
-          content: file.buffer,
+          content: file.content, // Now mapped to content by the caller
           contentType: file.mimetype,
         }));
       } else if (attachmentMode === "certificate") {
@@ -1688,10 +1893,11 @@ app.post(
         }
       }
 
-      const templateBuffer = req.files.templateImage[0].buffer;
-      const dataBuffer = req.files.dataFile[0].buffer;
+      const templateFile = req.files.templateImage[0];
+      const dataFile = req.files.dataFile[0];
 
-      const workbook = XLSX.read(dataBuffer, { type: "buffer" });
+      const templateBuffer = fs.readFileSync(templateFile.path);
+      const workbook = XLSX.readFile(dataFile.path);
       const firstSheetName = workbook.SheetNames?.[0] || "";
       const worksheet = workbook.Sheets[firstSheetName];
       if (!worksheet) {
@@ -1757,7 +1963,9 @@ app.post(
       res.set("Content-Disposition", `attachment; filename=${zipBaseName}.zip`);
       res.send(zipBuffer);
       console.log(`✅ ZIP sent with ${filesWritten} files.`);
+      cleanupReqFiles(req);
     } catch (error) {
+      cleanupReqFiles(req);
       return next(error);
     }
   }
@@ -1850,7 +2058,7 @@ app.post(
 
       if (attachmentMode === "certificate") {
         const templateFile = req.files.templateImage[0];
-        templateBuffer = templateFile.buffer;
+        templateBuffer = fs.readFileSync(templateFile.path); // Read from disk
         const originalName = templateFile.originalname || "certificate.png";
         templateFilename = sanitizeFileName(originalName, "certificate.png");
         templateBaseName = sanitizeFileName(
@@ -1866,8 +2074,8 @@ app.post(
 
       let rows = [];
       if (req.files?.dataFile?.[0]) {
-        const dataBuffer = req.files.dataFile[0].buffer;
-        const workbook = XLSX.read(dataBuffer, { type: "buffer" });
+        const dataFile = req.files.dataFile[0];
+        const workbook = XLSX.readFile(dataFile.path); // Read directly from path
         const firstSheetName = workbook.SheetNames?.[0] || "";
         const worksheet = workbook.Sheets[firstSheetName];
         if (!worksheet) {
@@ -1988,7 +2196,11 @@ app.post(
         templateFilename,
         templateBaseName,
         templateMimeType,
-        sharedAttachmentFiles,
+        sharedAttachmentFiles: sharedAttachmentFiles.map(f => ({
+          originalname: f.originalname,
+          content: fs.readFileSync(f.path),
+          mimetype: f.mimetype
+        })),
         emailConfig: {
           emailService,
           emailUser,
@@ -2110,13 +2322,62 @@ app.post(
         jobId,
         totalRecipients: emailJob.recipients.length
       });
+      
+      // Cleanup files after starting background job
+      // Note: We already read the buffers into the emailJob object above
+      cleanupReqFiles(req);
     } catch (error) {
+      cleanupReqFiles(req);
       return next(error);
     }
   }
 );
 
 // --- SHARED FILE OPTIMIZATION ENDPOINTS ---
+app.post("/api/attachments/sign-upload", checkAccess, async (req, res) => {
+  try {
+    const signature = buildAttachmentUploadSignature({
+      filename: sanitizeFileName(req.body?.filename || "attachment.pdf"),
+      purpose: req.body?.purpose,
+    });
+    return res.status(200).send(signature);
+  } catch (error) {
+    return res.status(500).send({ message: error.message });
+  }
+});
+
+app.post("/api/attachments/cleanup", checkAccess, async (req, res) => {
+  try {
+    const attachments = Array.isArray(req.body?.attachments)
+      ? req.body.attachments
+      : [];
+    await destroyRemoteAttachments(attachments);
+    return res.status(200).send({ status: "success" });
+  } catch (error) {
+    return res.status(500).send({ message: "Failed to clean up attachments." });
+  }
+});
+
+app.get("/api/attachments/cleanup-expired", async (req, res) => {
+  if (!isAuthorizedCronRequest(req)) {
+    return res.status(401).send({ message: "Unauthorized" });
+  }
+
+  try {
+    const result = await cleanupExpiredRemoteAttachments();
+    return res.status(200).send({
+      status: "success",
+      ...result,
+      maxAge: DEFAULT_ATTACHMENT_CLEANUP_MAX_AGE,
+    });
+  } catch (error) {
+    console.error("Expired attachment cleanup failed:", error);
+    return res
+      .status(500)
+      .send({ message: "Failed to clean up expired attachments." });
+  }
+});
+
 app.post(
   "/api/upload-shared",
   checkAccess,
@@ -2130,7 +2391,7 @@ app.post(
       const sharedBatchId = uuidv4();
       const files = req.files.map((file) => ({
         filename: fixFilenameEncoding(file.originalname),
-        content: file.buffer,
+        content: fs.readFileSync(file.path),
         contentType: file.mimetype,
       }));
 
@@ -2147,8 +2408,11 @@ app.post(
       console.log(
         `[CMS] Uploaded shared batch: ${sharedBatchId} (${files.length} files)`
       );
+      
+      cleanupReqFiles(req);
       return res.status(200).send({ sharedBatchId });
     } catch (error) {
+      cleanupReqFiles(req);
       console.error("Shared upload failed:", error);
       return res
         .status(500)
@@ -2172,6 +2436,9 @@ app.post(
   checkAccess,
   upload.array("attachments"),
   async (req, res, next) => {
+    let remoteAttachments = [];
+    let autoCleanupRemoteAttachments = false;
+
     try {
       const emailService = (req.body.emailService || "").trim();
       const emailUser = (req.body.emailUser || "").trim();
@@ -2181,6 +2448,11 @@ app.post(
       const emailTemplate = (req.body.emailTemplate || "").trim();
       const recipientName = (req.body.recipientName || "").trim();
       const recipientEmail = (req.body.recipientEmail || "").trim();
+      remoteAttachments = parseJsonArrayField(req.body.remoteAttachments);
+      autoCleanupRemoteAttachments = parseBoolean(
+        req.body.autoCleanupRemoteAttachments,
+        false
+      );
 
       if (!emailService || !emailUser || !emailPass || !recipientEmail) {
         return res.status(400).send({
@@ -2207,10 +2479,22 @@ app.post(
         const fixedName = fixFilenameEncoding(file.originalname);
         return {
           filename: fixedName,
-          content: file.buffer,
+          content: fs.readFileSync(file.path),
           contentType: file.mimetype,
         };
       });
+
+      const remoteMailAttachments = remoteAttachments
+        .filter((attachment) => attachment?.url)
+        .map((attachment) => ({
+          filename: fixFilenameEncoding(
+            attachment.filename || sanitizeFileName(recipientName, "attachment")
+          ),
+          path: attachment.url,
+          contentType: attachment.contentType || attachment.content_type,
+        }));
+
+      attachments = [...attachments, ...remoteMailAttachments];
 
       // Check for shared batch files
       const sharedBatchId = req.body.sharedBatchId;
@@ -2229,6 +2513,7 @@ app.post(
       });
 
       console.log(`[CMS] Single email sent to: ${recipientEmail} with ${attachments.length} attachments.`);
+      cleanupReqFiles(req);
       return res.status(200).send({ status: "success", message: `Sent to ${recipientEmail}` });
     } catch (error) {
       console.error(`Failed to send single email to ${req.body.recipientEmail}:`, error.message);
@@ -2238,6 +2523,13 @@ app.post(
         reason = "Invalid credentials. Verify your email and app password.";
       }
       return res.status(400).send({ status: "failed", message: reason });
+    } finally {
+      cleanupReqFiles(req);
+      if (autoCleanupRemoteAttachments && remoteAttachments.length) {
+        destroyRemoteAttachments(remoteAttachments).catch((cleanupError) => {
+          console.error("Remote attachment cleanup failed:", cleanupError.message);
+        });
+      }
     }
   }
 );
@@ -2542,7 +2834,9 @@ app.post(
       res.set("Content-Disposition", `attachment; filename=${safeName}.png`);
       res.send(pngBuffer);
       console.log(`✅ Preview PNG sent for ${safeName}.`);
+      cleanupReqFiles(req);
     } catch (error) {
+      cleanupReqFiles(req);
       return next(error);
     }
   }

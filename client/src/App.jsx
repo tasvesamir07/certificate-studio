@@ -23,6 +23,16 @@ import GetPasswordPage from "./Pages/GetPasswordPage";
 import ForgotPasswordPage from "./Pages/ForgotPasswordPage";
 import { buildApiUrl } from "./utils/api";
 
+// New Modular Components
+import EditorHeader from "./components/EditorHeader";
+import LayerPanel from "./components/LayerPanel";
+import PropertiesPanel from "./components/PropertiesPanel";
+import ManualRecipientsPanel from "./components/ManualRecipientsPanel";
+import EmailSettingsPanel from "./components/EmailSettingsPanel";
+import CanvasStage from "./components/CanvasStage";
+import PreviewGrid from "./components/PreviewGrid";
+import CanvaDesignModal from "./components/CanvaDesignModal";
+
 const normalizeBaseUrl = (base = "") =>
   base.trim().replace(/\s/g, "").replace(/\/+$/, "");
 
@@ -30,6 +40,8 @@ const DEFAULT_API_PORT = "5000";
 const AUTH_STORAGE_KEY = "certificate-studio-auth";
 const AUTH_USER_KEY = "certificate-studio-user";
 const AUTH_TOKEN_KEY = "certificate-studio-session";
+const CERTIFICATE_RENDER_SCALE = 1.6;
+const CERTIFICATE_JPEG_QUALITY = 0.82;
 
 const wrapIPv6Host = (host = "") => {
   if (!host) return "localhost";
@@ -141,6 +153,63 @@ const sanitizeFileBaseName = (value = "", fallback = "certificate") => {
 };
 
 const stripExtension = (filename = "") => filename.replace(/\.[^/.]+$/, "");
+
+const uploadRemoteAttachment = async (
+  apiBaseUrl,
+  file,
+  purpose = "certificate"
+) => {
+  const signUrl = buildApiUrl(apiBaseUrl, "api/attachments/sign-upload");
+  const safeFilename = sanitizeFileBaseName(file?.name || "attachment.pdf");
+  const signRes = await axios.post(signUrl, {
+    filename: safeFilename,
+    purpose,
+  });
+
+  const {
+    apiKey,
+    cloudName,
+    folder,
+    publicId,
+    tags,
+    signature,
+    timestamp,
+    uploadUrl,
+  } = signRes.data || {};
+
+  if (!apiKey || !cloudName || !signature || !timestamp) {
+    throw new Error("Attachment upload signature is incomplete.");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("api_key", apiKey);
+  formData.append("timestamp", String(timestamp));
+  formData.append("signature", signature);
+  if (folder) formData.append("folder", folder);
+  if (publicId) formData.append("public_id", publicId);
+  if (tags) formData.append("tags", tags);
+
+  const cloudinaryUrl =
+    uploadUrl || `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
+  const uploadRes = await axios.post(cloudinaryUrl, formData);
+  const uploadData = uploadRes.data || {};
+
+  return {
+    contentType: file?.type || "application/octet-stream",
+    filename: safeFilename,
+    publicId: uploadData.public_id,
+    resourceType: uploadData.resource_type || "raw",
+    url: uploadData.secure_url,
+  };
+};
+
+const cleanupRemoteAttachments = async (apiBaseUrl, attachments = []) => {
+  if (!attachments.length) return;
+
+  const cleanupUrl = buildApiUrl(apiBaseUrl, "api/attachments/cleanup");
+  await axios.post(cleanupUrl, { attachments });
+};
 
 const getCellKeyAndValue = (row = {}, columnName = "") => {
   if (!row || !columnName) return { key: null, value: "" };
@@ -310,21 +379,40 @@ const getResponsivePreviewHeight = (
   );
 };
 
+const calculateAutoScale = (naturalWidth, naturalHeight) => {
+  if (!naturalWidth || !naturalHeight) return DEFAULT_ZOOM_SCALE;
+  
+  const isMobile = window.innerWidth <= 768;
+  // Account for panels and padding
+  const hPadding = isMobile ? 60 : (CONTROL_PANEL_WIDTH + DATA_PANEL_WIDTH + PREVIEW_PADDING * 2.5);
+  const vPadding = isMobile ? 120 : (PREVIEW_PADDING * 2.5 + 80); // 80 for header/controls
+  
+  const availableW = Math.max(MIN_PREVIEW_WIDTH, window.innerWidth - hPadding);
+  const availableH = Math.max(MIN_PREVIEW_HEIGHT, window.innerHeight - vPadding);
+  
+  const scaleW = availableW / naturalWidth;
+  const scaleH = availableH / naturalHeight;
+  
+  // We fit the image while leaving 5% breathing room, but don't exceed 100% size unless tiny
+  const bestFit = Math.min(scaleW, scaleH) * 0.95;
+  return Math.min(1.2, Math.max(0.1, bestFit));
+};
+
 const createInitialLayout = (templateWidth, templateHeight) => {
-  const safeWidth = Math.max(MIN_LAYOUT_WIDTH, Math.round(templateWidth * 0.4));
+  const safeWidth = Math.max(MIN_LAYOUT_WIDTH, Math.round(templateWidth * 0.65));
   const safeHeight = Math.max(
     MIN_LAYOUT_HEIGHT,
-    Math.round(templateHeight * 0.08)
+    Math.round(templateHeight * 0.18)
   );
 
   return {
     x: Math.max(0, Math.round((templateWidth - safeWidth) / 2)),
-    y: Math.max(0, Math.round(templateHeight * 0.45 - safeHeight / 2)),
+    y: Math.max(0, Math.round(templateHeight * 0.42 - safeHeight / 2)),
     width: Math.min(templateWidth, safeWidth),
     height: Math.min(templateHeight, safeHeight),
     fontSize: 160,
-    fontFamily: "Sloop Script Bold One",
-    color: "#C67F0E",
+    fontFamily: "Libre Baskerville",
+    color: "#2D3436",
     align: "center",
     v_align: "middle",
     fontWeight: "normal",
@@ -339,16 +427,23 @@ const drawCertificateToCanvas = async (
   fullName,
   options = {}
 ) => {
-  const { drawName = true } = options;
+  const { drawName = true, multiplier = 1 } = options;
   const { width: templateWidth, height: templateHeight } = templateImage;
 
-  canvas.width = templateWidth;
-  canvas.height = templateHeight;
+  canvas.width = Math.round(templateWidth * multiplier);
+  canvas.height = Math.round(templateHeight * multiplier);
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new Error("Could not get 2D context");
   }
+
+  // Use scale to handle the high-DPI coordinate system automatically
+  ctx.scale(multiplier, multiplier);
+  
+  // Set quality hints
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
   ctx.drawImage(templateImage, 0, 0, templateWidth, templateHeight);
 
@@ -448,29 +543,27 @@ const generateCertificatePDF = async (
   const { width, height } = templateImage;
   const orientation = width > height ? "l" : "p";
 
-  // 1. Render exactly what's on the preview to a high-res canvas
+  // Render the browser preview into a moderately high-res canvas, then embed
+  // it as JPEG in the PDF to keep each attachment well below Vercel-safe sizes.
   const canvas = document.createElement("canvas");
   await drawCertificateToCanvas(
     canvas,
     templateImage,
     layout,
     fullName,
-    { drawName: true, ...options }
+    { drawName: true, multiplier: CERTIFICATE_RENDER_SCALE, ...options }
   );
 
-  // 2. Create PDF with same dimensions
   const doc = new jsPDF({
+    compress: true,
     orientation,
     unit: "px",
     format: [width, height],
   });
 
-  // 3. Add the rendered canvas as an image to the PDF
-  // We use PNG for lossless quality as requested by the user initially
-  const imgData = canvas.toDataURL("image/png");
-  doc.addImage(imgData, "PNG", 0, 0, width, height, undefined, "FAST");
+  const imgData = canvas.toDataURL("image/jpeg", CERTIFICATE_JPEG_QUALITY);
+  doc.addImage(imgData, "JPEG", 0, 0, width, height, undefined, "MEDIUM");
 
-  // 4. Add back side if provided
   if (templateBackImage) {
     const backImg = templateBackImage;
     const { naturalWidth: bW, naturalHeight: bH } = backImg;
@@ -527,6 +620,7 @@ const drawCertificateToCanvasThumbnail = async (
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authUser, setAuthUser] = useState("");
+  const [authUserId, setAuthUserId] = useState("");
   const [loginPrefill, setLoginPrefill] = useState("");
   const [template, setTemplate] = useState(null);
   const [templateURL, setTemplateURL] = useState("");
@@ -540,7 +634,7 @@ function App() {
   const [layout, setLayout] = useState(null);
   const [templateSignature, setTemplateSignature] = useState("");
 
-  const [previewName, setPreviewName] = useState("");
+  const [previewName, setPreviewName] = useState("Your Name Here");
   const [isLayoutLocked, setIsLayoutLocked] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [isSnapXActive, setIsSnapXActive] = useState(false);
@@ -619,18 +713,25 @@ function App() {
   const [previewImages, setPreviewImages] = useState([]);
   const [isPreviewGridLoading, setIsPreviewGridLoading] = useState(false);
   const [previewSide, setPreviewSide] = useState("front"); // "front" or "back"
+  const [isCanvaModalOpen, setIsCanvaModalOpen] = useState(false);
+  const [isCanvaConnected, setIsCanvaConnected] = useState(false);
+
 
   // --- Handle Resize for Responsive Zoom ---
   useEffect(() => {
     const handleResize = () => {
-      const isMobile = window.innerWidth <= 768;
-      if (isMobile && templateImageRef.current) {
+      if (templateImageRef.current) {
         const { naturalWidth, naturalHeight } = templateImageRef.current;
-        const maxMobileWidth = window.innerWidth - 40;
-        const autoScale = Math.min(DEFAULT_ZOOM_SCALE, maxMobileWidth / naturalWidth);
+        const autoScale = calculateAutoScale(naturalWidth, naturalHeight);
         
-        // Only update if significantly different to avoid jitter
-        if (Math.abs(previewScale - autoScale) > 0.01) {
+        // We only update if it's currently on auto-fit (or close to it)
+        // This avoids resetting their manual zoom if they are zooming in.
+        // We characterize "auto-fit" as within 5% of the calculated scale.
+        // On mobile, we ALWAYS auto-fit.
+        const isMobile = window.innerWidth <= 768;
+        const currentIsAutoFit = Math.abs(previewScale - autoScale) < 0.05;
+        
+        if (isMobile || currentIsAutoFit) {
           setPreviewScale(autoScale);
           setTemplateSize({
             width: Math.round(naturalWidth * autoScale),
@@ -750,6 +851,8 @@ function App() {
       setTemplate(file);
       setLastGenerationInfo(null);
       setPreviewImages([]);
+      // Ensure we have a default preview name if none is set
+      setPreviewName((prev) => (prev && prev !== "-") ? prev : "Your Name Here");
       setPreviewSide("front");
       templateImageRef.current = null;
 
@@ -775,14 +878,8 @@ function App() {
         };
         setTemplateSignature(signature);
 
-        // --- Responsive Auto Zoom ---
-        const isMobile = window.innerWidth <= 768;
-        let initialScale = DEFAULT_ZOOM_SCALE;
-        
-        if (isMobile) {
-          const maxMobileWidth = window.innerWidth - 60; // padding/margin
-          initialScale = Math.min(DEFAULT_ZOOM_SCALE, maxMobileWidth / naturalWidth);
-        }
+        // --- NEW: Dynamic Auto Zoom for all resolutions ---
+        const initialScale = calculateAutoScale(naturalWidth, naturalHeight);
         
         setPreviewScale(initialScale);
         setTemplateSize({
@@ -794,27 +891,25 @@ function App() {
         toast.success("Template loaded.", { id: toastId });
 
         setLayout((prev) => {
+          const signature = `${naturalWidth}x${naturalHeight}`;
           const savedLayout = savedLayoutsRef.current?.[signature];
           if (savedLayout) {
+            // Preload the saved font immediately
+            if (savedLayout.fontFamily) preloadAllFonts([savedLayout.fontFamily]);
             return { ...savedLayout };
           }
 
-          if (!prev) {
-            return createInitialLayout(naturalWidth, naturalHeight);
-          }
-
-          const safeWidth = Math.min(naturalWidth, prev.width);
-          const safeHeight = Math.min(naturalHeight, prev.height);
-          const maxX = Math.max(0, naturalWidth - safeWidth);
-          const maxY = Math.max(0, naturalHeight - safeHeight);
-
-          return {
+          const newLayout = prev ? {
             ...prev,
-            width: safeWidth,
-            height: safeHeight,
-            x: Math.min(prev.x, maxX),
-            y: Math.min(prev.y, maxY),
-          };
+            width: Math.min(naturalWidth, prev.width),
+            height: Math.min(naturalHeight, prev.height),
+            x: Math.min(prev.x, Math.max(0, naturalWidth - prev.width)),
+            y: Math.min(prev.y, Math.max(0, naturalHeight - prev.height)),
+          } : createInitialLayout(naturalWidth, naturalHeight);
+
+          // Preload the new/default font
+          if (newLayout.fontFamily) preloadAllFonts([newLayout.fontFamily]);
+          return newLayout;
         });
       };
       img.onerror = () => {
@@ -836,19 +931,26 @@ function App() {
 
       const toastId = toast.loading("Loading back side template...");
 
-      setTemplateBack(file);
-      const objectUrl = URL.createObjectURL(file);
+        setTemplateBack(file);
+        const objectUrl = URL.createObjectURL(file);
 
-      if (templateBackURL) {
-        URL.revokeObjectURL(templateBackURL);
-      }
-      setTemplateBackURL(objectUrl);
+        if (templateBackURL) {
+          URL.revokeObjectURL(templateBackURL);
+        }
+        setTemplateBackURL(objectUrl);
 
-      const img = new Image();
-      img.onload = () => {
-        templateBackImageRef.current = img;
-        toast.success("Back side template loaded.", { id: toastId });
-      };
+        const img = new Image();
+        img.onload = () => {
+          templateBackImageRef.current = img;
+          const { naturalWidth, naturalHeight } = img;
+          const autoScale = calculateAutoScale(naturalWidth, naturalHeight);
+          setPreviewScale(autoScale);
+          setTemplateSize({
+            width: Math.round(naturalWidth * autoScale),
+            height: Math.round(naturalHeight * autoScale),
+          });
+          toast.success("Back side template loaded.", { id: toastId });
+        };
       img.onerror = () => {
         toast.error("Failed to load back side image.", { id: toastId });
       };
@@ -974,6 +1076,116 @@ function App() {
       toast.success(`Attached ${names.join(", ")}`);
     }
   }, []);
+
+  // --- Canva Connect Integration ---
+  useEffect(() => {
+    // Check if we just returned from a successful Canva OAuth flow
+    const params = new URLSearchParams(window.location.search);
+    if (window.location.pathname === "/canva-success" || params.get("canva_success")) {
+      setIsCanvaConnected(true);
+      setIsCanvaModalOpen(true);
+      toast.success("Canva connected successfully!");
+      // Clean up the URL and navigate back to the editor
+      window.history.replaceState({}, document.title, "/generate-certifcate");
+      navigate("/generate-certifcate");
+    } else if (window.location.pathname === "/canva-error" || params.get("canva_error")) {
+      const error = params.get("error") || "Authorization failed";
+      toast.error(`Canva Connection: ${error.replace(/_/g, " ")}`);
+      // Clean up the URL and navigate back to the editor
+      window.history.replaceState({}, document.title, "/generate-certifcate");
+      navigate("/generate-certifcate");
+    }
+  }, [navigate]);
+
+  const handleConnectCanva = async () => {
+    const currentUserId = authUserId || window.localStorage.getItem("certificate-studio-userId");
+    if (!currentUserId) {
+      toast.error("Please log in again to connect Canva.");
+      return;
+    }
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/canva/auth-url?userId=${currentUserId}`);
+      window.location.href = response.data.url;
+    } catch (err) {
+      console.error("Failed to get Canva auth URL:", err);
+      toast.error("Failed to connect to Canva.");
+    }
+  };
+
+  const handleDisconnectCanva = async () => {
+    if (!window.confirm("Are you sure you want to disconnect your Canva account? This will revoke access for searching and exporting your designs.")) return;
+    
+    try {
+      await axios.post(`${API_BASE_URL}/api/canva/disconnect`, { userId: authUserId });
+      setIsCanvaConnected(false);
+      toast.success("Canva disconnected successfully.");
+    } catch (err) {
+      console.error("Disconnect Canva Error:", err);
+      toast.error("Failed to disconnect Canva. Please try again.");
+    }
+  };
+
+  const handleSelectCanvaDesign = async (designId, pages = []) => {
+    const currentUserId = authUserId || window.localStorage.getItem("certificate-studio-userId");
+    setIsCanvaModalOpen(false);
+    const selectedPages = pages.length > 0 ? pages : [1];
+    const toastId = toast.loading(`Exporting page(s) ${selectedPages.join(", ")} from Canva...`);
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/canva/designs/export`, {
+        userId: currentUserId,
+        designId,
+        pages: selectedPages
+      });
+      
+      const { urls } = response.data;
+      if (!urls || urls.length === 0) throw new Error("No export URLs found.");
+
+      // 1. Process Front Page (First URL returned)
+      const frontResponse = await fetch(urls[0]);
+      const frontBlob = await frontResponse.blob();
+      const frontFile = new File([frontBlob], `canva-${designId}-page-${selectedPages[0] || 1}.png`, { type: "image/png" });
+      onTemplateDrop([frontFile]);
+
+      // 2. Process Back Page (If 2+ pages requested or existed)
+      if (urls.length > 1) {
+        toast.loading("Importing second page as back side...", { id: toastId });
+        const backResponse = await fetch(urls[1]);
+        const backBlob = await backResponse.blob();
+        const backFile = new File([backBlob], `canva-${designId}-page-${selectedPages[1] || 2}.png`, { type: "image/png" });
+        onTemplateBackDrop([backFile]);
+        
+        if (urls.length > 2 && pages.length === 0) {
+          toast.success("Imported First 2 Pages! (Default)", { id: toastId });
+        } else {
+          toast.success(`Imported ${urls.length} selected pages!`, { id: toastId });
+        }
+      } else {
+        toast.success("Design imported successfully!", { id: toastId });
+      }
+    } catch (err) {
+      console.error("Canva Import Error:", err.response?.data || err);
+      const errorMsg = err.response?.data?.details?.message || err.response?.data?.message || err.message || "Unknown error";
+      toast.error(`Failed to import design: ${errorMsg}`, { id: toastId });
+    }
+  };
+
+  const handleCanvaDesignButtonExport = async (exportUrl) => {
+    setIsCanvaModalOpen(false);
+    const toastId = toast.loading("Importing created design...");
+    try {
+      const fileResponse = await fetch(exportUrl);
+      const blob = await fileResponse.blob();
+      const fileName = `canva-created-${Date.now()}.png`;
+      const file = new File([blob], fileName, { type: "image/png" });
+
+      onTemplateDrop([file]);
+      toast.success("Design imported successfully!", { id: toastId });
+    } catch (err) {
+      console.error("Canva Button Export Error:", err);
+      toast.error("Failed to import created design.", { id: toastId });
+    }
+  };
+    // ------------------------------------
 
   const insertFormat = (tag, targetId = "emailTemplate") => {
     const textarea = document.getElementById(targetId);
@@ -1144,6 +1356,7 @@ function App() {
     setTemplateSize(DEFAULT_TEMPLATE_SIZE);
     setPreviewScale(DEFAULT_ZOOM_SCALE);
     setPreviewSide("front");
+    setPreviewName("Your Name Here");
     setLayout(null);
     setIsLayoutLocked(false);
     setPreviewImages([]);
@@ -1169,7 +1382,7 @@ function App() {
     setDataFile(null);
     setData([]);
     setSheetName("");
-    setPreviewName("");
+    setPreviewName("Your Name Here");
     setPreviewImages([]);
     setLastGenerationInfo(null);
     setEmailSummary(null);
@@ -1188,14 +1401,17 @@ function App() {
   );
 
   const handleLogout = useCallback(() => {
-    setIsAuthenticated(false);
-    setAuthUser("");
-    setLoginPrefill("");
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
       window.localStorage.removeItem(AUTH_USER_KEY);
+      window.localStorage.removeItem("certificate-studio-userId");
       window.localStorage.removeItem(AUTH_TOKEN_KEY);
-      // Force a full page reload to clear all React state (uploaded templates, excel data, etc.)
+    }
+    setIsAuthenticated(false);
+    setAuthUser("");
+    setAuthUserId("");
+    setLoginPrefill("");
+    if (typeof window !== "undefined") {
       window.location.href = "/user/login";
     } else {
       navigate("/user/login");
@@ -1203,15 +1419,18 @@ function App() {
   }, [navigate]);
 
   const handleLoginSuccess = useCallback(
-    ({ email, code }) => {
+    ({ email, code, id }) => {
       const safeEmail = email?.toString().trim() || "";
       const safeToken = code?.toString().trim() || "";
+      const safeId = id?.toString().trim() || "";
       setIsAuthenticated(true);
       setAuthUser(safeEmail);
+      setAuthUserId(safeId);
       setLoginPrefill(safeEmail);
       if (typeof window !== "undefined") {
         window.localStorage.setItem(AUTH_STORAGE_KEY, "true");
         window.localStorage.setItem(AUTH_USER_KEY, safeEmail);
+        window.localStorage.setItem("certificate-studio-userId", safeId);
         window.localStorage.setItem(AUTH_TOKEN_KEY, safeToken);
       }
       navigate("/generate-certifcate");
@@ -1608,6 +1827,21 @@ function App() {
     [previewScale]
   );
 
+  const handleResetZoom = useCallback(() => {
+    if (templateImageRef.current) {
+      const { naturalWidth, naturalHeight } = templateImageRef.current;
+      const autoScale = calculateAutoScale(naturalWidth, naturalHeight);
+      setPreviewScale(autoScale);
+      setTemplateSize({
+        width: Math.round(naturalWidth * autoScale),
+        height: Math.round(naturalHeight * autoScale),
+      });
+      toast.success(`Reset zoom to best fit (${Math.round(autoScale * 100)}%)`);
+    } else {
+      setPreviewScale(DEFAULT_ZOOM_SCALE);
+    }
+  }, [DEFAULT_ZOOM_SCALE]);
+
   const handlePreviewSelect = useCallback((value) => {
     setPreviewName(value ? toTitleCase(value) : "");
   }, []);
@@ -1678,25 +1912,39 @@ function App() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handlePop = () =>
-      setCurrentPath(normalizePathOnly(window.location.pathname || "/pricing"));
+      setCurrentPath(normalizePathOnly(window.location.pathname || "/user/login"));
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
   }, [normalizePathOnly]);
 
   useEffect(() => {
-    if (!isAuthenticated && !sessionStorage.getItem("access_token")) {
-      // Attempt re-auth if token exists but state is lost (e.g., page refresh)
+    const restoreSession = async () => {
       const storedAuth = window.localStorage.getItem(AUTH_STORAGE_KEY);
       const storedUser = window.localStorage.getItem(AUTH_USER_KEY);
       const storedToken = window.localStorage.getItem(AUTH_TOKEN_KEY);
+      const storedUserId = window.localStorage.getItem("certificate-studio-userId");
+
       if (storedAuth === "true" && storedUser && storedToken) {
-        setIsAuthenticated(true);
-        setAuthUser(storedUser);
-        // In a real app, you would validate this token against the server here
-        // For this project, we assume the token (sessionToken) grants access.
-        sessionStorage.setItem("access_token", storedToken);
+        if (!isAuthenticated) {
+          setIsAuthenticated(true);
+          setAuthUser(storedUser);
+          setAuthUserId(storedUserId || "");
+        }
+        
+        // Recover Canva connection status
+        if (storedUserId && !isCanvaConnected) {
+          try {
+            const checkUrl = buildApiUrl(API_BASE_URL, `api/canva/check-connection?userId=${storedUserId}`);
+            const res = await axios.get(checkUrl);
+            setIsCanvaConnected(res.data.isConnected);
+          } catch (err) {
+            console.error("Failed to check Canva connection on mount:", err);
+          }
+        }
       }
-    }
+    };
+
+    restoreSession();
 
     const allowed = [
       "/user/login",
@@ -1705,10 +1953,11 @@ function App() {
       "/pricing",
       "/pricing/generate-password",
       "/forgot-password",
+      "/canva-success",
     ];
 
     if (!allowed.includes(currentPath)) {
-      navigate(isAuthenticated ? "/generate-certifcate" : "/user/login");
+      navigate(effectivelyAuthenticated ? "/generate-certifcate" : "/user/login");
       return;
     }
 
@@ -1716,19 +1965,45 @@ function App() {
       currentPath === "/user/login" ||
       currentPath === "/pricing" ||
       currentPath === "/pricing/generate-password" ||
-      currentPath === "/forgot-password";
+      currentPath === "/forgot-password" ||
+      currentPath === "/canva-success";
 
     if (
-      !isAuthenticated &&
+      !effectivelyAuthenticated &&
       (currentPath === "/generate-certifcate" || currentPath === "/profile")
     ) {
       navigate("/user/login");
     }
 
-    if (isAuthenticated && isAuthRoute) {
+    if (effectivelyAuthenticated && isAuthRoute) {
       navigate("/generate-certifcate");
     }
   }, [currentPath, isAuthenticated, navigate]);
+
+  // Robust User ID Recovery (Ensures authUserId is populated for the Canva flow)
+  useEffect(() => {
+    if (isAuthenticated && authUser && !authUserId) {
+      const storedUserId = window.localStorage.getItem("certificate-studio-userId");
+      if (storedUserId) {
+        setAuthUserId(storedUserId);
+      } else {
+        const fetchProfile = async () => {
+          try {
+            const profileUrl = buildApiUrl(API_BASE_URL, `api/auth/profile/${encodeURIComponent(authUser)}`);
+            const res = await axios.get(profileUrl);
+            if (res.data.id) {
+              const idStr = res.data.id.toString();
+              setAuthUserId(idStr);
+              window.localStorage.setItem("certificate-studio-userId", idStr);
+            }
+          } catch (err) {
+            console.error("Failed to recover user ID:", err);
+          }
+        };
+        fetchProfile();
+      }
+    }
+  }, [isAuthenticated, authUser, authUserId, API_BASE_URL]);
 
   const emailReadyRows = useMemo(() => {
     if (!data.length) return [];
@@ -1860,9 +2135,15 @@ function App() {
 
   const isLoginPage = currentPath.startsWith("/user/login");
   const isProfilePage = currentPath === "/profile";
+  const isCanvaSuccessPage = currentPath === "/canva-success";
   const isPricingPage = currentPath === "/pricing";
   const isGetPasswordPage = currentPath === "/pricing/generate-password";
   const isForgotPasswordPage = currentPath === "/forgot-password";
+
+  const localAuth = window.localStorage.getItem(AUTH_STORAGE_KEY) === "true";
+  const localUser = window.localStorage.getItem(AUTH_USER_KEY);
+  const localToken = window.localStorage.getItem(AUTH_TOKEN_KEY);
+  const effectivelyAuthenticated = isAuthenticated || (localAuth && !!localUser && !!localToken);
 
   const sendButtonLabel = isSending
     ? sendProgress
@@ -1990,10 +2271,18 @@ function App() {
       ctx.restore();
     };
 
-    drawPreview();
+    let animationFrameId;
+    let renderTimeout;
+
+    // Throttle rendering so dragging is smooth and doesn't freeze the main thread
+    renderTimeout = setTimeout(() => {
+      animationFrameId = requestAnimationFrame(drawPreview);
+    }, 16);
 
     return () => {
       cancelled = true;
+      clearTimeout(renderTimeout);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, [layout, previewName, previewSide, templateURL, previewScale]);
 
@@ -2391,7 +2680,7 @@ function App() {
 
       let successCount = 0;
       let failures = [];
-      let sharedBatchId = null;
+      let sharedRemoteAttachments = [];
 
       setIsSending(true);
       stopSendingRef.current = false;
@@ -2400,16 +2689,26 @@ function App() {
       if (emailAttachmentType === "shared" && sharedAttachmentFiles.length > 0) {
         toast.loading("Uploading shared attachments once...", { id: toastId });
         try {
-          const uploadFormData = new FormData();
-          sharedAttachmentFiles.forEach((file) => {
-            if (file) uploadFormData.append("attachments", file);
-          });
-          const uploadUrl = buildApiUrl(API_BASE_URL, "api/upload-shared");
-          const uploadRes = await axios.post(uploadUrl, uploadFormData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-          sharedBatchId = uploadRes.data.sharedBatchId;
+          for (const file of sharedAttachmentFiles) {
+            if (!file) continue;
+            const uploadedAttachment = await uploadRemoteAttachment(
+              API_BASE_URL,
+              file,
+              "shared"
+            );
+            sharedRemoteAttachments.push(uploadedAttachment);
+          }
         } catch (uploadErr) {
+          if (sharedRemoteAttachments.length) {
+            try {
+              await cleanupRemoteAttachments(
+                API_BASE_URL,
+                sharedRemoteAttachments
+              );
+            } catch (cleanupErr) {
+              console.error("Shared attachment cleanup failed:", cleanupErr);
+            }
+          }
           throw new Error(
             "Failed to pre-upload shared attachments. " +
               (uploadErr.response?.data?.message || uploadErr.message)
@@ -2450,6 +2749,7 @@ function App() {
           // this worker lane is "locked" to this specific person.
           const recipientSnapshot = { ...toSend[i] };
           const { name: rName, email: rEmail } = recipientSnapshot;
+          let recipientRemoteAttachments = [];
 
           try {
             const formData = new FormData();
@@ -2471,9 +2771,28 @@ function App() {
                 { drawName: personalizeWithNames },
                 templateBackImageRef.current
               );
-              formData.append("attachments", pdfBlob, `${sanitizeFileBaseName(rName, "certificate")}.pdf`);
-            } else if (attachmentMode === "shared" && sharedBatchId) {
-              formData.append("sharedBatchId", sharedBatchId);
+              const pdfFile = new File(
+                [pdfBlob],
+                `${sanitizeFileBaseName(rName, "certificate")}.pdf`,
+                { type: "application/pdf" }
+              );
+              const uploadedAttachment = await uploadRemoteAttachment(
+                API_BASE_URL,
+                pdfFile,
+                "certificate"
+              );
+              recipientRemoteAttachments = [uploadedAttachment];
+              formData.append(
+                "remoteAttachments",
+                JSON.stringify(recipientRemoteAttachments)
+              );
+              formData.append("autoCleanupRemoteAttachments", "true");
+            } else if (attachmentMode === "shared" && sharedRemoteAttachments.length) {
+              formData.append(
+                "remoteAttachments",
+                JSON.stringify(sharedRemoteAttachments)
+              );
+              formData.append("autoCleanupRemoteAttachments", "false");
             }
 
             // Send to the email from our snapshot
@@ -2489,6 +2808,14 @@ function App() {
               email: rEmail,
               reason: reason,
             });
+            if (recipientRemoteAttachments.length) {
+              cleanupRemoteAttachments(
+                API_BASE_URL,
+                recipientRemoteAttachments
+              ).catch((cleanupErr) => {
+                console.error("Recipient attachment cleanup failed:", cleanupErr);
+              });
+            }
           } finally {
             processedCount++;
             const pct = Math.round((processedCount / toSend.length) * 100);
@@ -2538,10 +2865,9 @@ function App() {
         }
       } finally {
         // 5. Cleanup Shared Files
-        if (sharedBatchId) {
+        if (sharedRemoteAttachments.length) {
           try {
-            const cleanupUrl = buildApiUrl(API_BASE_URL, "api/cleanup-shared");
-            await axios.post(cleanupUrl, { sharedBatchId });
+            await cleanupRemoteAttachments(API_BASE_URL, sharedRemoteAttachments);
           } catch (cleanupErr) {
             console.error("Cleanup failed:", cleanupErr);
           }
@@ -2724,7 +3050,7 @@ function App() {
     }
   };
 
-  if (!isAuthenticated && isLoginPage) {
+  if (!effectivelyAuthenticated && isLoginPage) {
     return (
       <LoginPage
         defaultEmail={loginPrefill || authUser}
@@ -2753,1343 +3079,214 @@ function App() {
       />
     );
   }
-
-  if (!isAuthenticated && isPricingPage) {
+  if (!effectivelyAuthenticated && isPricingPage) {
     return <PricingPage navigate={navigate} />;
   }
 
-  if (!isAuthenticated && !isLoginPage && !isPricingPage) {
-    return <PricingPage navigate={navigate} />;
+
+  if (!effectivelyAuthenticated && !isLoginPage && !isPricingPage && !isCanvaSuccessPage && !isGetPasswordPage && !isForgotPasswordPage) {
+    return (
+      <LoginPage
+        defaultEmail={loginPrefill || authUser}
+        onSuccess={handleLoginSuccess}
+        apiBaseUrl={API_BASE_URL}
+        navigate={navigate}
+      />
+    );
   }
 
-  if (isAuthenticated && isPricingPage) {
+  // If we're on canva-success but not yet authenticated (session recovering), 
+  // show a simple loading state to avoid flickering the pricing page
+  if (!effectivelyAuthenticated && isCanvaSuccessPage) {
+    return <div className="loading-screen">Finalizing Canva connection...</div>;
+  }
+
+  if (effectivelyAuthenticated && isPricingPage) {
     navigate("/generate-certifcate");
     return null;
   }
 
-  if (isAuthenticated && isProfilePage) {
+  if (effectivelyAuthenticated && isProfilePage) {
     return <ProfilePage authUser={authUser} onLogout={handleLogout} apiBaseUrl={API_BASE_URL} navigate={navigate} />;
   }
 
-  if (isAuthenticated) {
+  if (effectivelyAuthenticated) {
     // Main Generation UI
     return (
       <div className="App">
         <Toaster position="bottom-right" />
-        <div className="top-nav">
-          <div className="nav-left">
-            <span
-              className="nav-brand"
-              onClick={() => navigate("/generate-certifcate")}
-            >
-              Certificate Studio
-            </span>
-            <button
-              type="button"
-              className={`nav-link ${currentPath === "/generate-certifcate" ? "active" : ""
-                }`}
-              onClick={() => navigate("/generate-certifcate")}
-            >
-              Generate
-            </button>
-            <button
-              type="button"
-              className={`nav-link ${currentPath === "/profile" ? "active" : ""
-                }`}
-              onClick={() => navigate("/profile")}
-            >
-              Profile
-            </button>
-          </div>
-          <div className="nav-right">
-            <span className="nav-user">{authUser || "Signed in"}</span>
-            <button type="button" className="nav-logout" onClick={handleLogout}>
-              Logout
-            </button>
-          </div>
-        </div>
+        <EditorHeader
+          currentPath={currentPath}
+          navigate={navigate}
+          authUser={authUser}
+          onLogout={handleLogout}
+        />
 
         <div className="main-layout">
           <div className="controls-panel">
-            <h2>Design Studio</h2>
-            <p className="panel-intro">
-              Upload your artwork, decide whether to personalize it, then send
-              or download everything in one place.
-            </p>
+            <LayerPanel
+              template={template}
+              getTemplateProps={getTemplateProps}
+              getTemplateInputProps={getTemplateInputProps}
+              clearTemplate={clearTemplate}
+              templateBack={templateBack}
+              getTemplateBackProps={getTemplateBackProps}
+              getTemplateBackInputProps={getTemplateBackInputProps}
+              clearTemplateBack={clearTemplateBack}
+              dataFile={dataFile}
+              getDataProps={getDataProps}
+              getDataInputProps={getDataInputProps}
+              clearDataFile={clearDataFile}
+              isCanvaConnected={isCanvaConnected}
+              setIsCanvaModalOpen={setIsCanvaModalOpen}
+              handleConnectCanva={handleConnectCanva}
+              handleDisconnectCanva={handleDisconnectCanva}
+            />
 
-            <div className="control-group">
-              <label>1. Upload Template Image</label>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
-                }}
-              >
-                <div {...getTemplateProps({ className: "dropzone" })}>
-                  <input {...getTemplateInputProps()} />
-                  <p><b>Front Side:</b> Drag 'n' drop, or click</p>
-                  {template && (
-                    <div className="file-chip">
-                      <span className="file-name">{template.name}</span>
-                      <button
-                        type="button"
-                        className="file-remove-button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          event.preventDefault();
-                          clearTemplate();
-                        }}
-                        aria-label="Remove template"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  )}
-                </div>
+            <PropertiesPanel
+              layout={layout}
+              setLayout={setLayout}
+              serverFonts={serverFonts}
+              MAX_FONT_SIZE={MAX_FONT_SIZE}
+              handleLayoutChange={handleLayoutChange}
+              isLayoutLocked={isLayoutLocked}
+              COLOR_SWATCHES={COLOR_SWATCHES}
+              handleColorSelect={handleColorSelect}
+              handleAlign={handleAlign}
+              handleVAlign={handleVAlign}
+              setIsLayoutLocked={setIsLayoutLocked}
+              setPreviewImages={setPreviewImages}
+              template={template}
+              previewName={previewName}
+              handlePreviewInput={handlePreviewInput}
+              data={data}
+              isPreviewFromData={isPreviewFromData}
+              handleDownloadPreview={handleDownloadPreview}
+              isPreviewLoading={isPreviewLoading}
+              previewNameIsValid={previewNameIsValid}
+              layoutReady={layoutReady}
+            />
 
-                <div
-                  {...getTemplateBackProps({
-                    className: "dropzone",
-                    style: {
-                      borderStyle: "dashed",
-                      opacity: 0.8,
-                      minHeight: "80px",
-                    },
-                  })}
-                >
-                  <input {...getTemplateBackInputProps()} />
-                  <p><b>Back Side (Optional):</b> Drag 'n' drop, or click</p>
-                  {templateBack && (
-                    <div className="file-chip">
-                      <span className="file-name">{templateBack.name}</span>
-                      <button
-                        type="button"
-                        className="file-remove-button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          event.preventDefault();
-                          clearTemplateBack();
-                        }}
-                        aria-label="Remove back template"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <ManualRecipientsPanel
+              MAX_MANUAL_RECIPIENTS={MAX_MANUAL_RECIPIENTS}
+              manualRecipients={manualRecipients}
+              handleManualRecipientChange={handleManualRecipientChange}
+              removeManualRecipient={removeManualRecipient}
+              addManualRecipient={addManualRecipient}
+              manualRecipientLimitReached={manualRecipientLimitReached}
+              handleManualGenerate={handleManualGenerate}
+              template={template}
+              manualReadyRecipients={manualReadyRecipients}
+              isManualGenerating={isManualGenerating}
+              layoutReady={layoutReady}
+            />
 
-            <div className="control-group">
-              <label>2. Upload Data File (.xlsx)</label>
-              <div {...getDataProps({ className: "dropzone" })}>
-                <input {...getDataInputProps()} />
-                <p>Drag 'n' drop, or click</p>
-                {dataFile && (
-                  <div className="file-chip">
-                    <span className="file-name">{dataFile.name}</span>
-                    <button
-                      type="button"
-                      className="file-remove-button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        event.preventDefault();
-                        clearDataFile();
-                      }}
-                      aria-label="Remove data file"
-                    >
-                      &times;
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="control-group">
-              <label>3. Personalize Certificates</label>
-              <p className="toggle-hint">
-                Drag or resize the red box, then lock the layout to prevent
-                accidental changes.
-              </p>
-
-              <label>Font Family</label>
-              <div className="font-picker-wrapper">
-                <FontPicker
-                  activeFontFamily={layout?.fontFamily || "Montserrat"}
-                  serverFonts={serverFonts}
-                  onChange={(nextFont) => {
-                    setLayout((prev) => ({ ...prev, fontFamily: nextFont.family }));
-                  }}
-                />
-              </div>
-
-              <label htmlFor="fontSize">Font Size (px)</label>
-              <input
-                type="number"
-                name="fontSize"
-                min="8"
-                max={MAX_FONT_SIZE}
-                value={layout?.fontSize ?? ""}
-                onChange={handleLayoutChange}
-                disabled={!layout || isLayoutLocked}
-              />
-
-              <label htmlFor="color">Font Color</label>
-              <input
-                type="color"
-                name="color"
-                value={layout?.color || "#C67F0E"}
-                onChange={handleLayoutChange}
-                disabled={!layout || isLayoutLocked}
-              />
-              <div className="color-swatches">
-                {COLOR_SWATCHES.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    className={`color-swatch ${layout?.color?.toLowerCase() === swatch.toLowerCase()
-                        ? "selected"
-                        : ""
-                      }`}
-                    style={{ backgroundColor: swatch }}
-                    onClick={() => handleColorSelect(swatch)}
-                    aria-label={`Set font color to ${swatch}`}
-                    disabled={!layout || isLayoutLocked}
-                  />
-                ))}
-              </div>
-
-              <label style={{ marginTop: "12px" }}>Text Styling</label>
-              <div className="font-align">
-                <button
-                  className={layout?.fontWeight === "bold" ? "active" : ""}
-                  onClick={() =>
-                    handleLayoutChange({
-                      target: {
-                        name: "fontWeight",
-                        value:
-                          layout?.fontWeight === "bold" ? "normal" : "bold",
-                      },
-                    })
-                  }
-                  disabled={!layout || isLayoutLocked}
-                >
-                  Bold
-                </button>
-                <button
-                  className={layout?.fontStyle === "italic" ? "active" : ""}
-                  onClick={() =>
-                    handleLayoutChange({
-                      target: {
-                        name: "fontStyle",
-                        value:
-                          layout?.fontStyle === "italic" ? "normal" : "italic",
-                      },
-                    })
-                  }
-                  disabled={!layout || isLayoutLocked}
-                >
-                  Italic
-                </button>
-              </div>
-
-              <label htmlFor="positionX">Horizontal Position (px)</label>
-              <input
-                type="number"
-                name="x"
-                min="0"
-                max={Math.max(0, Math.floor(maxXForInput))}
-                value={layout?.x ?? ""}
-                onChange={handleLayoutChange}
-                disabled={!layout || isLayoutLocked}
-              />
-
-              <label htmlFor="positionY">Vertical Position (px)</label>
-              <input
-                type="number"
-                name="y"
-                min="0"
-                max={Math.max(0, Math.floor(maxYForInput))}
-                value={layout?.y ?? ""}
-                onChange={handleLayoutChange}
-                disabled={!layout || isLayoutLocked}
-              />
-
-              <label>Horizontal Alignment</label>
-              <div className="font-align">
-                <button
-                  onClick={() => handleAlign("left")}
-                  className={layout?.align === "left" ? "active" : ""}
-                  disabled={!layout || isLayoutLocked}
-                >
-                  Left
-                </button>
-                <button
-                  onClick={() => handleAlign("center")}
-                  className={layout?.align === "center" ? "active" : ""}
-                  disabled={!layout || isLayoutLocked}
-                >
-                  Center
-                </button>
-                <button
-                  onClick={() => handleAlign("right")}
-                  className={layout?.align === "right" ? "active" : ""}
-                  disabled={!layout || isLayoutLocked}
-                >
-                  Right
-                </button>
-              </div>
-
-              <label style={{ marginTop: "10px" }}>Vertical Alignment</label>
-              <div className="font-align">
-                <button
-                  onClick={() => handleVAlign("top")}
-                  className={layout?.v_align === "top" ? "active" : ""}
-                  disabled={!layout || isLayoutLocked}
-                >
-                  Top
-                </button>
-                <button
-                  onClick={() => handleVAlign("middle")}
-                  className={layout?.v_align === "middle" ? "active" : ""}
-                  disabled={!layout || isLayoutLocked}
-                >
-                  Middle
-                </button>
-                <button
-                  onClick={() => handleVAlign("bottom")}
-                  className={layout?.v_align === "bottom" ? "active" : ""}
-                  disabled={!layout || isLayoutLocked}
-                >
-                  Bottom
-                </button>
-              </div>
-
-              <button
-                className={`confirm-layout-button ${isLayoutLocked ? "locked" : ""}`}
-                onClick={() => {
-                  setIsLayoutLocked(!isLayoutLocked);
-                  setPreviewImages([]);
-                }}
-                disabled={!template || !layout}
-              >
-                {isLayoutLocked ? "Unlock Layout" : "Lock Layout"}
-              </button>
-            </div>
-
-            <div className="control-group">
-              <label>4. Test Preview & Download</label>
-              <p className="toggle-hint">
-                Enter a test name below, then download a single PDF preview or
-                view it in the center panel.
-              </p>
-
-              <label htmlFor="previewName">Recipient Name (Test)</label>
-              <input
-                id="previewName"
-                className="preview-input"
-                type="text"
-                value={previewName}
-                onChange={(e) => handlePreviewInput(e.target.value)}
-                placeholder={data[0]?.Name || "Enter test name"}
-              />
-              <p className="active-preview">
-                {isPreviewFromData
-                  ? "Name derived from data."
-                  : "Name used for testing only."}
-              </p>
-
-              <button
-                className="preview-download-button"
-                onClick={handleDownloadPreview}
-                disabled={
-                  !template ||
-                  isPreviewLoading ||
-                  !previewNameIsValid ||
-                  !layoutReady
-                }
-              >
-                {isPreviewLoading ? "Downloading..." : "Download Preview PDF"}
-              </button>
-            </div>
-
-            <div className="control-group">
-              <label>5. Quick Recipients (Max {MAX_MANUAL_RECIPIENTS})</label>
-              <p className="layout-hint">
-                Use this for quick testing or sending certificates to a small,
-                fixed list without uploading an Excel file.
-              </p>
-              {manualRecipients.map((recipient, index) => (
-                <div key={recipient.id} className="manual-recipient-row">
-                  <input
-                    type="text"
-                    placeholder={`Recipient Name ${index + 1}`}
-                    value={recipient.name}
-                    onChange={(e) =>
-                      handleManualRecipientChange(
-                        recipient.id,
-                        "name",
-                        e.target.value
-                      )
-                    }
-                  />
-                  <div className="manual-recipient-email-row">
-                    <input
-                      type="email"
-                      placeholder={`Email Address ${index + 1}`}
-                      value={recipient.email}
-                      onChange={(e) =>
-                        handleManualRecipientChange(
-                          recipient.id,
-                          "email",
-                          e.target.value
-                        )
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() => removeManualRecipient(recipient.id)}
-                      disabled={manualRecipients.length === 1}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              <div className="manual-recipient-actions">
-                <button
-                  type="button"
-                  className="add-manual-button"
-                  onClick={addManualRecipient}
-                  disabled={manualRecipientLimitReached}
-                >
-                  + Add Recipient
-                </button>
-                {manualRecipientLimitReached && (
-                  <span className="manual-limit-hint">
-                    Limit: {MAX_MANUAL_RECIPIENTS} recipients
-                  </span>
-                )}
-              </div>
-
-              <button
-                className="manual-generate-button"
-                onClick={handleManualGenerate}
-                disabled={
-                  !template ||
-                  !manualReadyRecipients.length ||
-                  isManualGenerating ||
-                  !layoutReady
-                }
-              >
-                {isManualGenerating
-                  ? "Generating..."
-                  : `Download Manual (${manualReadyRecipients.length})`}
-              </button>
-            </div>
-
-
-
-            <div className="control-group">
-              <label>6. Email Delivery (Optional)</label>
-              <p className="layout-hint">
-                Personalize your email with <code>{"{name}"}</code> to insert
-                each recipient's name automatically.
-              </p>
-              <label className="email-toggle">
-                <input
-                  type="checkbox"
-                  checked={emailDeliveryEnabled}
-                  onChange={(event) => {
-                    setEmailDeliveryEnabled(event.target.checked);
-                  }}
-                />
-                Enable Generate & Send
-              </label>
-
-              <div
-                className={`email-settings ${emailDeliveryEnabled ? "active" : "disabled"
-                  }`}
-              >
-
-                <label>Email Attachment</label>
-                <div className="radio-group">
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="emailAttachmentType"
-                      value="certificate"
-                      checked={emailAttachmentType === "certificate"}
-                      onChange={(e) => setEmailAttachmentType(e.target.value)}
-                      disabled={!emailDeliveryEnabled || isSending}
-                    />
-                    Attach Personalized Certificate
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="emailAttachmentType"
-                      value="shared"
-                      checked={emailAttachmentType === "shared"}
-                      onChange={(e) => setEmailAttachmentType(e.target.value)}
-                      disabled={!emailDeliveryEnabled || isSending}
-                    />
-                    Attach Shared File(s)
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="emailAttachmentType"
-                      value="none"
-                      checked={emailAttachmentType === "none"}
-                      onChange={(e) => setEmailAttachmentType(e.target.value)}
-                      disabled={!emailDeliveryEnabled || isSending}
-                    />
-                    Send Email Only (No Attachment)
-                  </label>
-                </div>
-
-                {emailAttachmentType === "shared" && (
-                  <div
-                    {...getSharedFileProps({
-                      className: "dropzone shared-file-dropzone",
-                    })}
-                  >
-                    <input {...getSharedFileInputProps()} />
-                    <p>Drop one or more shared files here (PDF, DOCX, etc.)</p>
-                    {sharedAttachmentFiles.map((file, index) => (
-                      <div className="file-chip" key={`${file.name}-${index}`}>
-                        <span className="file-name">{file.name}</span>
-                        <button
-                          type="button"
-                          className="file-remove-button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            event.preventDefault();
-                            clearSharedAttachment(index);
-                          }}
-                          aria-label={`Remove ${file.name}`}
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {emailAttachmentType === "certificate" && (
-                  <p className="layout-hint">
-                    This will generate and attach a unique PNG for each
-                    recipient.
-                  </p>
-                )}
-                {emailAttachmentType === "shared" && (
-                  <p className="layout-hint">
-                    Everyone will receive the same shared file(s) you upload
-                    here.
-                  </p>
-                )}
-                {emailAttachmentType === "none" && (
-                  <p className="email-warning">No attachments will be sent.</p>
-                )}
-
-                <label htmlFor="emailService">Email Service</label>
-                <input
-                  id="emailService"
-                  name="service"
-                  type="text"
-                  placeholder="gmail, outlook, yahoo..."
-                  value={emailSettings.service}
-                  onChange={handleEmailSettingsChange}
-                  disabled={!emailDeliveryEnabled || isSending}
-                />
-                <label htmlFor="senderName">Sender Name (optional)</label>
-                <input
-                  id="senderName"
-                  name="senderName"
-                  type="text"
-                  placeholder="Your Organization"
-                  value={emailSettings.senderName}
-                  onChange={handleEmailSettingsChange}
-                  disabled={!emailDeliveryEnabled || isSending}
-                />
-                <label htmlFor="senderEmail">Sender Email Address</label>
-                <input
-                  id="senderEmail"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={emailSettings.email}
-                  onChange={handleEmailSettingsChange}
-                  disabled={!emailDeliveryEnabled || isSending}
-                />
-                <label htmlFor="emailPassword">Email App Password</label>
-                <input
-                  id="emailPassword"
-                  name="password"
-                  type="password"
-                  autoComplete="off"
-                  placeholder="Enter the app password from your provider"
-                  value={emailSettings.password}
-                  onChange={handleEmailSettingsChange}
-                  disabled={!emailDeliveryEnabled || isSending}
-                />
-                <label htmlFor="emailSubject">Email Subject</label>
-                <input
-                  id="emailSubject"
-                  name="subject"
-                  type="text"
-                  placeholder="Your Certificate is Ready!"
-                  value={emailSettings.subject}
-                  onChange={handleEmailSettingsChange}
-                  disabled={!emailDeliveryEnabled || isSending}
-                />
-
-                <div className="presets-section" style={{ marginTop: '16px', padding: '16px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                  <label style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: 'var(--text-color)', display: 'block' }}>Message Template Presets</label>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                    <select 
-                      value={selectedMessagePresetId} 
-                      onChange={(e) => handleLoadPreset(e, 'message')}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                      disabled={isSavingMessagePreset || isSending}
-                    >
-                      <option value="">-- Load a saved message --</option>
-                      {presets.filter(p => p.presetType === 'message').map(p => (
-                        <option key={p.id} value={p.id}>{p.presetName}</option>
-                      ))}
-                    </select>
-                    <button 
-                      type="button" 
-                      onClick={() => handleDeletePreset(selectedMessagePresetId, 'message')}
-                      disabled={!selectedMessagePresetId || isSavingMessagePreset || isSending}
-                      style={{ alignSelf: 'flex-start', padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', opacity: (!selectedMessagePresetId || isSavingMessagePreset || isSending) ? 0.5 : 1 }}
-                      title="Delete selected preset"
-                    >
-                      Delete
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <input 
-                      type="text" 
-                      placeholder="New message preset name..." 
-                      value={newMessagePresetName}
-                      onChange={(e) => setNewMessagePresetName(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                      disabled={isSavingMessagePreset || isSending}
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => handleSavePreset('message')}
-                      disabled={!newMessagePresetName.trim() || isSavingMessagePreset || isSending}
-                      style={{ alignSelf: 'flex-start', padding: '10px 16px', background: '#6366f1', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', opacity: (!newMessagePresetName.trim() || isSavingMessagePreset || isSending) ? 0.5 : 1 }}
-                    >
-                      {isSavingMessagePreset ? 'Saving...' : 'Save As Preset'}
-                    </button>
-                  </div>
-                </div>
-
-                <label htmlFor="emailTemplate" style={{ marginTop: '16px' }}>Message Template</label>
-                <div className="formatting-toolbar">
-                  <button
-                    type="button"
-                    onClick={() => insertFormat("b")}
-                    title="Bold copy"
-                    className="format-btn"
-                  >
-                    <b>B</b>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormat("i")}
-                    title="Italic copy"
-                    className="format-btn"
-                  >
-                    <i>I</i>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormat("u")}
-                    title="Underline copy"
-                    className="format-btn"
-                  >
-                    <u>U</u>
-                  </button>
-                  <div className="divider" style={{ width: "1px", background: "#ccc", margin: "0 5px" }} />
-                  <button
-                    type="button"
-                    onClick={() => insertLink("emailTemplate")}
-                    title="Insert Link"
-                    className="format-btn"
-                  >
-                    🔗
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => promptForImage("emailTemplate")}
-                    title="Insert Image via URL"
-                    className="format-btn"
-                  >
-                    🌐
-                  </button>
-                  <label className="format-btn" title="Upload Image" style={{ display: "inline-flex", alignItems: "center", marginBottom: 0 }}>
-                    📤
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      onChange={(e) => handleImageUpload(e, "emailTemplate")}
-                    />
-                  </label>
-                  <div className="divider" style={{ width: "1px", background: "#ccc", margin: "0 5px" }} />
-                  <div className="placeholder-buttons" style={{ display: "inline-flex", gap: "5px" }}>
-                    <button
-                      type="button"
-                      onClick={() => insertPlaceholder("name", "emailTemplate")}
-                      className="format-btn placeholder-btn"
-                      title="Insert Name Placeholder"
-                      style={{ fontSize: '12px', fontWeight: 'bold', color: '#6366f1' }}
-                    >
-                      {`{name}`}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertPlaceholder("email", "emailTemplate")}
-                      className="format-btn placeholder-btn"
-                      title="Insert Email Placeholder"
-                      style={{ fontSize: '12px', fontWeight: 'bold', color: '#6366f1' }}
-                    >
-                      {`{email}`}
-                    </button>
-                  </div>
-                </div>
-                <textarea
-                  id="emailTemplate"
-                  name="template"
-                  placeholder="Hi {name}, ..."
-                  value={emailSettings.template}
-                  onChange={handleEmailSettingsChange}
-                  disabled={!emailDeliveryEnabled || isSending}
-                />
-
-                <div className="presets-section" style={{ marginTop: '24px', padding: '16px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                  <label style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: 'var(--text-color)', display: 'block' }}>Email Signature Presets</label>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                    <select 
-                      value={selectedSignaturePresetId} 
-                      onChange={(e) => handleLoadPreset(e, 'signature')}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                      disabled={isSavingSignaturePreset || isSending}
-                    >
-                      <option value="">-- Load a saved signature --</option>
-                      {presets.filter(p => p.presetType === 'signature').map(p => (
-                        <option key={p.id} value={p.id}>{p.presetName}</option>
-                      ))}
-                    </select>
-                    <button 
-                      type="button" 
-                      onClick={() => handleDeletePreset(selectedSignaturePresetId, 'signature')}
-                      disabled={!selectedSignaturePresetId || isSavingSignaturePreset || isSending}
-                      style={{ alignSelf: 'flex-start', padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', opacity: (!selectedSignaturePresetId || isSavingSignaturePreset || isSending) ? 0.5 : 1 }}
-                      title="Delete selected preset"
-                    >
-                      Delete
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <input 
-                      type="text" 
-                      placeholder="New signature preset name..." 
-                      value={newSignaturePresetName}
-                      onChange={(e) => setNewSignaturePresetName(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                      disabled={isSavingSignaturePreset || isSending}
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => handleSavePreset('signature')}
-                      disabled={!newSignaturePresetName.trim() || isSavingSignaturePreset || isSending}
-                      style={{ alignSelf: 'flex-start', padding: '10px 16px', background: '#6366f1', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', opacity: (!newSignaturePresetName.trim() || isSavingSignaturePreset || isSending) ? 0.5 : 1 }}
-                    >
-                      {isSavingSignaturePreset ? 'Saving...' : 'Save As Preset'}
-                    </button>
-                  </div>
-                </div>
-
-                <label htmlFor="emailSignature" style={{ marginTop: "16px" }}>Email Signature</label>
-                <div className="formatting-toolbar">
-                  <button
-                    type="button"
-                    onClick={() => insertFormat("b", "emailSignature")}
-                    title="Bold"
-                    className="format-btn"
-                  >
-                    <b>B</b>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormat("i", "emailSignature")}
-                    title="Italic"
-                    className="format-btn"
-                  >
-                    <i>I</i>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormat("u", "emailSignature")}
-                    title="Underline"
-                    className="format-btn"
-                  >
-                    <u>U</u>
-                  </button>
-                  <div className="divider" style={{ width: "1px", background: "#ccc", margin: "0 5px" }} />
-                  <button
-                    type="button"
-                    onClick={() => insertLink("emailSignature")}
-                    title="Insert Link"
-                    className="format-btn"
-                  >
-                    🔗
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => promptForImage("emailSignature")}
-                    title="Insert Image via URL"
-                    className="format-btn"
-                  >
-                    🌐
-                  </button>
-                  <label className="format-btn" title="Upload Image" style={{ display: "inline-flex", alignItems: "center", marginBottom: 0 }}>
-                    📤
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      onChange={(e) => handleImageUpload(e, "emailSignature")}
-                    />
-                  </label>
-                  <div className="divider" style={{ width: "1px", background: "#ccc", margin: "0 5px" }} />
-                  <div className="placeholder-buttons" style={{ display: "inline-flex", gap: "5px" }}>
-                    <button
-                      type="button"
-                      onClick={() => insertPlaceholder("name", "emailSignature")}
-                      className="format-btn placeholder-btn"
-                      title="Insert Name Placeholder"
-                      style={{ fontSize: '12px', fontWeight: 'bold', color: '#6366f1' }}
-                    >
-                      {`{name}`}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertPlaceholder("email", "emailSignature")}
-                      className="format-btn placeholder-btn"
-                      title="Insert Email Placeholder"
-                      style={{ fontSize: '12px', fontWeight: 'bold', color: '#6366f1' }}
-                    >
-                      {`{email}`}
-                    </button>
-                  </div>
-                </div>
-                <textarea
-                  id="emailSignature"
-                  name="signature"
-                  placeholder="Sincerely,\nYour Name"
-                  value={emailSettings.signature}
-                  onChange={handleEmailSettingsChange}
-                  disabled={!emailDeliveryEnabled || isSending}
-                  style={{ minHeight: "80px" }}
-                />
-
-                {/* Combined Email Preview */}
-                {(emailSettings.template || emailSettings.signature) && (
-                  <div className="email-preview-container" style={{ marginTop: "15px", padding: "16px", border: "1px solid #e2e8f0", borderRadius: "12px", background: "#ffffff", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", width: "100%", boxSizing: "border-box" }}>
-                    <p style={{ margin: "0 0 8px", fontSize: "0.85rem", color: "#64748b", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Email Preview</p>
-                    <div
-                      className="email-content-preview"
-                      style={{ fontFamily: "sans-serif", fontSize: "14px", lineHeight: "1.5", color: "#334155", overflowWrap: "anywhere", wordBreak: "break-word", width: "100%" }}
-                    >
-                      <div dangerouslySetInnerHTML={{ __html: (emailSettings.template || "").replace(/\n/g, "<br/>") }} />
-
-                      {(emailSettings.template && emailSettings.signature) && <br />}
-
-                      <div dangerouslySetInnerHTML={{ __html: (emailSettings.signature || "").replace(/\n/g, "<br/>") }} />
-                    </div>
-                  </div>
-                )}
-
-                <p className="template-hint">
-                  Tip: We'll automatically replace <code>{"{name}"}</code> with
-                  each recipient's name and attach their certificate as a PNG.
-                </p>
-              </div>
-            </div>
-
-            <div className="control-group">
-              <label>7. Generate & Deliver</label>
-
-              {/* Counts and Toggles - Kept here as requested */}
-              <div className="email-delivery-stats" style={{ marginBottom: "15px" }}>
-                <p style={{ margin: "0 0 10px 0", color: "#000000", fontWeight: "bold" }}>
-                  Emails detected: {emailReadyRows.length}/{data.length || 0}
-                  <span style={{ margin: "0 10px", color: "#ccc" }}>|</span>
-                  Manual: {manualReadyRecipients.length}
-                </p>
-
-                <label className="toggle-label" style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  cursor: emailDeliveryEnabled ? "pointer" : "default",
-                  color: emailDeliveryEnabled ? "#000000" : "#94a3b8",
-                  fontWeight: "bold",
-                  opacity: emailDeliveryEnabled ? 1 : 0.6
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={skipDuplicates}
-                    onChange={(e) => setSkipDuplicates(e.target.checked)}
-                    disabled={!emailDeliveryEnabled}
-                    style={{ width: "16px", height: "16px", cursor: emailDeliveryEnabled ? "pointer" : "default" }}
-                  />
-                  Skip Duplicate Emails
-                </label>
-              </div>
-
-              <div className="generation-actions">
-                {/* Warning: Missing Emails */}
-                {emailDeliveryEnabled && rowsMissingEmails.length > 0 && (
-                  <div
-                    className="missing-emails-warning"
-                    style={{
-                      marginBottom: "15px",
-                      padding: "12px",
-                      backgroundColor: "#fff3cd", /* Light Yellow */
-                      border: "1px solid #ffeeba",
-                      borderRadius: "6px",
-                      fontSize: "0.9rem",
-                      color: "#856404",
-                      position: "relative",
-                      zIndex: 10,
-                      isolation: "isolate"
-                    }}
-                  >
-                    <p style={{ margin: "0 0 8px 0", fontWeight: "bold", position: "relative", zIndex: 10, color: "#856404" }}>
-                      <span style={{ color: "#856404", position: "relative", zIndex: 10 }}>
-                        ⚠️ Warning: {rowsMissingEmails.length} recipients have a Name but missing/invalid Email.
-                      </span>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleDownloadMissingEmails}
-                      style={{
-                        fontSize: "0.85rem",
-                        padding: "6px 14px",
-                        backgroundColor: "#ef5350", /* Soft Red */
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        display: "inline-block",
-                        fontWeight: "bold",
-                        position: "relative",
-                        zIndex: 10
-                      }}
-                    >
-                      <span style={{ color: "#ffffff" }}>
-                        Download These Entries (.xlsx)
-                      </span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Warning: Duplicate Emails */}
-                {emailDeliveryEnabled && rowsWithDuplicateEmails.length > 0 && (
-                  <div
-                    className="duplicate-emails-warning"
-                    style={{
-                      marginBottom: "15px",
-                      padding: "12px",
-                      backgroundColor: "#e3f2fd", /* Light Blue */
-                      border: "1px solid #bbdefb",
-                      borderRadius: "6px",
-                      fontSize: "0.9rem",
-                      color: "#0d47a1", /* Dark Blue */
-                      position: "relative",
-                      zIndex: 10,
-                      isolation: "isolate"
-                    }}
-                  >
-                    <p style={{ margin: "0 0 8px 0", fontWeight: "bold", position: "relative", zIndex: 10, color: "#0d47a1" }}>
-                      <span style={{ color: "#0d47a1", position: "relative", zIndex: 10 }}>
-                        {skipDuplicates
-                          ? `⚠️ Detect: ${rowsWithDuplicateEmails.length} duplicates found (Skipping enabled).`
-                          : `⚠️ Detect: ${rowsWithDuplicateEmails.length} Duplicate Email Entries found.`}
-                      </span>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleDownloadDuplicateEmails}
-                      style={{
-                        fontSize: "0.85rem",
-                        padding: "6px 14px",
-                        backgroundColor: "#42a5f5", /* Soft Blue */
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        display: "inline-block",
-                        fontWeight: "bold",
-                        position: "relative",
-                        zIndex: 10
-                      }}
-                    >
-                      <span style={{ color: "#ffffff" }}>
-                        Download Duplicates (.xlsx)
-                      </span>
-                    </button>
-                  </div>
-                )}
-                <button
-                  className="generate-button"
-                  onClick={handleGenerate}
-                  disabled={
-                    !template ||
-                    !dataFile ||
-                    isLoading ||
-                    isPreviewLoading ||
-                    (layoutIsRequired && !layoutReady)
-                  }
-                >
-                  {isLoading
-                    ? "Generating..."
-                    : `Generate ${data.length} Certificates`}
-                </button>
-                <button
-                  className="send-button"
-                  onClick={handleGenerateAndSend}
-                  disabled={!canAttemptEmailSend}
-                >
-                  {sendButtonLabel}
-                </button>
-
-                {isSending && (
-                  <button
-                    className="stop-button"
-                    onClick={handleStopSending}
-                    type="button"
-                  >
-                    <span>Stop Sending</span>
-                  </button>
-                )}
-              </div>
-              {lastGenerationInfo && (
-                <div className="generation-summary">
-                  <p>
-                    <strong>Last download:</strong>{" "}
-                    {lastGenerationInfo.timestamp}
-                  </p>
-                  <p>
-                    <strong>Certificates:</strong> {lastGenerationInfo.count}
-                  </p>
-                  <p>
-                    <strong>ZIP Name:</strong>{" "}
-                    <code>{lastGenerationInfo.fileName || "-"}</code>
-                  </p>
-                </div>
-              )}
-              {emailSummary && (
-                <div className="generation-summary email-summary">
-                  <p>
-                    <strong>Last send:</strong> {emailSummary.timestamp}
-                  </p>
-                  <p>
-                    <strong>Delivered:</strong> {emailSummary.successCount || 0}{" "}
-                    / {emailSummary.attempted || emailReadyRows.length || 0}
-                  </p>
-                  <p>
-                    <strong>Missing Emails:</strong>{" "}
-                    {emailSummary.missingEmailCount || 0}
-                  </p>
-                  {emailSummary.failureCount > 0 && (
-                    <details>
-                      <summary>
-                        Failed deliveries ({emailSummary.failureCount})
-                      </summary>
-                      <ul className="failure-list">
-                        {(emailSummary.failures || [])
-                          .slice(0, 5)
-                          .map((failure, i) => (
-                            <li key={`${failure.email}-${i}`}>
-                              {failure.name} - {failure.email}: {failure.reason}
-                            </li>
-                          ))}
-                        {emailSummary.failures?.length > 5 && (
-                          <li>
-                            ...and {emailSummary.failures.length - 5} more
-                          </li>
-                        )}
-                      </ul>
-                    </details>
-                  )}
-                </div>
-              )}
-            </div>
+            <EmailSettingsPanel
+              emailDeliveryEnabled={emailDeliveryEnabled}
+              setEmailDeliveryEnabled={setEmailDeliveryEnabled}
+              emailAttachmentType={emailAttachmentType}
+              setEmailAttachmentType={setEmailAttachmentType}
+              isSending={isSending}
+              getSharedFileProps={getSharedFileProps}
+              getSharedFileInputProps={getSharedFileInputProps}
+              sharedAttachmentFiles={sharedAttachmentFiles}
+              clearSharedAttachment={clearSharedAttachment}
+              emailSettings={emailSettings}
+              handleEmailSettingsChange={handleEmailSettingsChange}
+              selectedMessagePresetId={selectedMessagePresetId}
+              handleLoadPreset={handleLoadPreset}
+              isSavingMessagePreset={isSavingMessagePreset}
+              presets={presets}
+              handleDeletePreset={handleDeletePreset}
+              newMessagePresetName={newMessagePresetName}
+              setNewMessagePresetName={setNewMessagePresetName}
+              handleSavePreset={handleSavePreset}
+              insertFormat={insertFormat}
+              insertLink={insertLink}
+              promptForImage={promptForImage}
+              handleImageUpload={handleImageUpload}
+              insertPlaceholder={insertPlaceholder}
+              selectedSignaturePresetId={selectedSignaturePresetId}
+              isSavingSignaturePreset={isSavingSignaturePreset}
+              newSignaturePresetName={newSignaturePresetName}
+              setNewSignaturePresetName={setNewSignaturePresetName}
+              emailReadyRows={emailReadyRows}
+              data={data}
+              manualReadyRecipients={manualReadyRecipients}
+              skipDuplicates={skipDuplicates}
+              setSkipDuplicates={setSkipDuplicates}
+              rowsMissingEmails={rowsMissingEmails}
+              handleDownloadMissingEmails={handleDownloadMissingEmails}
+              rowsWithDuplicateEmails={rowsWithDuplicateEmails}
+              handleDownloadDuplicateEmails={handleDownloadDuplicateEmails}
+              handleGenerate={handleGenerate}
+              template={template}
+              dataFile={dataFile}
+              isLoading={isLoading}
+              isPreviewLoading={isPreviewLoading}
+              layoutIsRequired={layoutIsRequired}
+              layoutReady={layoutReady}
+              handleGenerateAndSend={handleGenerateAndSend}
+              canAttemptEmailSend={canAttemptEmailSend}
+              sendButtonLabel={sendButtonLabel}
+              handleStopSending={handleStopSending}
+              lastGenerationInfo={lastGenerationInfo}
+              emailSummary={emailSummary}
+            />
           </div>
 
-          <div className="editor-panel">
-            {templateURL && (
-              <div className="preview-zoom-controls">
-                <div className="preview-zoom-header">
-                  <label htmlFor="zoomSlider">
-                    Zoom: {Math.round(previewScale * 100)}%
-                  </label>
-                  <button
-                    className="preview-zoom-reset"
-                    onClick={() => setPreviewScale(DEFAULT_ZOOM_SCALE)}
-                    disabled={previewScale === DEFAULT_ZOOM_SCALE}
-                  >
-                    Reset to 35%
-                  </button>
-                </div>
-                <input
-                  id="zoomSlider"
-                  className="preview-zoom-slider"
-                  type="range"
-                  min="0.1"
-                  max="0.35"
-                  step="0.01"
-                  value={previewScale}
-                  onChange={(e) => setPreviewScale(parseFloat(e.target.value))}
-                  disabled={!templateURL}
-                />
-              </div>
-            )}
+          <CanvasStage
+            templateURL={templateURL}
+            previewScale={previewScale}
+            setPreviewScale={setPreviewScale}
+            DEFAULT_ZOOM_SCALE={DEFAULT_ZOOM_SCALE}
+            previewName={previewName}
+            showGrid={showGrid}
+            setShowGrid={setShowGrid}
+            template={template}
+            templateBackURL={templateBackURL}
+            previewSide={previewSide}
+            setPreviewSide={setPreviewSide}
+            templateSize={templateSize}
+            layout={layout}
+            isSnapXActive={isSnapXActive}
+            isSnapYActive={isSnapYActive}
+            handleDragStop={handleDragStop}
+            handleDrag={handleDrag}
+            handleResizeStart={handleResizeStart}
+            handleResize={handleResize}
+            isLayoutLocked={isLayoutLocked}
+            MIN_LAYOUT_WIDTH={MIN_LAYOUT_WIDTH}
+            MIN_LAYOUT_HEIGHT={MIN_LAYOUT_HEIGHT}
+            getJustifyContent={getJustifyContent}
+            getAlignItems={getAlignItems}
+            previewCanvasRef={previewCanvasRef}
+            handleResetZoom={handleResetZoom}
+          />
 
-            {templateURL ? (
-              <>
-                <div className="preview-top-bar">
-                  <div className="preview-pill">
-                    Previewing: <strong>{previewName || "-"}</strong>
-                  </div>
-
-                  <div className="preview-top-actions">
-                    <button
-                      className={`grid-toggle-button canvas-mode ${showGrid ? "active" : ""}`}
-                      onClick={() => setShowGrid(!showGrid)}
-                      disabled={!template}
-                      title={showGrid ? "Hide Grid" : "Show Grid"}
-                    >
-                      {showGrid ? "Hide Grid" : "Show Grid"}
-                    </button>
-
-                    {templateBackURL && (
-                      <div className="preview-side-toggle">
-                        <button
-                          className={`side-toggle-button ${previewSide === "front" ? "active" : ""}`}
-                          onClick={() => setPreviewSide("front")}
-                        >
-                          Front Side
-                        </button>
-                        <button
-                          className={`side-toggle-button ${previewSide === "back" ? "active" : ""}`}
-                          onClick={() => setPreviewSide("back")}
-                        >
-                          Back Side
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="preview-container-3d">
-                  <div className={`preview-card-3d ${previewSide === "back" ? "is-flipped" : ""}`}>
-                    {/* Front Face */}
-                    <div className={`preview-face-3d front ${previewSide !== "back" ? "active" : ""}`}>
-                      <div
-                        className="editor-canvas"
-                        style={{
-                          width: `${templateSize.width}px`,
-                          height: `${templateSize.height}px`,
-                          backgroundImage: `url(${templateURL})`,
-                          backgroundSize: "contain",
-                          backgroundRepeat: "no-repeat",
-                        }}
-                      >
-                        {layout ? (
-                          <>
-                            {showGrid && (
-                              <div
-                                className="designer-grid"
-                                style={{ "--grid-size": `${20 * previewScale}px` }}
-                              />
-                            )}
-                            {showGrid && (
-                              <>
-                                <div className={`center-snap-line-v ${isSnapXActive ? "active" : ""}`} />
-                                <div className={`center-snap-line-h ${isSnapYActive ? "active" : ""}`} />
-                              </>
-                            )}
-                            <Rnd
-                              bounds="parent"
-                            dragHandleClassName="draggable-text-box"
-                            onDragStop={handleDragStop}
-                            position={{
-                              x: layout.x * previewScale,
-                              y: layout.y * previewScale,
-                            }}
-                            size={{
-                              width: Math.max(1, layout.width * previewScale),
-                              height: Math.max(1, layout.height * previewScale),
-                            }}
-                            onDrag={handleDrag}
-                            onResizeStart={handleResizeStart}
-                            onResize={handleResize}
-                            disableDragging={isLayoutLocked}
-                            enableResizing={isLayoutLocked ? false : {
-                              top: true, right: true, bottom: true, left: true,
-                              topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
-                            }}
-                            minWidth={Math.max(1, MIN_LAYOUT_WIDTH * previewScale)}
-                            minHeight={Math.max(1, MIN_LAYOUT_HEIGHT * previewScale)}
-                            maxWidth={templateSize.width}
-                            maxHeight={templateSize.height}
-                          >
-                            <div
-                              className={`draggable-text-box ${isLayoutLocked ? "locked" : ""}`}
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                justifyContent: getJustifyContent(),
-                                alignItems: getAlignItems(),
-                              }}
-                            >
-                              <canvas
-                                ref={previewCanvasRef}
-                                className="preview-text-canvas"
-                                aria-label="Certificate name preview"
-                              />
-                            </div>
-                          </Rnd>
-                        </>
-                      ) : (
-                          <h3 className="layout-placeholder">Preparing layout box...</h3>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Back Face */}
-                    <div className={`preview-face-3d back ${previewSide === "back" ? "active" : ""}`}>
-                      {templateBackURL && (
-                        <div
-                          className="editor-canvas"
-                          style={{
-                            width: `${templateSize.width}px`,
-                            height: `${templateSize.height}px`,
-                            backgroundImage: `url(${templateBackURL})`,
-                            backgroundSize: "contain",
-                            backgroundRepeat: "no-repeat",
-                          }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <h3 className="empty-template-hint">Upload a template to begin designing</h3>
-            )}
-          </div>
-
-          <div className="preview-grid-panel">
-            <h2>All Previews ({data.length})</h2>
-
-            {!template ? (
-              <>
-                <p className="data-panel-hint">Upload a template image first.</p>
-                <button className="generate-previews-button" disabled>
-                  Generate Previews
-                </button>
-              </>
-            ) : !data.length ? (
-              <>
-                <p className="data-panel-hint">
-                  Upload an Excel data file to see previews.
-                </p>
-                <button className="generate-previews-button" disabled>
-                  Generate Previews
-                </button>
-              </>
-            ) : !isLayoutLocked ? (
-              <>
-                <p className="data-panel-hint">
-                  Lock your layout in Step 3 to generate all previews.
-                </p>
-                <button className="generate-previews-button" disabled>
-                  Generate All {data.length} Previews
-                </button>
-              </>
-            ) : isPreviewGridLoading ? (
-              <button className="generate-previews-button" disabled>
-                Generating Previews...
-              </button>
-            ) : previewImages.length === 0 ? (
-              <>
-                <p className="data-panel-hint">
-                  Ready to see what everyone's certificate will look like?
-                </p>
-                <button
-                  className="generate-previews-button"
-                  onClick={handleGeneratePreviews}
-                  disabled={
-                    !layoutReady || !data.length || !templateImageRef.current
-                  }
-                >
-                  Generate All {data.length} Previews
-                </button>
-              </>
-            ) : (
-              <button
-                className="generate-previews-button clear"
-                onClick={() => setPreviewImages([])}
-              >
-                Clear Previews
-              </button>
-            )}
-
-            {previewImages.length > 0 && !isPreviewGridLoading && (
-              <p className="data-panel-hint">
-                Showing {previewImages.length} previews. Click a name in Step 3
-                to adjust the main preview.
-              </p>
-            )}
-
-            <div className="preview-grid-container">
-              {previewImages.map((img, i) => (
-                <div
-                  key={i}
-                  className="preview-grid-item"
-                  onClick={() => handlePreviewSelect(img.name)}
-                >
-                  <img
-                    src={img.imageSrc}
-                    alt={img.name}
-                    width={PREVIEW_THUMBNAIL_WIDTH}
-                    loading="lazy"
-                  />
-                  <p>{img.name}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <PreviewGrid
+            data={data}
+            template={template}
+            isLayoutLocked={isLayoutLocked}
+            isPreviewGridLoading={isPreviewGridLoading}
+            previewImages={previewImages}
+            handleGeneratePreviews={handleGeneratePreviews}
+            layoutReady={layoutReady}
+            templateImageRef={templateImageRef}
+            setPreviewImages={setPreviewImages}
+            handlePreviewSelect={handlePreviewSelect}
+            PREVIEW_THUMBNAIL_WIDTH={PREVIEW_THUMBNAIL_WIDTH}
+          />
         </div>
+
+        <CanvaDesignModal
+          isOpen={isCanvaModalOpen}
+          onClose={() => setIsCanvaModalOpen(false)}
+          onSelect={handleSelectCanvaDesign}
+          onDesignButtonExport={handleCanvaDesignButtonExport}
+          userId={authUserId}
+          apiBaseUrl={API_BASE_URL}
+        />
       </div>
     );
   }
