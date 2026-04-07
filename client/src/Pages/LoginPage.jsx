@@ -54,11 +54,11 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
         password: trimmedPassword,
       });
 
-      const { sessionToken } = response.data;
+      const { sessionToken, user } = response.data;
 
       setError("");
       toast.success("Login successful!", { id: toastId });
-      onSuccess?.({ email: trimmedEmail, code: sessionToken });
+      onSuccess?.({ email: user?.email || trimmedEmail, code: sessionToken, id: user?.id });
     } catch (err) {
       const message =
         err.response?.data?.message ||
