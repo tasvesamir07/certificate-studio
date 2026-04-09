@@ -45,15 +45,172 @@ const sanitizePublicIdSegment = (value = "", fallback = "attachment") => {
   return cleaned || fallback;
 };
 
+const getRemoteAttachmentPublicId = (attachment = {}) =>
+  (
+    attachment?.publicId ||
+    attachment?.public_id ||
+    attachment?.cloudinaryPublicId ||
+    ""
+  )
+    .toString()
+    .trim();
+
+const getRemoteAttachmentResourceType = (attachment = {}) =>
+  (
+    attachment?.resourceType ||
+    attachment?.resource_type ||
+    attachment?.cloudinaryResourceType ||
+    "raw"
+  )
+    .toString()
+    .trim() || "raw";
+
+const getRemoteAttachmentFormat = (attachment = {}) => {
+  const explicitFormat = (
+    attachment?.format ||
+    attachment?.extension ||
+    ""
+  )
+    .toString()
+    .trim()
+    .replace(/^\./, "")
+    .toLowerCase();
+
+  if (explicitFormat) return explicitFormat;
+
+  const filename = (
+    attachment?.filename ||
+    attachment?.originalFilename ||
+    attachment?.original_filename ||
+    ""
+  )
+    .toString()
+    .trim();
+  const ext = path.extname(filename).replace(/^\./, "").toLowerCase();
+  return ext || "";
+};
+
+const buildRemoteAttachmentCandidateUrls = (attachment = {}) => {
+  const urls = [];
+  const seen = new Set();
+  const push = (value) => {
+    const normalized = (value || "").toString().trim();
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    urls.push(normalized);
+  };
+
+  push(attachment?.url);
+  push(attachment?.secureUrl);
+  push(attachment?.secure_url);
+
+  const publicId = getRemoteAttachmentPublicId(attachment);
+  const resourceType = getRemoteAttachmentResourceType(attachment);
+  const format = getRemoteAttachmentFormat(attachment);
+  const version = Number(attachment?.version);
+
+  if (!publicId || !process.env.CLOUDINARY_CLOUD_NAME) {
+    return urls;
+  }
+
+  if (format && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+    try {
+      push(
+        cloudinary.utils.private_download_url(publicId, format, {
+          resource_type: resourceType,
+          type: "upload",
+          secure: true,
+        })
+      );
+    } catch (_error) {}
+  }
+
+  const urlOptions = {
+    resource_type: resourceType,
+    type: "upload",
+    secure: true,
+    sign_url: false,
+  };
+  if (Number.isFinite(version) && version > 0) {
+    urlOptions.version = version;
+  }
+  if (format) {
+    urlOptions.format = format;
+  }
+
+  push(cloudinary.url(publicId, urlOptions));
+  return urls;
+};
+
+const downloadRemoteAttachment = async (attachment = {}) => {
+  const candidateUrls = buildRemoteAttachmentCandidateUrls(attachment);
+  if (!candidateUrls.length) {
+    throw new Error(
+      "Attachment file metadata is incomplete. Please re-upload and try again."
+    );
+  }
+
+  let lastError = null;
+  let sawAccessFailure = false;
+
+  for (const candidateUrl of candidateUrls) {
+    try {
+      const response = await axios.get(candidateUrl, {
+        responseType: "arraybuffer",
+        timeout: 30000,
+      });
+
+      return {
+        filename: attachment.filename || "attachment",
+        content: Buffer.from(response.data),
+        contentType:
+          attachment.contentType ||
+          attachment.content_type ||
+          response.headers["content-type"] ||
+          "application/octet-stream",
+      };
+    } catch (error) {
+      const statusCode = error?.response?.status;
+      lastError = error;
+
+      if (statusCode === 401 || statusCode === 403) {
+        sawAccessFailure = true;
+        continue;
+      }
+
+      if (statusCode === 404) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  const finalStatusCode = lastError?.response?.status;
+  if (sawAccessFailure || finalStatusCode === 401 || finalStatusCode === 403) {
+    throw new Error(
+      "Attachment file has expired or is no longer accessible. Please re-upload and try again."
+    );
+  }
+
+  if (finalStatusCode === 404) {
+    throw new Error(
+      "Attachment file could not be found. Please re-upload and try again."
+    );
+  }
+
+  throw new Error(
+    `Failed to download attachment: ${lastError?.message || "Unknown error"}`
+  );
+};
+
 const destroyRemoteAttachments = async (attachments = []) => {
   const uniqueAssets = [];
   const seen = new Set();
 
   attachments.forEach((attachment) => {
-    const publicId = (attachment?.publicId || attachment?.public_id || "").trim();
-    const resourceType =
-      (attachment?.resourceType || attachment?.resource_type || "raw").trim() ||
-      "raw";
+    const publicId = getRemoteAttachmentPublicId(attachment);
+    const resourceType = getRemoteAttachmentResourceType(attachment);
     if (!publicId) return;
 
     const key = `${resourceType}:${publicId}`;
@@ -365,29 +522,10 @@ const sendSingle = async (req, res) => {
       contentType: f.mimetype
     }));
     const remoteMailAttachments = [];
-    for (const attachment of remoteAttachments.filter((a) => a?.url)) {
-      try {
-        const response = await axios.get(attachment.url, {
-          responseType: "arraybuffer",
-          timeout: 30000,
-        });
-        remoteMailAttachments.push({
-          filename: attachment.filename || "attachment",
-          content: Buffer.from(response.data),
-          contentType:
-            attachment.contentType ||
-            attachment.content_type ||
-            response.headers["content-type"] ||
-            "application/octet-stream",
-        });
-      } catch (dlErr) {
-        const statusCode = dlErr?.response?.status;
-        throw new Error(
-          statusCode === 401 || statusCode === 403
-            ? "Attachment file has expired or is no longer accessible. Please re-upload and try again."
-            : `Failed to download attachment: ${dlErr.message}`
-        );
-      }
+    for (const attachment of remoteAttachments.filter(
+      (a) => a?.url || a?.publicId || a?.public_id
+    )) {
+      remoteMailAttachments.push(await downloadRemoteAttachment(attachment));
     }
 
     await transporter.sendMail({

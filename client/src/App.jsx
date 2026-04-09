@@ -198,8 +198,10 @@ const uploadRemoteAttachment = async (
   return {
     contentType: file?.type || "application/octet-stream",
     filename: safeFilename,
+    format: uploadData.format || "",
     publicId: uploadData.public_id,
     resourceType: uploadData.resource_type || "raw",
+    version: uploadData.version || "",
     url: uploadData.secure_url,
   };
 };
