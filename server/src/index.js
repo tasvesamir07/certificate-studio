@@ -6,7 +6,6 @@ const { setupFonts } = require("./services/fontService");
 
 const authRoutes = require("./routes/authRoutes");
 const certRoutes = require("./routes/certRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
 const canvaRoutes = require("./routes/canvaRoutes");
 
 const app = express();
@@ -28,7 +27,6 @@ app.use(express.urlencoded({ extended: true, limit: "150mb" }));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api", certRoutes);
-app.use("/api/payments", paymentRoutes);
 app.use("/api/canva", canvaRoutes);
 
 // Static folders

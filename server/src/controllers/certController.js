@@ -498,6 +498,5 @@ module.exports = {
   activeJobs,
   sharedFileStore,
   pendingEmailJobs,
-  pendingPurchaseJobs,
   sendEmailBatch
 };

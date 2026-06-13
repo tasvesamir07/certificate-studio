@@ -20,3 +20,5 @@ client/.env.production
 # IDE / Agent
 .agents/
 skills-lock.json
+.vercel
+.env*.local

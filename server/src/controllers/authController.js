@@ -1,23 +1,14 @@
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
-const SSLCommerzPayment = require("sslcommerz-lts");
 const pool = require("../models/db");
 const { createTransporter } = require("../services/mailer");
-const { pendingPurchaseJobs } = require("./certController");
 
-// In-memory stores (to be replaced with Redis/DB for production)
 const otpStore = new Map();
 const resetTokenStore = new Map();
 const OTP_TTL_MS = 2 * 60 * 1000;
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-const DEFAULT_PAYMENT_AMOUNT = 50;
-
-const getServerBaseUrl = (req) => {
-  const host = req.get("host") || "localhost:5000";
-  return (process.env.PUBLIC_BASE_URL || `${req.protocol}://${host}`).replace(/\/$/, "");
-};
 
 const isValidEmailFormat = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -26,29 +17,25 @@ const login = async (req, res) => {
   if (!email || !password) return res.status(400).send({ message: "Email and password are required." });
 
   try {
-    const userQuery =
-      "SELECT u.id, u.display_name, u.password_hash, ua.access_expires_at, ua.is_active FROM users u JOIN user_access ua ON u.id = ua.user_id WHERE u.email = $1";
-    const result = await pool.query(userQuery, [email.trim()]);
+    const result = await pool.query(
+      "SELECT id, email, display_name, password_hash FROM users WHERE email = $1",
+      [email.trim()]
+    );
 
     if (result.rows.length === 0) {
-      return res.status(401).send({ message: "Invalid email or access has expired." });
+      return res.status(401).send({ message: "Invalid email or password." });
     }
 
     const user = result.rows[0];
     const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) return res.status(401).send({ message: "Invalid password." });
-
-    const expiryDate = new Date(user.access_expires_at);
-    if (expiryDate < new Date()) {
-      return res.status(401).send({ message: "Your access has expired. Please renew via the pricing page." });
-    }
+    if (!match) return res.status(401).send({ message: "Invalid email or password." });
 
     res.send({
       message: "Login successful.",
       id: user.id,
       email: user.email,
+      displayName: user.display_name,
       sessionToken: uuidv4(),
-      accessExpires: expiryDate.toISOString(),
     });
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -59,146 +46,72 @@ const signup = async (req, res) => {
   const { email, password, displayName } = req.body;
   if (!email || !password || !displayName) return res.status(400).send({ message: "All fields are required." });
 
+  const passwordErrors = [];
+  if (password.length < 8) passwordErrors.push("At least 8 characters");
+  if (!/[A-Z]/.test(password)) passwordErrors.push("One uppercase letter");
+  if (!/[a-z]/.test(password)) passwordErrors.push("One lowercase letter");
+  if (!/\d/.test(password)) passwordErrors.push("One number");
+  if (!/[\W_]/.test(password)) passwordErrors.push("One special character");
+  if (passwordErrors.length > 0) {
+    return res.status(400).send({ message: "Password must include: " + passwordErrors.join(", ") + "." });
+  }
+
   try {
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10;
     const hash = await bcrypt.hash(password, saltRounds);
-    const result = await pool.query(
-      "INSERT INTO users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, email, display_name",
-      [email.trim(), hash, displayName.trim()]
-    );
-    res.status(201).send(result.rows[0]);
-  } catch (error) {
-    if (error.code === "23505") return res.status(400).send({ message: "Email already exists." });
-    res.status(500).send({ message: error.message });
-  }
-};
 
-const verifyPurchase = async (req, res) => {
-  const { email, name, phone } = req.body;
-  const trimmedEmail = (email || "").toString().trim();
-  const trimmedName = (name || "").toString().trim();
-  const trimmedPhone = (phone || "").toString().trim();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-  if (!trimmedEmail || !isValidEmailFormat(trimmedEmail)) {
-    return res.status(400).send({ message: "A valid email address is required." });
-  }
-  if (!trimmedName) {
-    return res.status(400).send({ message: "Name is required to complete the purchase." });
-  }
-  if (!trimmedPhone) {
-    return res.status(400).send({ message: "Phone number is required to complete the purchase." });
-  }
+      const userResult = await client.query(
+        "INSERT INTO users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, email, display_name",
+        [email.trim(), hash, displayName.trim()]
+      );
 
-  let client;
-  try {
-    client = await pool.connect();
-  } catch (dbErr) {
-    console.error("❌ Database connection failed during purchase request:", dbErr);
-    return res.status(500).send({ message: "Database connection failed." });
-  }
+      const userId = userResult.rows[0].id;
 
-  try {
-    await client.query("BEGIN");
+      await client.query(
+        `INSERT INTO user_access (user_id, access_expires_at, last_renewal_date, is_active)
+         VALUES ($1, '2099-12-31T23:59:59Z', NOW(), TRUE)
+         ON CONFLICT (user_id)
+         DO UPDATE SET access_expires_at = '2099-12-31T23:59:59Z', is_active = TRUE`,
+        [userId]
+      );
 
-    const userResult = await client.query(
-      `SELECT u.id, ua.access_expires_at FROM users u LEFT JOIN user_access ua ON u.id = ua.user_id WHERE u.email = $1`,
-      [trimmedEmail]
-    );
+      await client.query("COMMIT");
 
-    const existingUser = userResult.rows.length > 0 ? userResult.rows[0] : null;
+      const transporter = createTransporter({
+        service: process.env.PURCHASE_EMAIL_SERVICE,
+        user: process.env.PURCHASE_EMAIL_USER,
+        pass: process.env.PURCHASE_EMAIL_PASS,
+      });
 
-    if (existingUser) {
-      const expiresAt = existingUser.access_expires_at ? new Date(existingUser.access_expires_at) : null;
-      if (expiresAt && expiresAt > new Date() && !req.body.forceRenew) {
-        await client.query("ROLLBACK");
-        return res.status(200).send({
-          message: "You are already subscribed. Your access is currently active.",
-          expiresAt: expiresAt.toISOString(),
-          status: "active",
-        });
+      await transporter.sendMail({
+        from: process.env.PURCHASE_EMAIL_USER,
+        to: email.trim(),
+        subject: "Welcome to Certificate Studio",
+        html: `
+          <h1>Welcome to Certificate Studio!</h1>
+          <p>Your account has been created successfully. You now have full access to all features.</p>
+          <p><strong>Email:</strong> ${email.trim()}</p>
+          <p><strong>Name:</strong> ${displayName.trim()}</p>
+          <p>Login at: <a href="${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/user/login">Certificate Studio</a></p>
+        `,
+      });
+
+      res.status(201).send(result.rows[0]);
+    } catch (innerErr) {
+      await client.query("ROLLBACK");
+      if (innerErr.code === "23505") {
+        return res.status(400).send({ message: "Email already exists." });
       }
+      throw innerErr;
+    } finally {
+      client.release();
     }
-
-    await client.query("ROLLBACK");
   } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("❌ Failed to process purchase verification:", error);
-    return res.status(500).send({ message: "Failed to process purchase verification." });
-  } finally {
-    client.release();
-  }
-
-  const store_id = process.env.SSL_COMMERZ_STORE_ID;
-  const store_passwd = process.env.SSL_COMMERZ_STORE_PASSWORD;
-  const is_live = (process.env.IS_LIVE || "false").toLowerCase() === "true";
-
-  if (!store_id || !store_passwd) {
-    console.error("❌ Missing SSLCommerz credentials.");
-    return res.status(500).send({ message: "Server misconfiguration: Missing payment credentials." });
-  }
-
-  const tranId = `cert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const baseUrl = getServerBaseUrl(req);
-  const totalAmount = Number(req.body.totalAmount || req.body.amount) > 0
-    ? Number(req.body.totalAmount || req.body.amount)
-    : DEFAULT_PAYMENT_AMOUNT;
-
-  const paymentPayload = {
-    total_amount: totalAmount,
-    currency: "BDT",
-    tran_id: tranId,
-    success_url: `${baseUrl}/api/payments/success`,
-    fail_url: `${baseUrl}/api/payments/fail`,
-    cancel_url: `${baseUrl}/api/payments/cancel`,
-    ipn_url: `${baseUrl}/api/payments/ipn`,
-    shipping_method: "Courier",
-    product_name: "Certificate Access",
-    product_category: "Digital",
-    product_profile: "general",
-    cus_name: trimmedName,
-    cus_email: trimmedEmail,
-    cus_add1: "Dhaka",
-    cus_city: "Dhaka",
-    cus_state: "Dhaka",
-    cus_postcode: "1000",
-    cus_country: "Bangladesh",
-    cus_phone: trimmedPhone,
-    cus_fax: trimmedPhone,
-    ship_name: trimmedName,
-    ship_add1: "Dhaka",
-    ship_city: "Dhaka",
-    ship_state: "Dhaka",
-    ship_postcode: "1000",
-    ship_country: "Bangladesh",
-  };
-
-  try {
-    const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
-    const apiResponse = await sslcz.init(paymentPayload);
-    const GatewayPageURL = apiResponse?.GatewayPageURL;
-
-    if (!GatewayPageURL) {
-      console.error("❌ SSLCommerz Init Failed (No URL):", apiResponse);
-      return res.status(500).send({ message: "Payment Gateway Error: No URL returned.", details: apiResponse });
-    }
-
-    pendingPurchaseJobs.set(tranId, {
-      email: trimmedEmail,
-      name: trimmedName,
-      phone: trimmedPhone,
-      amount: totalAmount,
-      days: parseInt(req.body.days, 10) || ACCESS_PERIOD_DAYS,
-    });
-
-    return res.status(200).send({
-      status: "payment_pending",
-      message: "Redirecting to payment to complete your purchase and receive your password.",
-      paymentUrl: GatewayPageURL,
-      tranId,
-    });
-  } catch (err) {
-    console.error("❌ Payment initialization crashed:", err);
-    return res.status(500).send({ message: `Payment Error: ${err.message}` });
+    res.status(500).send({ message: error.message });
   }
 };
 
@@ -206,10 +119,10 @@ const getProfile = async (req, res) => {
   const { email } = req.params;
   try {
     const result = await pool.query(
-      `SELECT u.id, u.email, u.display_name as "displayName", u.phone, 
-              ua.access_expires_at as "accessExpiresAt", ua.is_active as "isActive" 
-       FROM users u 
-       LEFT JOIN user_access ua ON u.id = ua.user_id 
+      `SELECT u.id, u.email, u.display_name as "displayName", u.phone,
+              ua.access_expires_at as "accessExpiresAt", ua.is_active as "isActive"
+       FROM users u
+       LEFT JOIN user_access ua ON u.id = ua.user_id
        WHERE u.email = $1`,
       [email.trim()]
     );
@@ -261,7 +174,7 @@ const savePreset = async (req, res) => {
     const upsertQuery = `
       INSERT INTO email_presets (user_id, preset_type, preset_name, template_text, signature_text)
       VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT (user_id, preset_type, preset_name) 
+      ON CONFLICT (user_id, preset_type, preset_name)
       DO UPDATE SET template_text = EXCLUDED.template_text, signature_text = EXCLUDED.signature_text
       RETURNING id, preset_type as "presetType", preset_name as "presetName", template_text as "templateText", signature_text as "signatureText"
     `;
@@ -293,6 +206,16 @@ const changePassword = async (req, res) => {
     const match = await bcrypt.compare(currentPassword, user.password_hash);
     if (!match) return res.status(401).send({ message: "Incorrect current password." });
 
+    const passwordErrors = [];
+    if (newPassword.length < 8) passwordErrors.push("At least 8 characters");
+    if (!/[A-Z]/.test(newPassword)) passwordErrors.push("One uppercase letter");
+    if (!/[a-z]/.test(newPassword)) passwordErrors.push("One lowercase letter");
+    if (!/\d/.test(newPassword)) passwordErrors.push("One number");
+    if (!/[\W_]/.test(newPassword)) passwordErrors.push("One special character");
+    if (passwordErrors.length > 0) {
+      return res.status(400).send({ message: "New password must include: " + passwordErrors.join(", ") + "." });
+    }
+
     const hash = await bcrypt.hash(newPassword, 10);
     await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [hash, user.id]);
     res.send({ message: "Password updated successfully." });
@@ -312,7 +235,11 @@ const forgotPassword = async (req, res) => {
     const otp = generateOTP();
     otpStore.set(email.trim(), { otp, expiresAt: Date.now() + OTP_TTL_MS });
 
-    const transporter = createTransporter();
+    const transporter = createTransporter({
+      service: process.env.PURCHASE_EMAIL_SERVICE,
+      user: process.env.PURCHASE_EMAIL_USER,
+      pass: process.env.PURCHASE_EMAIL_PASS,
+    });
     await transporter.sendMail({
       from: process.env.PURCHASE_EMAIL_USER,
       to: email.trim(),
@@ -346,6 +273,16 @@ const resetPassword = async (req, res) => {
     return res.status(400).send({ message: "Invalid or expired reset session." });
   }
 
+  const passwordErrors = [];
+  if (newPassword.length < 8) passwordErrors.push("At least 8 characters");
+  if (!/[A-Z]/.test(newPassword)) passwordErrors.push("One uppercase letter");
+  if (!/[a-z]/.test(newPassword)) passwordErrors.push("One lowercase letter");
+  if (!/\d/.test(newPassword)) passwordErrors.push("One number");
+  if (!/[\W_]/.test(newPassword)) passwordErrors.push("One special character");
+  if (passwordErrors.length > 0) {
+    return res.status(400).send({ message: "Password must include: " + passwordErrors.join(", ") + "." });
+  }
+
   try {
     const hash = await bcrypt.hash(newPassword, 10);
     await pool.query("UPDATE users SET password_hash = $1 WHERE email = $2", [hash, email.trim()]);
@@ -359,7 +296,6 @@ const resetPassword = async (req, res) => {
 module.exports = {
   login,
   signup,
-  verifyPurchase,
   getProfile,
   updateProfile,
   getPresets,

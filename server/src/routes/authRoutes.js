@@ -4,7 +4,6 @@ const authController = require("../controllers/authController");
 
 router.post("/login", authController.login);
 router.post("/signup", authController.signup);
-router.post("/verify-purchase", authController.verifyPurchase);
 router.get("/profile/:email", authController.getProfile);
 router.post("/update-profile", authController.updateProfile);
 router.get("/presets/:email", authController.getPresets);

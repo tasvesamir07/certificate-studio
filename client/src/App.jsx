@@ -17,8 +17,6 @@ import { jsPDF } from "jspdf";
 import "./App.css";
 import LoginPage from "./Pages/LoginPage";
 import ProfilePage from "./Pages/ProfilePage";
-import PricingPage from "./Pages/PricingPage";
-import GetPasswordPage from "./Pages/GetPasswordPage";
 import ForgotPasswordPage from "./Pages/ForgotPasswordPage";
 import { buildApiUrl } from "./utils/api";
 
@@ -1869,8 +1867,6 @@ function App() {
       "/user/login",
       "/generate-certifcate",
       "/profile",
-      "/pricing",
-      "/pricing/generate-password",
       "/forgot-password",
       "/canva-success",
     ];
@@ -1882,8 +1878,6 @@ function App() {
 
     const isAuthRoute =
       currentPath === "/user/login" ||
-      currentPath === "/pricing" ||
-      currentPath === "/pricing/generate-password" ||
       currentPath === "/forgot-password" ||
       currentPath === "/canva-success";
 
@@ -2055,8 +2049,6 @@ function App() {
   const isLoginPage = currentPath.startsWith("/user/login");
   const isProfilePage = currentPath === "/profile";
   const isCanvaSuccessPage = currentPath === "/canva-success";
-  const isPricingPage = currentPath === "/pricing";
-  const isGetPasswordPage = currentPath === "/pricing/generate-password";
   const isForgotPasswordPage = currentPath === "/forgot-password";
 
   const localAuth = window.localStorage.getItem(AUTH_STORAGE_KEY) === "true";
@@ -2980,16 +2972,6 @@ function App() {
     );
   }
 
-  if (isGetPasswordPage) {
-    return (
-      <GetPasswordPage
-        defaultEmail={loginPrefill || authUser}
-        apiBaseUrl={API_BASE_URL}
-        navigate={navigate}
-      />
-    );
-  }
-
   if (isForgotPasswordPage) {
     return (
       <ForgotPasswordPage
@@ -2998,12 +2980,7 @@ function App() {
       />
     );
   }
-  if (!effectivelyAuthenticated && isPricingPage) {
-    return <PricingPage navigate={navigate} />;
-  }
-
-
-  if (!effectivelyAuthenticated && !isLoginPage && !isPricingPage && !isCanvaSuccessPage && !isGetPasswordPage && !isForgotPasswordPage) {
+  if (!effectivelyAuthenticated && !isLoginPage && !isCanvaSuccessPage && !isForgotPasswordPage) {
     return (
       <LoginPage
         defaultEmail={loginPrefill || authUser}
@@ -3015,14 +2992,9 @@ function App() {
   }
 
   // If we're on canva-success but not yet authenticated (session recovering), 
-  // show a simple loading state to avoid flickering the pricing page
+  // show a simple loading state to avoid flickering during session recovery
   if (!effectivelyAuthenticated && isCanvaSuccessPage) {
     return <div className="loading-screen">Finalizing Canva connection...</div>;
-  }
-
-  if (effectivelyAuthenticated && isPricingPage) {
-    navigate("/generate-certifcate");
-    return null;
   }
 
   if (effectivelyAuthenticated && isProfilePage) {
