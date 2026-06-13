@@ -1,0 +1,18 @@
+export const createDesignerSlice = (set, get) => ({
+  previewScale: 0.35,
+  showGrid: false,
+  isSnapXActive: false,
+  isSnapYActive: false,
+  templateSize: { width: 800, height: 600 },
+  previewName: "Your Name Here",
+  previewSide: "front",
+  isLayoutLocked: false,
+  setPreviewScale: (previewScale) => set({ previewScale }),
+  setShowGrid: (showGrid) => set({ showGrid }),
+  setIsSnapXActive: (isSnapXActive) => set({ isSnapXActive }),
+  setIsSnapYActive: (isSnapYActive) => set({ isSnapYActive }),
+  setTemplateSize: (templateSize) => set({ templateSize }),
+  setPreviewName: (previewName) => set({ previewName }),
+  setPreviewSide: (previewSide) => set({ previewSide }),
+  setIsLayoutLocked: (isLayoutLocked) => set({ isLayoutLocked }),
+});

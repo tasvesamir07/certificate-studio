@@ -1,0 +1,68 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Client dependencies
+        run: npm install
+        working-directory: client
+      - name: Build client
+        run: npm run build
+        working-directory: client
+      - name: Run client unit tests
+        run: npm run test
+        working-directory: client
+
+  test-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Server dependencies
+        run: npm install
+        working-directory: server
+      - name: Run server unit/integration tests
+        run: npm run test
+        working-directory: server
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install server deps
+        run: npm install
+        working-directory: server
+      - name: Install client deps
+        run: npm install
+        working-directory: client
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+        working-directory: client
+      - name: Start server in background
+        run: npm run start &
+        working-directory: server
+      - name: Start client in background
+        run: npm run start &
+        working-directory: client
+      - name: Run E2E tests
+        run: npx playwright test
+        working-directory: client

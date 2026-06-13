@@ -1,6 +1,16 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
+import { useAppStore } from "../shared/store/useAppStore";
 
-const EditorHeader = ({ currentPath, navigate, authUser, onLogout }) => {
+const EditorHeader = ({ navigate, onLogout }) => {
+  const { theme, setTheme, currentPath, authUser } = useAppStore();
+  const { t, i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    const nextLng = i18n.language === "en" ? "es" : "en";
+    i18n.changeLanguage(nextLng);
+  };
+
   return (
     <div className="top-nav">
       <div className="nav-left">
@@ -29,8 +39,26 @@ const EditorHeader = ({ currentPath, navigate, authUser, onLogout }) => {
       </div>
       <div className="nav-right">
         <span className="nav-user">{authUser || "Signed in"}</span>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={toggleLanguage}
+          title="Toggle Language"
+          style={{ marginRight: "8px" }}
+        >
+          🌐 {i18n.language === "en" ? "Español" : "English"}
+        </button>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          title="Toggle color theme"
+          style={{ marginRight: "8px" }}
+        >
+          {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
+        </button>
         <button type="button" className="nav-logout" onClick={onLogout}>
-          Logout
+          {t("logout")}
         </button>
       </div>
     </div>
@@ -38,3 +66,4 @@ const EditorHeader = ({ currentPath, navigate, authUser, onLogout }) => {
 };
 
 export default EditorHeader;
+

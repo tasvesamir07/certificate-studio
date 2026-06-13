@@ -1,23 +1,44 @@
 import React from "react";
+import { useAppStore } from "../shared/store/useAppStore";
+
+const PREVIEW_THUMBNAIL_WIDTH = 300;
 
 const PreviewGrid = ({
-  data,
-  template,
-  isLayoutLocked,
-  isPreviewGridLoading,
-  previewImages,
   handleGeneratePreviews,
-  layoutReady,
   templateImageRef,
   setPreviewImages,
   handlePreviewSelect,
-  PREVIEW_THUMBNAIL_WIDTH,
   handleDownloadAllZIP,
+  className = "",
+  onCloseDrawer,
 }) => {
+  const {
+    data,
+    template,
+    layout,
+    isLayoutLocked,
+    isPreviewGridLoading,
+    previewImages,
+  } = useAppStore();
+
+  const layoutReady = !!layout && isLayoutLocked;
+
   return (
-    <div className="preview-grid-panel">
+    <div className={`preview-grid-panel ${className}`}>
       <div className="preview-grid-header">
-        <h2>Previews ({data.length})</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {onCloseDrawer && (
+            <button
+              type="button"
+              className="drawer-close-btn"
+              onClick={onCloseDrawer}
+              style={{ margin: 0, padding: "4px 8px" }}
+            >
+              &times;
+            </button>
+          )}
+          <h2 style={{ margin: 0 }}>Previews ({data.length})</h2>
+        </div>
         {previewImages.length > 0 && !isPreviewGridLoading && (
           <button
             className="preview-zip-button"

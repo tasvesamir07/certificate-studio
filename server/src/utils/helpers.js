@@ -23,6 +23,16 @@ const toTitleCase = (str) => {
   return str.toString().trim().toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
+const escapeHTML = (str = "") => {
+  return str
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 const NAME_TOKEN_REGEX = /{{\s*name\s*}}|{\s*name\s*}/gi;
 const EMAIL_TOKEN_REGEX = /{{\s*email\s*}}|{\s*email\s*}/gi;
 const DEFAULT_EMAIL_TEMPLATE = `Hi {name},
@@ -36,12 +46,23 @@ const buildEmailBodies = (template = "", name = "", email = "") => {
   const safeName = name || "";
   const safeEmail = email || "";
   const baseTemplate = template?.toString() || DEFAULT_EMAIL_TEMPLATE;
-  const populated = baseTemplate
+
+  const textPopulated = baseTemplate
     .replace(NAME_TOKEN_REGEX, safeName)
     .replace(EMAIL_TOKEN_REGEX, safeEmail);
+
+  const escapedName = escapeHTML(safeName);
+  const escapedEmail = escapeHTML(safeEmail);
+  const escapedTemplate = escapeHTML(baseTemplate);
+
+  const htmlPopulated = escapedTemplate
+    .replace(NAME_TOKEN_REGEX, escapedName)
+    .replace(EMAIL_TOKEN_REGEX, escapedEmail)
+    .replace(/\r?\n/g, "<br />");
+
   return {
-    text: populated,
-    html: populated.replace(/\r?\n/g, "<br />"),
+    text: textPopulated,
+    html: htmlPopulated,
   };
 };
 

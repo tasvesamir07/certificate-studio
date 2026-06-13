@@ -1,57 +1,145 @@
 import React from "react";
+import { useAppStore } from "../shared/store/useAppStore";
+import { isValidEmail } from "../utils/textHelpers";
 
 const EmailSettingsPanel = ({
-  emailDeliveryEnabled,
-  setEmailDeliveryEnabled,
-  emailAttachmentType,
-  setEmailAttachmentType,
-  isSending,
   getSharedFileProps,
   getSharedFileInputProps,
-  sharedAttachmentFiles,
   clearSharedAttachment,
-  emailSettings,
   handleEmailSettingsChange,
-  selectedMessagePresetId,
   handleLoadPreset,
-  isSavingMessagePreset,
-  presets,
   handleDeletePreset,
-  newMessagePresetName,
-  setNewMessagePresetName,
   handleSavePreset,
   insertFormat,
   insertLink,
   promptForImage,
   handleImageUpload,
   insertPlaceholder,
-  selectedSignaturePresetId,
-  isSavingSignaturePreset,
-  newSignaturePresetName,
-  setNewSignaturePresetName,
-  emailReadyRows,
-  data,
-  manualReadyRecipients,
-  skipDuplicates,
-  setSkipDuplicates,
-  rowsMissingEmails,
   handleDownloadMissingEmails,
-  rowsWithDuplicateEmails,
   handleDownloadDuplicateEmails,
   handleGenerate,
-  template,
-  dataFile,
-  isLoading,
-  isPreviewLoading,
-  layoutIsRequired,
-  layoutReady,
   handleGenerateAndSend,
-  canAttemptEmailSend,
-  sendButtonLabel,
   handleStopSending,
-  lastGenerationInfo,
-  emailSummary,
+  isPaused,
+  onTogglePause,
+  handleRetryFailed,
 }) => {
+  const {
+    emailDeliveryEnabled,
+    setEmailDeliveryEnabled,
+    emailAttachmentType,
+    setEmailAttachmentType,
+    isSending,
+    sharedAttachmentFiles,
+    emailSettings,
+    setEmailSettings,
+    presets,
+    selectedMessagePresetId,
+    isSavingMessagePreset,
+    newMessagePresetName,
+    setNewMessagePresetName,
+    selectedSignaturePresetId,
+    isSavingSignaturePreset,
+    newSignaturePresetName,
+    setNewSignaturePresetName,
+    data,
+    manualRecipients,
+    skipDuplicates,
+    setSkipDuplicates,
+    template,
+    dataFile,
+    isLoading,
+    isPreviewLoading,
+    layout,
+    isLayoutLocked,
+    sendProgress,
+    lastGenerationInfo,
+    emailSummary,
+  } = useAppStore();
+
+  const emailReadyRows = React.useMemo(() => {
+    if (!data.length) return [];
+    const seen = new Set();
+    return data.filter((row) => {
+      const value = row?.Email?.toString().trim();
+      if (!value || !isValidEmail(value)) return false;
+      const emailLower = value.toLowerCase();
+      if (skipDuplicates) {
+        if (seen.has(emailLower)) return false;
+        seen.add(emailLower);
+      }
+      return true;
+    });
+  }, [data, skipDuplicates]);
+
+  const manualReadyRecipients = React.useMemo(() => {
+    return manualRecipients.filter((recipient) => {
+      const name = recipient?.name?.toString().trim();
+      const email = recipient?.email?.toString().trim();
+      return !!name && !!email && isValidEmail(email);
+    });
+  }, [manualRecipients]);
+
+  const totalReadyRecipients = manualReadyRecipients.length + emailReadyRows.length;
+  const layoutIsRequired = true;
+  const layoutReady = !!layout && isLayoutLocked;
+  const templateAssetsReady = !!template && layoutReady;
+  const hasExcelRecipients = emailReadyRows.length > 0;
+  const excelDataReady = hasExcelRecipients ? !!dataFile : true;
+
+  const canAttemptEmailSend =
+    emailDeliveryEnabled &&
+    totalReadyRecipients > 0 &&
+    (emailAttachmentType !== "certificate" || templateAssetsReady) &&
+    (emailAttachmentType !== "shared" || sharedAttachmentFiles.length > 0) &&
+    excelDataReady &&
+    emailSettings.service.trim().length > 0 &&
+    emailSettings.email.trim().length > 0 &&
+    emailSettings.password.trim().length > 0 &&
+    emailSettings.subject.trim().length > 0 &&
+    emailSettings.template.trim().length > 0 &&
+    !isSending &&
+    !isLoading &&
+    !isPreviewLoading;
+
+  const rowsMissingEmails = React.useMemo(() => {
+    if (!data.length) return [];
+    return data.filter((row) => {
+      const hasName = !!row?.Name?.toString().trim();
+      const email = row?.Email?.toString().trim();
+      const hasValidEmail = email && isValidEmail(email);
+      return hasName && !hasValidEmail;
+    });
+  }, [data]);
+
+  const rowsWithDuplicateEmails = React.useMemo(() => {
+    if (!data.length) return [];
+    const emailCounts = {};
+    data.forEach(row => {
+      const email = row?.Email?.toString().trim().toLowerCase();
+      if (email && isValidEmail(email)) {
+        emailCounts[email] = (emailCounts[email] || 0) + 1;
+      }
+    });
+    const seenDuplicates = new Set();
+    return data.filter(row => {
+      const email = row?.Email?.toString().trim().toLowerCase();
+      if (email && emailCounts[email] > 1 && !seenDuplicates.has(email)) {
+        seenDuplicates.add(email);
+        return true;
+      }
+      return false;
+    });
+  }, [data]);
+
+  const sendButtonLabel = isSending
+    ? sendProgress
+      ? `Sending (${sendProgress.processed}/${sendProgress.total})...`
+      : "Sending..."
+    : totalReadyRecipients
+      ? `Send ${totalReadyRecipients} Email${totalReadyRecipients === 1 ? "" : "s"}`
+      : "Generate & Send Emails";
+
   return (
     <div className="control-group">
       <label>6. Email Delivery (Optional)</label>
@@ -882,13 +970,24 @@ const EmailSettingsPanel = ({
           </button>
 
           {isSending && (
-            <button
-              className="stop-button"
-              onClick={handleStopSending}
-              type="button"
-            >
-              <span>Stop Sending</span>
-            </button>
+            <div style={{ display: "flex", gap: "8px", width: "100%", marginTop: "8px" }}>
+              <button
+                className="action-button secondary"
+                style={{ flex: 1, padding: "8px 12px", fontSize: "12px" }}
+                onClick={onTogglePause}
+                type="button"
+              >
+                {isPaused ? "▶ Resume" : "⏸ Pause"}
+              </button>
+              <button
+                className="stop-button"
+                style={{ flex: 1, padding: "8px 12px", fontSize: "12px", background: "#f3727f", color: "#000" }}
+                onClick={handleStopSending}
+                type="button"
+              >
+                <span>Stop</span>
+              </button>
+            </div>
           )}
         </div>
         {lastGenerationInfo && (
@@ -919,21 +1018,31 @@ const EmailSettingsPanel = ({
               {emailSummary.missingEmailCount || 0}
             </p>
             {emailSummary.failureCount > 0 && (
-              <details>
-                <summary>Failed deliveries ({emailSummary.failureCount})</summary>
-                <ul className="failure-list">
-                  {(emailSummary.failures || [])
-                    .slice(0, 5)
-                    .map((failure, i) => (
-                      <li key={`${failure.email}-${i}`}>
-                        {failure.name} - {failure.email}: {failure.reason}
-                      </li>
-                    ))}
-                  {emailSummary.failures?.length > 5 && (
-                    <li>...and {emailSummary.failures.length - 5} more</li>
-                  )}
-                </ul>
-              </details>
+              <>
+                <details>
+                  <summary>Failed deliveries ({emailSummary.failureCount})</summary>
+                  <ul className="failure-list">
+                    {(emailSummary.failures || [])
+                      .slice(0, 5)
+                      .map((failure, i) => (
+                        <li key={`${failure.email}-${i}`}>
+                          {failure.name} - {failure.email}: {failure.reason}
+                        </li>
+                      ))}
+                    {emailSummary.failures?.length > 5 && (
+                      <li>...and {emailSummary.failures.length - 5} more</li>
+                    )}
+                  </ul>
+                </details>
+                <button
+                  className="action-button secondary"
+                  onClick={handleRetryFailed}
+                  type="button"
+                  style={{ marginTop: "12px", width: "100%", background: "#ffa42b", color: "#000", fontSize: "12px", padding: "8px" }}
+                >
+                  🔄 Retry Failed Deliveries ({emailSummary.failureCount})
+                </button>
+              </>
             )}
           </div>
         )}

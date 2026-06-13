@@ -1,18 +1,34 @@
 import React from "react";
+import { useAppStore } from "../shared/store/useAppStore";
+import { isValidEmail } from "../utils/textHelpers";
+
+const MAX_MANUAL_RECIPIENTS = 5;
 
 const ManualRecipientsPanel = ({
-  MAX_MANUAL_RECIPIENTS,
-  manualRecipients,
   handleManualRecipientChange,
   removeManualRecipient,
   addManualRecipient,
-  manualRecipientLimitReached,
   handleManualGenerate,
-  template,
-  manualReadyRecipients,
-  isManualGenerating,
-  layoutReady,
 }) => {
+  const {
+    manualRecipients,
+    template,
+    isManualGenerating,
+    layout,
+    isLayoutLocked,
+  } = useAppStore();
+
+  const manualReadyRecipients = React.useMemo(() => {
+    return manualRecipients.filter((recipient) => {
+      const name = recipient?.name?.toString().trim();
+      const email = recipient?.email?.toString().trim();
+      return !!name && !!email && isValidEmail(email);
+    });
+  }, [manualRecipients]);
+
+  const manualRecipientLimitReached = manualRecipients.length >= MAX_MANUAL_RECIPIENTS;
+  const layoutReady = !!layout && isLayoutLocked;
+
   return (
     <div className="control-group">
       <label>5. Quick Recipients (Max {MAX_MANUAL_RECIPIENTS})</label>

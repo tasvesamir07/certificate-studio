@@ -1,33 +1,85 @@
 import React, { memo } from "react";
 import { Rnd } from "react-rnd";
+import { useAppStore } from "../shared/store/useAppStore";
+
+const MIN_LAYOUT_WIDTH = 100;
+const MIN_LAYOUT_HEIGHT = 30;
 
 const CanvasStage = memo(({
-  templateURL,
-  previewScale,
-  setPreviewScale,
-  previewName,
-  showGrid,
-  setShowGrid,
-  template,
-  templateBackURL,
-  previewSide,
-  setPreviewSide,
-  templateSize,
-  layout,
-  isSnapXActive,
-  isSnapYActive,
   handleDragStop,
   handleDrag,
   handleResizeStart,
   handleResize,
-  isLayoutLocked,
-  MIN_LAYOUT_WIDTH,
-  MIN_LAYOUT_HEIGHT,
   getJustifyContent,
   getAlignItems,
   previewCanvasRef,
   handleResetZoom,
 }) => {
+  const {
+    templateURL,
+    previewScale,
+    setPreviewScale,
+    previewName,
+    showGrid,
+    setShowGrid,
+    template,
+    templateBackURL,
+    previewSide,
+    setPreviewSide,
+    templateSize,
+    layout,
+    isSnapXActive,
+    isSnapYActive,
+    isLayoutLocked,
+  } = useAppStore();
+
+  const containerRef = React.useRef(null);
+  const touchStart = React.useRef({ x: 0, y: 0 });
+  const scrollStart = React.useRef({ x: 0, y: 0 });
+  const touchStartDistance = React.useRef(0);
+  const startScale = React.useRef(0.35);
+  const isPanning = React.useRef(false);
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      isPanning.current = true;
+      touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      if (containerRef.current) {
+        scrollStart.current = {
+          x: containerRef.current.scrollLeft,
+          y: containerRef.current.scrollTop
+        };
+      }
+    } else if (e.touches.length === 2) {
+      isPanning.current = false;
+      const xDiff = e.touches[0].clientX - e.touches[1].clientX;
+      const yDiff = e.touches[0].clientY - e.touches[1].clientY;
+      touchStartDistance.current = Math.hypot(xDiff, yDiff);
+      startScale.current = previewScale;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 1 && isPanning.current && containerRef.current) {
+      const dx = e.touches[0].clientX - touchStart.current.x;
+      const dy = e.touches[0].clientY - touchStart.current.y;
+      containerRef.current.scrollLeft = scrollStart.current.x - dx;
+      containerRef.current.scrollTop = scrollStart.current.y - dy;
+    } else if (e.touches.length === 2 && touchStartDistance.current > 0) {
+      const xDiff = e.touches[0].clientX - e.touches[1].clientX;
+      const yDiff = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(xDiff, yDiff);
+      const factor = dist / touchStartDistance.current;
+      const newScale = Math.min(1.5, Math.max(0.1, startScale.current * factor));
+      setPreviewScale(newScale);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isPanning.current = false;
+    touchStartDistance.current = 0;
+  };
+
   if (!templateURL) {
     return (
       <div className="editor-panel">
@@ -104,7 +156,14 @@ const CanvasStage = memo(({
         </div>
       </div>
 
-      <div className="preview-container-3d">
+      <div 
+        ref={containerRef}
+        className="preview-container-3d"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: "none", overflow: "auto" }}
+      >
         <div
           className={`preview-card-3d ${
             previewSide === "back" ? "is-flipped" : ""

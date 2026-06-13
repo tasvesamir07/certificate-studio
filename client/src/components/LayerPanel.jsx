@@ -1,26 +1,53 @@
 import React from "react";
+import { useAppStore } from "../shared/store/useAppStore";
 
 const LayerPanel = ({
-  template,
   getTemplateProps,
   getTemplateInputProps,
   clearTemplate,
-  templateBack,
   getTemplateBackProps,
   getTemplateBackInputProps,
   clearTemplateBack,
-  dataFile,
   getDataProps,
   getDataInputProps,
   clearDataFile,
-  isCanvaConnected,
-  setIsCanvaModalOpen,
   handleConnectCanva,
   handleDisconnectCanva,
+  onOpenTemplateLibrary,
 }) => {
+  const {
+    template,
+    templateBack,
+    dataFile,
+    isCanvaConnected,
+    setIsCanvaModalOpen,
+  } = useAppStore();
+
   return (
     <>
-      <h2>Design Studio</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+        <h2>Design Studio</h2>
+        <button
+          type="button"
+          onClick={onOpenTemplateLibrary}
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "999px",
+            color: "#fff",
+            padding: "6px 12px",
+            fontSize: "12px",
+            fontWeight: "700",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            transition: "all 0.2s"
+          }}
+        >
+          📚 Library
+        </button>
+      </div>
       <p className="panel-intro">
         Upload your artwork, decide whether to personalize it, then send or
         download everything in one place.

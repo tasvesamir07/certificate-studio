@@ -1,29 +1,46 @@
 import React from "react";
 import FontPicker from "./FontPicker";
+import { useAppStore } from "../shared/store/useAppStore";
+
+const MAX_FONT_SIZE = 1000;
+const COLOR_SWATCHES = [
+  "#000000",
+  "#FFFFFF",
+  "#C67F0E",
+  "#0D47A1",
+  "#C2185B",
+  "#388E3C",
+];
 
 const PropertiesPanel = ({
-  layout,
-  setLayout,
-  serverFonts,
-  MAX_FONT_SIZE,
   handleLayoutChange,
-  isLayoutLocked,
-  COLOR_SWATCHES,
   handleColorSelect,
   handleAlign,
   handleVAlign,
-  setIsLayoutLocked,
-  setPreviewImages,
-  template,
-  previewName,
   handlePreviewInput,
-  data,
-  isPreviewFromData,
   handleDownloadPreview,
-  isPreviewLoading,
-  previewNameIsValid,
-  layoutReady,
 }) => {
+  const {
+    layout,
+    setLayout,
+    serverFonts,
+    isLayoutLocked,
+    setIsLayoutLocked,
+    setPreviewImages,
+    template,
+    previewName,
+    data,
+    isPreviewLoading,
+  } = useAppStore();
+
+  const isPreviewFromData = React.useMemo(() => {
+    if (!data.length) return false;
+    return data.some((row) => row.Name === previewName);
+  }, [data, previewName]);
+
+  const previewNameIsValid = !!previewName?.trim();
+  const layoutReady = !!layout && isLayoutLocked;
+
   return (
     <>
       <div className="control-group">

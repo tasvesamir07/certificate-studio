@@ -46,6 +46,15 @@ const signup = async (req, res) => {
   const { email, password, displayName } = req.body;
   if (!email || !password || !displayName) return res.status(400).send({ message: "All fields are required." });
 
+  if (!isValidEmailFormat(email)) {
+    return res.status(400).send({ message: "Invalid email format." });
+  }
+
+  const sanitizedDisplayName = displayName.trim().replace(/[<>]/g, "");
+  if (!sanitizedDisplayName) {
+    return res.status(400).send({ message: "Invalid display name." });
+  }
+
   const passwordErrors = [];
   if (password.length < 8) passwordErrors.push("At least 8 characters");
   if (!/[A-Z]/.test(password)) passwordErrors.push("One uppercase letter");
@@ -66,7 +75,7 @@ const signup = async (req, res) => {
 
       const userResult = await client.query(
         "INSERT INTO users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, email, display_name",
-        [email.trim(), hash, displayName.trim()]
+        [email.trim(), hash, sanitizedDisplayName]
       );
 
       const userId = userResult.rows[0].id;
@@ -135,10 +144,19 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   const { email, displayName, phone } = req.body;
+  if (!email || !isValidEmailFormat(email)) {
+    return res.status(400).send({ message: "Valid email is required." });
+  }
+
+  const sanitizedDisplayName = displayName ? displayName.trim().replace(/[<>]/g, "") : "";
+  if (displayName && !sanitizedDisplayName) {
+    return res.status(400).send({ message: "Invalid display name." });
+  }
+
   try {
     const result = await pool.query(
       'UPDATE users SET display_name = $1, phone = $2 WHERE email = $3 RETURNING display_name as "displayName", phone, email',
-      [displayName, phone, email.trim()]
+      [sanitizedDisplayName, phone, email.trim()]
     );
     if (result.rows.length === 0) return res.status(404).send({ message: "User not found." });
     res.send({ message: "Profile updated successfully.", user: result.rows[0] });
