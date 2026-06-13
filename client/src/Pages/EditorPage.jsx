@@ -10,6 +10,7 @@ import axios from "axios";
 import { saveAs } from "file-saver";
 import { Toaster, toast } from "react-hot-toast";
 import JSZip from "jszip";
+import { buildApiUrl } from "../utils/api";
 
 import { useAppStore } from "../shared/store/useAppStore";
 import { useFonts } from "../shared/hooks/useFonts";
