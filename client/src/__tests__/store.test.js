@@ -34,4 +34,9 @@ describe('App Store (Zustand)', () => {
     useAppStore.getState().setPreviewName('Sami Tasve');
     expect(useAppStore.getState().previewName).toBe('Sami Tasve');
   });
+
+  test('updates previewName state via setPreviewName with a function updater', () => {
+    useAppStore.getState().setPreviewName((prev) => prev + ' Updated');
+    expect(useAppStore.getState().previewName).toBe('Your Name Here Updated');
+  });
 });
