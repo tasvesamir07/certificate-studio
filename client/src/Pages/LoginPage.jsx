@@ -14,6 +14,7 @@ const PASSWORD_RULES = [
 const PasswordStrengthIndicator = ({ password }) => {
   const passed = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const score = password.length === 0 ? 0 : Math.round((passed / PASSWORD_RULES.length) * 100);
+  const hasValue = password.length > 0;
 
   let barColor = "#1f1f1f";
   let label = "";
@@ -22,6 +23,8 @@ const PasswordStrengthIndicator = ({ password }) => {
   else if (score <= 60) { barColor = "#ffa42b"; label = "Good"; }
   else if (score <= 80) { barColor = "#1ed760"; label = "Strong"; }
   else if (score === 100) { barColor = "#1ed760"; label = "Very strong"; }
+
+  if (!hasValue) return null;
 
   return (
     <div style={{ marginTop: 8 }}>
