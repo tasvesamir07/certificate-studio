@@ -18,13 +18,9 @@ const parseBoolean = (value, defaultValue = true) => {
   return defaultValue;
 };
 
-const chunkArray = (arr = [], size = 1) => {
-  if (!Array.isArray(arr) || size <= 0) return [];
-  const chunks = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
+const toTitleCase = (str) => {
+  if (!str) return "";
+  return str.toString().trim().toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
 const NAME_TOKEN_REGEX = /{{\s*name\s*}}|{\s*name\s*}/gi;
@@ -65,7 +61,7 @@ module.exports = {
   sanitizeFileName,
   stripExtension,
   parseBoolean,
-  chunkArray,
+  toTitleCase,
   buildEmailBodies,
   getColumnValue
 };

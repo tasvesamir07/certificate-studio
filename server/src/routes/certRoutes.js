@@ -14,11 +14,12 @@ router.post("/generate-and-send", upload.fields([
   { name: "sharedAttachment", maxCount: 10 },
 ]), certController.generateAndSend);
 router.post("/generate-preview", upload.fields([{ name: "templateImage", maxCount: 1 }]), certController.generatePreview);
-router.post("/attachments/sign-upload", certController.signAttachmentUpload);
+router.post("/attachments/sign-upload", upload.single("file"), certController.signAttachmentUpload);
 router.post("/attachments/cleanup", certController.cleanupRemoteAttachmentUploads);
 router.get("/attachments/cleanup-expired", certController.cleanupExpiredAttachmentUploads);
 router.post("/upload-shared", upload.array("attachments"), certController.uploadShared);
 router.post("/cleanup-shared", certController.cleanupShared);
 router.post("/send-single", upload.array("attachments"), certController.sendSingle);
+router.get("/files/:fileId", certController.serveFile);
 
 module.exports = router;

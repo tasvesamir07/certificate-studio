@@ -13,7 +13,6 @@ import { saveAs } from "file-saver";
 import { Toaster, toast } from "react-hot-toast";
 import JSZip from "jszip";
 import { jsPDF } from "jspdf";
-import FontPicker from './components/FontPicker';
 
 import "./App.css";
 import LoginPage from "./Pages/LoginPage";
@@ -159,51 +158,13 @@ const uploadRemoteAttachment = async (
   file,
   purpose = "certificate"
 ) => {
-  const signUrl = buildApiUrl(apiBaseUrl, "api/attachments/sign-upload");
-  const safeFilename = sanitizeFileBaseName(file?.name || "attachment.pdf");
-  const signRes = await axios.post(signUrl, {
-    filename: safeFilename,
-    purpose,
-  });
-
-  const {
-    apiKey,
-    cloudName,
-    folder,
-    publicId,
-    tags,
-    signature,
-    timestamp,
-    uploadUrl,
-  } = signRes.data || {};
-
-  if (!apiKey || !cloudName || !signature || !timestamp) {
-    throw new Error("Attachment upload signature is incomplete.");
-  }
-
+  const uploadUrl = buildApiUrl(apiBaseUrl, "api/attachments/sign-upload");
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("api_key", apiKey);
-  formData.append("timestamp", String(timestamp));
-  formData.append("signature", signature);
-  if (folder) formData.append("folder", folder);
-  if (publicId) formData.append("public_id", publicId);
-  if (tags) formData.append("tags", tags);
-
-  const cloudinaryUrl =
-    uploadUrl || `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
-  const uploadRes = await axios.post(cloudinaryUrl, formData);
-  const uploadData = uploadRes.data || {};
-
-  return {
-    contentType: file?.type || "application/octet-stream",
-    filename: safeFilename,
-    format: uploadData.format || "",
-    publicId: uploadData.public_id,
-    resourceType: uploadData.resource_type || "raw",
-    version: uploadData.version || "",
-    url: uploadData.secure_url,
-  };
+  const res = await axios.post(uploadUrl, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
 };
 
 const cleanupRemoteAttachments = async (apiBaseUrl, attachments = []) => {
@@ -249,8 +210,6 @@ const isValidEmail = (value = "") => EMAIL_REGEX.test(value.trim());
 
 // --- API URLs use the resolved base ---
 const API_BASE_URL = resolveApiBase();
-
-  // Handled by centralized buildApiUrl imported above
 
 const API_FONTS_URL = buildApiUrl(API_BASE_URL, "api/fonts");
 const API_SEND_URL = buildApiUrl(API_BASE_URL, "api/generate-and-send");
@@ -360,25 +319,6 @@ const fitFontSizeToBox = (
   }
 
   return size;
-};
-
-const getResponsivePreviewWidth = (viewportWidth = DEFAULT_VIEWPORT_WIDTH) => {
-  const available =
-    viewportWidth - (CONTROL_PANEL_WIDTH + DATA_PANEL_WIDTH + PREVIEW_PADDING);
-  return Math.max(
-    MIN_PREVIEW_WIDTH,
-    Math.min(BASE_MAX_PREVIEW_WIDTH, available)
-  );
-};
-
-const getResponsivePreviewHeight = (
-  viewportHeight = DEFAULT_VIEWPORT_HEIGHT
-) => {
-  const available = viewportHeight - PREVIEW_PADDING * 1.5;
-  return Math.max(
-    MIN_PREVIEW_HEIGHT,
-    Math.min(BASE_MAX_PREVIEW_HEIGHT, available)
-  );
 };
 
 const calculateAutoScale = (naturalWidth, naturalHeight) => {
@@ -798,7 +738,6 @@ function App() {
   const templateImageRef = useRef(null);
   const templateBackImageRef = useRef(null);
   const draggableRef = useRef(null);
-  const textMeasureContextRef = useRef(null);
   const previewCanvasRef = useRef(null);
   const templateNaturalSizeRef = useRef(DEFAULT_TEMPLATE_SIZE);
   const resizeStartLayoutRef = useRef(null);
@@ -1171,24 +1110,6 @@ function App() {
     }
   };
 
-  const handleCanvaDesignButtonExport = async (exportUrl) => {
-    setIsCanvaModalOpen(false);
-    const toastId = toast.loading("Importing created design...");
-    try {
-      const fileResponse = await fetch(exportUrl);
-      const blob = await fileResponse.blob();
-      const fileName = `canva-created-${Date.now()}.png`;
-      const file = new File([blob], fileName, { type: "image/png" });
-
-      onTemplateDrop([file]);
-      toast.success("Design imported successfully!", { id: toastId });
-    } catch (err) {
-      console.error("Canva Button Export Error:", err);
-      toast.error("Failed to import created design.", { id: toastId });
-    }
-  };
-    // ------------------------------------
-
   const insertFormat = (tag, targetId = "emailTemplate") => {
     const textarea = document.getElementById(targetId);
     if (!textarea) return;
@@ -1439,10 +1360,6 @@ function App() {
     },
     [navigate]
   );
-
-  const handleDesignerSettingsChange = useCallback((event) => {
-    const { name, value } = event.target;
-  }, []);
 
   const handleEmailSettingsChange = useCallback((event) => {
     const { name, value } = event.target;
@@ -3241,7 +3158,6 @@ function App() {
             templateURL={templateURL}
             previewScale={previewScale}
             setPreviewScale={setPreviewScale}
-            DEFAULT_ZOOM_SCALE={DEFAULT_ZOOM_SCALE}
             previewName={previewName}
             showGrid={showGrid}
             setShowGrid={setShowGrid}
@@ -3285,7 +3201,6 @@ function App() {
           isOpen={isCanvaModalOpen}
           onClose={() => setIsCanvaModalOpen(false)}
           onSelect={handleSelectCanvaDesign}
-          onDesignButtonExport={handleCanvaDesignButtonExport}
           userId={authUserId}
           apiBaseUrl={API_BASE_URL}
         />

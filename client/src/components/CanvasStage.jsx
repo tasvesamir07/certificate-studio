@@ -5,7 +5,6 @@ const CanvasStage = ({
   templateURL,
   previewScale,
   setPreviewScale,
-  DEFAULT_ZOOM_SCALE,
   previewName,
   showGrid,
   setShowGrid,

@@ -5,23 +5,16 @@ const axios = require("axios");
 const XLSX = require("xlsx");
 const { v4: uuidv4 } = require("uuid");
 const { drawTextOnCanvas, drawTextOnPDF } = require("../services/canvasService");
-const { chunkArray, getColumnValue, sanitizeFileName, stripExtension, parseBoolean, toTitleCase, buildEmailBodies } = require("../utils/helpers");
+const { getColumnValue, sanitizeFileName, stripExtension, parseBoolean, toTitleCase, buildEmailBodies } = require("../utils/helpers");
 const { createTransporter } = require("../services/mailer");
+const { storeFile, getFile, deleteFile } = require("../services/fileStore");
 
 const activeJobs = new Map();
 const sharedFileStore = new Map();
 const pendingEmailJobs = new Map();
 const pendingPurchaseJobs = new Map();
 
-const cloudinary = require("cloudinary").v2;
 const { fontList } = require("../services/fontService");
-
-// Cloudinary Config (should ideally be in a separate config or service)
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 const parseJsonArrayField = (value) => {
   if (!value) return [];
@@ -34,320 +27,11 @@ const parseJsonArrayField = (value) => {
   }
 };
 
-const sanitizePublicIdSegment = (value = "", fallback = "attachment") => {
-  const cleaned = stripExtension(value)
-    .toString()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-
-  return cleaned || fallback;
-};
-
-const getRemoteAttachmentPublicId = (attachment = {}) =>
-  (
-    attachment?.publicId ||
-    attachment?.public_id ||
-    attachment?.cloudinaryPublicId ||
-    ""
-  )
-    .toString()
-    .trim();
-
-const getRemoteAttachmentResourceType = (attachment = {}) =>
-  (
-    attachment?.resourceType ||
-    attachment?.resource_type ||
-    attachment?.cloudinaryResourceType ||
-    "raw"
-  )
-    .toString()
-    .trim() || "raw";
-
-const getRemoteAttachmentFormat = (attachment = {}) => {
-  const explicitFormat = (
-    attachment?.format ||
-    attachment?.extension ||
-    ""
-  )
-    .toString()
-    .trim()
-    .replace(/^\./, "")
-    .toLowerCase();
-
-  if (explicitFormat) return explicitFormat;
-
-  const filename = (
-    attachment?.filename ||
-    attachment?.originalFilename ||
-    attachment?.original_filename ||
-    ""
-  )
-    .toString()
-    .trim();
-  const ext = path.extname(filename).replace(/^\./, "").toLowerCase();
-  return ext || "";
-};
-
-const buildRemoteAttachmentCandidateUrls = (attachment = {}) => {
-  const urls = [];
-  const seen = new Set();
-  const push = (value) => {
-    const normalized = (value || "").toString().trim();
-    if (!normalized || seen.has(normalized)) return;
-    seen.add(normalized);
-    urls.push(normalized);
-  };
-
-  push(attachment?.url);
-  push(attachment?.secureUrl);
-  push(attachment?.secure_url);
-
-  const publicId = getRemoteAttachmentPublicId(attachment);
-  const resourceType = getRemoteAttachmentResourceType(attachment);
-  const format = getRemoteAttachmentFormat(attachment);
-  const version = Number(attachment?.version);
-
-  if (!publicId || !process.env.CLOUDINARY_CLOUD_NAME) {
-    return urls;
-  }
-
-  if (format && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-    try {
-      push(
-        cloudinary.utils.private_download_url(publicId, format, {
-          resource_type: resourceType,
-          type: "upload",
-          secure: true,
-        })
-      );
-    } catch (_error) {}
-  }
-
-  const urlOptions = {
-    resource_type: resourceType,
-    type: "upload",
-    secure: true,
-    sign_url: false,
-  };
-  if (Number.isFinite(version) && version > 0) {
-    urlOptions.version = version;
-  }
-  if (format) {
-    urlOptions.format = format;
-  }
-
-  push(cloudinary.url(publicId, urlOptions));
-  return urls;
-};
-
-const downloadRemoteAttachment = async (attachment = {}) => {
-  const candidateUrls = buildRemoteAttachmentCandidateUrls(attachment);
-  if (!candidateUrls.length) {
-    throw new Error(
-      "Attachment file metadata is incomplete. Please re-upload and try again."
-    );
-  }
-
-  let lastError = null;
-  let sawAccessFailure = false;
-
-  for (const candidateUrl of candidateUrls) {
-    try {
-      const response = await axios.get(candidateUrl, {
-        responseType: "arraybuffer",
-        timeout: 30000,
-      });
-
-      return {
-        filename: attachment.filename || "attachment",
-        content: Buffer.from(response.data),
-        contentType:
-          attachment.contentType ||
-          attachment.content_type ||
-          response.headers["content-type"] ||
-          "application/octet-stream",
-      };
-    } catch (error) {
-      const statusCode = error?.response?.status;
-      lastError = error;
-
-      if (statusCode === 401 || statusCode === 403) {
-        sawAccessFailure = true;
-        continue;
-      }
-
-      if (statusCode === 404) {
-        continue;
-      }
-
-      break;
-    }
-  }
-
-  const finalStatusCode = lastError?.response?.status;
-  if (sawAccessFailure || finalStatusCode === 401 || finalStatusCode === 403) {
-    throw new Error(
-      "Attachment file has expired or is no longer accessible. Please re-upload and try again."
-    );
-  }
-
-  if (finalStatusCode === 404) {
-    throw new Error(
-      "Attachment file could not be found. Please re-upload and try again."
-    );
-  }
-
-  throw new Error(
-    `Failed to download attachment: ${lastError?.message || "Unknown error"}`
-  );
-};
-
-const destroyRemoteAttachments = async (attachments = []) => {
-  const uniqueAssets = [];
-  const seen = new Set();
-
-  attachments.forEach((attachment) => {
-    const publicId = getRemoteAttachmentPublicId(attachment);
-    const resourceType = getRemoteAttachmentResourceType(attachment);
-    if (!publicId) return;
-
-    const key = `${resourceType}:${publicId}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    uniqueAssets.push({ publicId, resourceType });
-  });
-
-  if (!uniqueAssets.length) return [];
-
-  return Promise.allSettled(
-    uniqueAssets.map((asset) =>
-      cloudinary.uploader.destroy(asset.publicId, {
-        resource_type: asset.resourceType,
-        invalidate: true,
-      })
-    )
-  );
-};
-
-const TEMP_ATTACHMENT_TAG = "certificate-studio-temp";
-const DEFAULT_ATTACHMENT_CLEANUP_MAX_AGE = (
-  process.env.ATTACHMENT_CLEANUP_MAX_AGE || "2d"
-).trim();
-
 const isAuthorizedCronRequest = (req) => {
   const cronSecret = (process.env.CRON_SECRET || "").trim();
-  if (!cronSecret) {
-    return process.env.NODE_ENV !== "production";
-  }
-
+  if (!cronSecret) return process.env.NODE_ENV !== "production";
   const authHeader = (req.get("authorization") || "").trim();
   return authHeader === `Bearer ${cronSecret}`;
-};
-
-const cleanupExpiredRemoteAttachments = async ({
-  maxAge = DEFAULT_ATTACHMENT_CLEANUP_MAX_AGE,
-  maxBatches = 10,
-} = {}) => {
-  const deleted = [];
-  let batchCount = 0;
-  let nextCursor = undefined;
-
-  while (batchCount < maxBatches) {
-    let search = cloudinary.search
-      .expression(
-        `tags=${TEMP_ATTACHMENT_TAG} AND resource_type=raw AND type=upload AND uploaded_at<${maxAge}`
-      )
-      .sort_by("uploaded_at", "asc")
-      .max_results(100);
-
-    if (nextCursor) {
-      search = search.next_cursor(nextCursor);
-    }
-
-    const result = await search.execute();
-    const resources = Array.isArray(result?.resources) ? result.resources : [];
-    if (!resources.length) {
-      return {
-        deletedCount: deleted.length,
-        deletedPublicIds: deleted,
-        nextCursor: null,
-      };
-    }
-
-    const publicIds = resources
-      .map((resource) => resource.public_id)
-      .filter(Boolean);
-
-    if (!publicIds.length) {
-      return {
-        deletedCount: deleted.length,
-        deletedPublicIds: deleted,
-        nextCursor: result?.next_cursor || null,
-      };
-    }
-
-    await cloudinary.api.delete_resources(publicIds, {
-      resource_type: "raw",
-      type: "upload",
-    });
-
-    deleted.push(...publicIds);
-    batchCount += 1;
-    nextCursor = result?.next_cursor;
-
-    if (!nextCursor) {
-      break;
-    }
-  }
-
-  return {
-    deletedCount: deleted.length,
-    deletedPublicIds: deleted,
-    nextCursor: nextCursor || null,
-  };
-};
-
-const buildAttachmentUploadSignature = ({
-  filename = "attachment.pdf",
-  purpose = "certificate",
-} = {}) => {
-  if (
-    !process.env.CLOUDINARY_CLOUD_NAME ||
-    !process.env.CLOUDINARY_API_KEY ||
-    !process.env.CLOUDINARY_API_SECRET
-  ) {
-    throw new Error("Cloudinary is not configured for attachment uploads.");
-  }
-
-  const safePurpose = purpose === "shared" ? "shared" : "certificate";
-  const folder = `certificate-studio/email-attachments/${safePurpose}`;
-  const publicId = `${Date.now()}-${Math.round(
-    Math.random() * 1e9
-  )}-${sanitizePublicIdSegment(filename)}`;
-  const timestamp = Math.floor(Date.now() / 1000);
-  const paramsToSign = {
-    folder,
-    public_id: publicId,
-    tags: `${TEMP_ATTACHMENT_TAG},certificate-studio-${safePurpose}`,
-    timestamp,
-  };
-
-  return {
-    apiKey: process.env.CLOUDINARY_API_KEY,
-    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-    folder,
-    publicId,
-    resourceType: "raw",
-    tags: paramsToSign.tags,
-    signature: cloudinary.utils.api_sign_request(
-      paramsToSign,
-      process.env.CLOUDINARY_API_SECRET
-    ),
-    timestamp,
-    uploadUrl: `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload`,
-  };
 };
 
 const getProgress = (req, res) => {
@@ -405,11 +89,11 @@ const getFontFile = (req, res) => {
 const uploadImage = async (req, res) => {
   if (!req.file) return res.status(400).send({ message: "No image file uploaded." });
   try {
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "certificate-studio-signatures",
-    });
+    const buffer = fs.readFileSync(req.file.path);
+    const fileId = await storeFile(buffer, req.file.originalname, req.file.mimetype);
     fs.unlinkSync(req.file.path);
-    res.json({ message: "Image uploaded successfully", url: result.secure_url, filename: req.file.filename });
+    const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get("host")}`;
+    res.json({ message: "Image uploaded successfully", url: `${baseUrl}/api/files/${fileId}`, filename: req.file.originalname });
   } catch (err) {
     res.status(500).send({ message: "Failed to upload image." });
   }
@@ -432,11 +116,19 @@ const generatePreview = async (req, res) => {
 
 const signAttachmentUpload = async (req, res) => {
   try {
-    const signature = buildAttachmentUploadSignature({
-      filename: sanitizeFileName(req.body?.filename || "attachment.pdf"),
-      purpose: req.body?.purpose,
+    if (!req.file) {
+      return res.status(400).send({ message: "No file provided." });
+    }
+    const fileId = await storeFile(
+      fs.readFileSync(req.file.path),
+      req.file.originalname,
+      req.file.mimetype
+    );
+    res.status(200).send({
+      fileId,
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
     });
-    res.status(200).send(signature);
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -447,7 +139,11 @@ const cleanupRemoteAttachmentUploads = async (req, res) => {
     const attachments = Array.isArray(req.body?.attachments)
       ? req.body.attachments
       : [];
-    await destroyRemoteAttachments(attachments);
+    for (const attachment of attachments) {
+      if (attachment?.fileId) {
+        await deleteFile(attachment.fileId);
+      }
+    }
     res.status(200).send({ status: "success" });
   } catch (error) {
     res.status(500).send({ message: "Failed to clean up attachments." });
@@ -458,38 +154,49 @@ const cleanupExpiredAttachmentUploads = async (req, res) => {
   if (!isAuthorizedCronRequest(req)) {
     return res.status(401).send({ message: "Unauthorized" });
   }
-
-  try {
-    const result = await cleanupExpiredRemoteAttachments();
-    res.status(200).send({
-      status: "success",
-      ...result,
-      maxAge: DEFAULT_ATTACHMENT_CLEANUP_MAX_AGE,
-    });
-  } catch (error) {
-    res.status(500).send({ message: "Failed to clean up expired attachments." });
-  }
+  res.status(200).send({ status: "success", message: "Supabase Storage manages expiry; no server-side cleanup needed." });
 };
 
 const uploadShared = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.status(400).send({ message: "No files provided." });
     const sharedBatchId = uuidv4();
-    const files = req.files.map(file => ({
-      filename: file.originalname,
-      content: fs.readFileSync(file.path),
-      contentType: file.mimetype,
-    }));
-    sharedFileStore.set(sharedBatchId, files);
+    const fileIds = [];
+    for (const file of req.files) {
+      const buffer = fs.readFileSync(file.path);
+      const fileId = await storeFile(buffer, file.originalname, file.mimetype);
+      fileIds.push(fileId);
+    }
+    sharedFileStore.set(sharedBatchId, fileIds);
     res.status(200).send({ sharedBatchId });
   } catch (error) {
     res.status(500).send({ message: "Failed to upload shared files." });
   }
 };
 
-const cleanupShared = (req, res) => {
+const serveFile = async (req, res) => {
+  try {
+    const file = await getFile(req.params.fileId);
+    if (!file) return res.status(404).send("File not found");
+    res.set("Content-Type", file.mimetype);
+    res.set("Content-Disposition", `inline; filename="${file.filename}"`);
+    res.send(file.content);
+  } catch (error) {
+    res.status(500).send("Failed to serve file");
+  }
+};
+
+const cleanupShared = async (req, res) => {
   const { sharedBatchId } = req.body;
-  if (sharedBatchId) sharedFileStore.delete(sharedBatchId);
+  if (sharedBatchId) {
+    const fileIds = sharedFileStore.get(sharedBatchId);
+    if (fileIds) {
+      for (const fileId of fileIds) {
+        await deleteFile(fileId);
+      }
+    }
+    sharedFileStore.delete(sharedBatchId);
+  }
   res.status(200).send({ status: "success" });
 };
 
@@ -523,9 +230,16 @@ const sendSingle = async (req, res) => {
     }));
     const remoteMailAttachments = [];
     for (const attachment of remoteAttachments.filter(
-      (a) => a?.url || a?.publicId || a?.public_id
+      (a) => a?.fileId
     )) {
-      remoteMailAttachments.push(await downloadRemoteAttachment(attachment));
+      const file = await getFile(attachment.fileId);
+      if (file) {
+        remoteMailAttachments.push({
+          filename: file.filename,
+          content: file.content,
+          contentType: file.mimetype,
+        });
+      }
     }
 
     await transporter.sendMail({
@@ -547,7 +261,9 @@ const sendSingle = async (req, res) => {
       });
     }
     if (autoCleanupRemoteAttachments && remoteAttachments.length) {
-      destroyRemoteAttachments(remoteAttachments).catch(() => {});
+      for (const attachment of remoteAttachments) {
+        if (attachment?.fileId) await deleteFile(attachment.fileId);
+      }
     }
   }
 };
@@ -775,6 +491,7 @@ module.exports = {
   cleanupExpiredAttachmentUploads,
   uploadShared,
   cleanupShared,
+  serveFile,
   sendSingle,
   generate,
   generateAndSend,

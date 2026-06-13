@@ -1,7 +1,9 @@
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
+const SSLCommerzPayment = require("sslcommerz-lts");
 const pool = require("../models/db");
 const { createTransporter } = require("../services/mailer");
+const { pendingPurchaseJobs } = require("./certController");
 
 // In-memory stores (to be replaced with Redis/DB for production)
 const otpStore = new Map();
@@ -10,6 +12,13 @@ const OTP_TTL_MS = 2 * 60 * 1000;
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const DEFAULT_PAYMENT_AMOUNT = 50;
+
+const getServerBaseUrl = (req) => {
+  const host = req.get("host") || "localhost:5000";
+  return (process.env.PUBLIC_BASE_URL || `${req.protocol}://${host}`).replace(/\/$/, "");
+};
+
 const isValidEmailFormat = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const login = async (req, res) => {
@@ -65,15 +74,132 @@ const signup = async (req, res) => {
 };
 
 const verifyPurchase = async (req, res) => {
-  // Transfer verify-purchase logic from server.js
-  // This logic is complex and involves SSLCommerz, so I'll keep it streamlined
   const { email, name, phone } = req.body;
-  if (!email || !name || !phone) return res.status(400).send({ message: "Email, name, and phone are required." });
+  const trimmedEmail = (email || "").toString().trim();
+  const trimmedName = (name || "").toString().trim();
+  const trimmedPhone = (phone || "").toString().trim();
 
-  // For now, redirect to a mock/placeholder or the real SSLCommerz init if credentials exist
-  // Based on server.js, this usually returns a paymentUrl
-  // ... (omitting full SSLCommerz implementation here for brevity, but matching the interface)
-  res.status(200).send({ status: "payment_pending", message: "Redirecting to payment..." });
+  if (!trimmedEmail || !isValidEmailFormat(trimmedEmail)) {
+    return res.status(400).send({ message: "A valid email address is required." });
+  }
+  if (!trimmedName) {
+    return res.status(400).send({ message: "Name is required to complete the purchase." });
+  }
+  if (!trimmedPhone) {
+    return res.status(400).send({ message: "Phone number is required to complete the purchase." });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+  } catch (dbErr) {
+    console.error("❌ Database connection failed during purchase request:", dbErr);
+    return res.status(500).send({ message: "Database connection failed." });
+  }
+
+  try {
+    await client.query("BEGIN");
+
+    const userResult = await client.query(
+      `SELECT u.id, ua.access_expires_at FROM users u LEFT JOIN user_access ua ON u.id = ua.user_id WHERE u.email = $1`,
+      [trimmedEmail]
+    );
+
+    const existingUser = userResult.rows.length > 0 ? userResult.rows[0] : null;
+
+    if (existingUser) {
+      const expiresAt = existingUser.access_expires_at ? new Date(existingUser.access_expires_at) : null;
+      if (expiresAt && expiresAt > new Date() && !req.body.forceRenew) {
+        await client.query("ROLLBACK");
+        return res.status(200).send({
+          message: "You are already subscribed. Your access is currently active.",
+          expiresAt: expiresAt.toISOString(),
+          status: "active",
+        });
+      }
+    }
+
+    await client.query("ROLLBACK");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("❌ Failed to process purchase verification:", error);
+    return res.status(500).send({ message: "Failed to process purchase verification." });
+  } finally {
+    client.release();
+  }
+
+  const store_id = process.env.SSL_COMMERZ_STORE_ID;
+  const store_passwd = process.env.SSL_COMMERZ_STORE_PASSWORD;
+  const is_live = (process.env.IS_LIVE || "false").toLowerCase() === "true";
+
+  if (!store_id || !store_passwd) {
+    console.error("❌ Missing SSLCommerz credentials.");
+    return res.status(500).send({ message: "Server misconfiguration: Missing payment credentials." });
+  }
+
+  const tranId = `cert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const baseUrl = getServerBaseUrl(req);
+  const totalAmount = Number(req.body.totalAmount || req.body.amount) > 0
+    ? Number(req.body.totalAmount || req.body.amount)
+    : DEFAULT_PAYMENT_AMOUNT;
+
+  const paymentPayload = {
+    total_amount: totalAmount,
+    currency: "BDT",
+    tran_id: tranId,
+    success_url: `${baseUrl}/api/payments/success`,
+    fail_url: `${baseUrl}/api/payments/fail`,
+    cancel_url: `${baseUrl}/api/payments/cancel`,
+    ipn_url: `${baseUrl}/api/payments/ipn`,
+    shipping_method: "Courier",
+    product_name: "Certificate Access",
+    product_category: "Digital",
+    product_profile: "general",
+    cus_name: trimmedName,
+    cus_email: trimmedEmail,
+    cus_add1: "Dhaka",
+    cus_city: "Dhaka",
+    cus_state: "Dhaka",
+    cus_postcode: "1000",
+    cus_country: "Bangladesh",
+    cus_phone: trimmedPhone,
+    cus_fax: trimmedPhone,
+    ship_name: trimmedName,
+    ship_add1: "Dhaka",
+    ship_city: "Dhaka",
+    ship_state: "Dhaka",
+    ship_postcode: "1000",
+    ship_country: "Bangladesh",
+  };
+
+  try {
+    const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+    const apiResponse = await sslcz.init(paymentPayload);
+    const GatewayPageURL = apiResponse?.GatewayPageURL;
+
+    if (!GatewayPageURL) {
+      console.error("❌ SSLCommerz Init Failed (No URL):", apiResponse);
+      return res.status(500).send({ message: "Payment Gateway Error: No URL returned.", details: apiResponse });
+    }
+
+    pendingPurchaseJobs.set(tranId, {
+      email: trimmedEmail,
+      name: trimmedName,
+      phone: trimmedPhone,
+      amount: totalAmount,
+      days: parseInt(req.body.days, 10) || ACCESS_PERIOD_DAYS,
+    });
+
+    return res.status(200).send({
+      status: "payment_pending",
+      message: "Redirecting to payment to complete your purchase and receive your password.",
+      paymentUrl: GatewayPageURL,
+      tranId,
+    });
+  } catch (err) {
+    console.error("❌ Payment initialization crashed:", err);
+    return res.status(500).send({ message: `Payment Error: ${err.message}` });
+  }
 };
 
 const getProfile = async (req, res) => {

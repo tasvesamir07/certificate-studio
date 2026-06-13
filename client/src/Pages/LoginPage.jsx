@@ -5,7 +5,6 @@ import axios from "axios";
 import { buildApiUrl } from "../utils/api";
 
 const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
-  // ... (Your existing LoginPage.jsx code) ...
   const [email, setEmail] = useState(defaultEmail || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

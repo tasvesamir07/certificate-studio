@@ -15,18 +15,18 @@
             }
         },
         {
-            "src": "server/server.js",
+            "src": "server/src/index.js",
             "use": "@vercel/node"
         }
     ],
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "server/server.js"
+            "dest": "server/src/index.js"
         },
         {
             "src": "/fonts/(.*)",
-            "dest": "server/server.js"
+            "dest": "server/src/index.js"
         },
         {
             "src": "/(.*)",

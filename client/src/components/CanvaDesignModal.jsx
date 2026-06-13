@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
-const CanvaDesignModal = ({ isOpen, onClose, onSelect, onDesignButtonExport, userId, apiBaseUrl }) => {
+const CanvaDesignModal = ({ isOpen, onClose, onSelect, userId, apiBaseUrl }) => {
   const [designs, setDesigns] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);

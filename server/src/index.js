@@ -42,3 +42,23 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
+
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught exception:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ Unhandled rejection:", reason);
+});
+
+// Global error handler (must be last)
+app.use((err, req, res, next) => {
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ message: "File too large. Maximum size is 100MB." });
+  }
+  if (err.name === "MulterError") {
+    return res.status(400).json({ message: `Upload error: ${err.message}` });
+  }
+  console.error("❌ Unhandled error:", err);
+  res.status(500).json({ message: "Internal server error" });
+});

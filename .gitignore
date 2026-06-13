@@ -16,3 +16,7 @@ server/uploads/
 client/dist/
 client/.env
 client/.env.production
+
+# IDE / Agent
+.agents/
+skills-lock.json
