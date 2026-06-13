@@ -2892,6 +2892,39 @@ function App() {
     }
   };
 
+  const handleDownloadAllZIP = async () => {
+    if (!template || !previewImages.length) {
+      toast.error("Generate previews first before downloading.");
+      return;
+    }
+
+    const toastId = toast.loading(`Packaging ${previewImages.length} certificates...`);
+    try {
+      const canvas = document.createElement("canvas");
+      const templateObjectUrl = URL.createObjectURL(template);
+      const templateImage = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = (err) => reject(new Error("Failed to load template: " + err));
+        img.src = templateObjectUrl;
+      });
+      URL.revokeObjectURL(templateObjectUrl);
+
+      const zip = new JSZip();
+      for (const { name } of previewImages) {
+        const pdfBlob = await generateCertificatePDF(templateImage, layout, name, { drawName: true }, templateBackImageRef.current);
+        const safeName = name.replace(/[<>:"/\\|?*\x00-\x1F]/g, "").replace(/\s+/g, " ").trim() || "certificate";
+        zip.file(`${safeName}.pdf`, pdfBlob);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      saveAs(zipBlob, `all-certificates-${Date.now()}.zip`);
+      toast.success(`Downloading ${previewImages.length} certificates`, { id: toastId });
+    } catch (err) {
+      toast.error("ZIP failed: " + (err.message || "Unknown error"), { id: toastId });
+    }
+  };
+
   const handleGeneratePreviews = async () => {
     if (!data.length || !templateImageRef.current || !layout) {
       toast.error("Missing template, data, or layout.");
@@ -3166,6 +3199,7 @@ function App() {
             setPreviewImages={setPreviewImages}
             handlePreviewSelect={handlePreviewSelect}
             PREVIEW_THUMBNAIL_WIDTH={PREVIEW_THUMBNAIL_WIDTH}
+            handleDownloadAllZIP={handleDownloadAllZIP}
           />
         </div>
 

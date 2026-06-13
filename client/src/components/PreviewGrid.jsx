@@ -12,10 +12,22 @@ const PreviewGrid = ({
   setPreviewImages,
   handlePreviewSelect,
   PREVIEW_THUMBNAIL_WIDTH,
+  handleDownloadAllZIP,
 }) => {
   return (
     <div className="preview-grid-panel">
-      <h2>All Previews ({data.length})</h2>
+      <div className="preview-grid-header">
+        <h2>Previews ({data.length})</h2>
+        {previewImages.length > 0 && !isPreviewGridLoading && (
+          <button
+            className="preview-zip-button"
+            onClick={handleDownloadAllZIP}
+            title="Download all previews as PDFs in a ZIP file"
+          >
+            Download All ZIP
+          </button>
+        )}
+      </div>
 
       {!template ? (
         <>

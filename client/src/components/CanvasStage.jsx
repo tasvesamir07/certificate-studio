@@ -1,7 +1,7 @@
-import React from "react";
+import React, { memo } from "react";
 import { Rnd } from "react-rnd";
 
-const CanvasStage = ({
+const CanvasStage = memo(({
   templateURL,
   previewScale,
   setPreviewScale,
@@ -231,6 +231,6 @@ const CanvasStage = ({
       </div>
     </div>
   );
-};
+});
 
 export default CanvasStage;
