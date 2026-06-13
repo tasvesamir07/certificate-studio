@@ -6,6 +6,10 @@ const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "certificate-studio";
 const fileMeta = new Map();
 
 async function storeFile(buffer, filename, mimetype) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured on the server. Please set SUPABASE_URL and SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY in your environment variables.");
+  }
+
   const id = uuidv4();
   const storagePath = `uploads/${id}`;
 

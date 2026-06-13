@@ -95,7 +95,8 @@ const uploadImage = async (req, res) => {
     const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get("host")}`;
     res.json({ message: "Image uploaded successfully", url: `${baseUrl}/api/files/${fileId}`, filename: req.file.originalname });
   } catch (err) {
-    res.status(500).send({ message: "Failed to upload image." });
+    console.error("Error uploading image in certController:", err);
+    res.status(500).send({ message: `Failed to upload image: ${err.message || err}` });
   }
 };
 
