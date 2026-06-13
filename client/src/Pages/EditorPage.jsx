@@ -195,6 +195,8 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
   const templateNaturalSizeRef = useRef(DEFAULT_TEMPLATE_SIZE);
   const resizeStartLayoutRef = useRef(null);
   const savedLayoutsRef = useRef({});
+  const [isSendingPaused, setIsSendingPaused] = React.useState(false);
+  const isSendingPausedRef = useRef(false);
   const stopSendingRef = useRef(false);
 
   const handleStopSending = () => {
