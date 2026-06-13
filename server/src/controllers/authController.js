@@ -100,7 +100,7 @@ const signup = async (req, res) => {
         `,
       });
 
-      res.status(201).send(result.rows[0]);
+      res.status(201).send(userResult.rows[0]);
     } catch (innerErr) {
       await client.query("ROLLBACK");
       if (innerErr.code === "23505") {

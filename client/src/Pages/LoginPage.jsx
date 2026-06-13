@@ -258,16 +258,21 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
             </div>
             <div>
               <label htmlFor="signupConfirm" style={labelStyle}>Confirm Password</label>
-              <input id="signupConfirm" type="password" value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password" required disabled={isLoading}
-                style={{
-                  ...inputStyle,
-                  borderColor: confirmPassword && password !== confirmPassword ? "#f3727f" : "transparent",
-                  boxShadow: confirmPassword && password !== confirmPassword
-                    ? "0 0 0 1px #f3727f"
-                    : "rgb(18,18,18) 0px 1px 0px, rgb(124,124,124) 0px 0px 0px 1px inset",
-                }} />
+              <div style={{ position: "relative" }}>
+                <input id="signupConfirm" type={showPassword ? "text" : "password"} value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password" required disabled={isLoading}
+                  style={{
+                    ...inputStyle, paddingRight: 44,
+                    boxShadow: confirmPassword && password !== confirmPassword
+                      ? "0 0 0 1px #f3727f"
+                      : "rgb(18,18,18) 0px 1px 0px, rgb(124,124,124) 0px 0px 0px 1px inset",
+                  }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#b3b3b3", fontSize: 16, padding: 4 }}>
+                  {showPassword ? "\u{1F648}" : "\u{1F441}"}
+                </button>
+              </div>
             </div>
             {error && <p style={{ color: "#f3727f", margin: 0, fontSize: 13 }}>{error}</p>}
             <button type="submit" disabled={isLoading || !allRulesPass} style={btnStyle}>
