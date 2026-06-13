@@ -1,9 +1,22 @@
 const { v4: uuidv4 } = require("uuid");
 const supabase = require("./supabase");
+const pool = require("../models/db");
 
 const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "certificate-studio";
 
-const fileMeta = new Map();
+// Auto-create file_metadata table if it doesn't exist
+pool.query(`
+  CREATE TABLE IF NOT EXISTS file_metadata (
+    id VARCHAR(36) PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    mimetype VARCHAR(100) NOT NULL,
+    size INTEGER NOT NULL,
+    storage_path TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  );
+`).catch((err) => {
+  console.error("Failed to create file_metadata table:", err);
+});
 
 async function storeFile(buffer, filename, mimetype) {
   if (!supabase) {
@@ -38,32 +51,54 @@ async function storeFile(buffer, filename, mimetype) {
     }
   }
 
-  fileMeta.set(id, { filename, mimetype, size: buffer.length, storagePath });
+  // Persist metadata in the database
+  await pool.query(
+    "INSERT INTO file_metadata (id, filename, mimetype, size, storage_path) VALUES ($1, $2, $3, $4, $5)",
+    [id, filename, mimetype, buffer.length, storagePath]
+  );
+
   return id;
 }
 
 async function getFile(id) {
-  const meta = fileMeta.get(id);
-  if (!meta) return null;
+  try {
+    const res = await pool.query("SELECT * FROM file_metadata WHERE id = $1", [id]);
+    const meta = res.rows[0];
+    if (!meta) return null;
 
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .download(meta.storagePath);
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .download(meta.storage_path);
 
-  if (error || !data) {
-    fileMeta.delete(id);
+    if (error || !data) {
+      await pool.query("DELETE FROM file_metadata WHERE id = $1", [id]);
+      return null;
+    }
+
+    return {
+      filename: meta.filename,
+      mimetype: meta.mimetype,
+      size: meta.size,
+      storagePath: meta.storage_path,
+      content: Buffer.from(await data.arrayBuffer()),
+    };
+  } catch (err) {
+    console.error("Error in getFile:", err);
     return null;
   }
-
-  return { ...meta, content: Buffer.from(await data.arrayBuffer()) };
 }
 
 async function deleteFile(id) {
-  const meta = fileMeta.get(id);
-  if (!meta) return;
+  try {
+    const res = await pool.query("SELECT storage_path FROM file_metadata WHERE id = $1", [id]);
+    const meta = res.rows[0];
+    if (!meta) return;
 
-  await supabase.storage.from(BUCKET).remove([meta.storagePath]);
-  fileMeta.delete(id);
+    await supabase.storage.from(BUCKET).remove([meta.storage_path]);
+    await pool.query("DELETE FROM file_metadata WHERE id = $1", [id]);
+  } catch (err) {
+    console.error("Error in deleteFile:", err);
+  }
 }
 
 module.exports = { storeFile, getFile, deleteFile };

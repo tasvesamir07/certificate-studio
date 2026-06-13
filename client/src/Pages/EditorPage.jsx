@@ -45,6 +45,9 @@ import {
   getCellValue,
 } from "../utils/textHelpers";
 
+import { compressImage } from "../utils/imageCompressor";
+
+
 // Lazy Loaded Components
 const CanvaDesignModal = React.lazy(() => import("../components/CanvaDesignModal"));
 const TemplateLibraryModal = React.lazy(() => import("../components/TemplateLibraryModal"));
@@ -656,11 +659,15 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("image", file);
-
-    const toastId = toast.loading("Uploading image...");
+    const toastId = toast.loading("Compressing image...");
     try {
+      const compressedFile = await compressImage(file, { maxSize: 1024, quality: 0.8 });
+      
+      const formData = new FormData();
+      formData.append("image", compressedFile);
+
+      toast.loading("Uploading image...", { id: toastId });
+      
       const uploadUrl = buildApiUrl(API_BASE_URL, "api/upload-image");
       const response = await axios.post(uploadUrl, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -668,7 +675,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
 
       const { url } = response.data;
       insertImage(url, targetId);
-      toast.success("Image uploaded!", { id: toastId });
+      toast.success("Image uploaded successfully!", { id: toastId });
     } catch (error) {
       console.error("Upload failed", error);
       toast.error("Upload failed: " + (error.response?.data?.message || error.message), { id: toastId });
