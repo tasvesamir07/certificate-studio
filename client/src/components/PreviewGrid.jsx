@@ -19,6 +19,7 @@ const PreviewGrid = ({
     isLayoutLocked,
     isPreviewGridLoading,
     previewImages,
+    previewName,
   } = useAppStore();
 
   const layoutReady = !!layout && isLayoutLocked;
@@ -107,23 +108,32 @@ const PreviewGrid = ({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 overflow-y-auto pr-1 flex-1">
-        {previewImages.map((img, i) => (
-          <div
-            key={i}
-            className="group flex flex-col gap-1.5 p-2 bg-bg-elevated border border-border-light rounded-xl cursor-pointer hover:border-accent hover:bg-bg-hover transition-all duration-150"
-            onClick={() => handlePreviewSelect(img.name)}
-          >
-            <img
-              src={img.imageSrc}
-              alt={img.name}
-              width={PREVIEW_THUMBNAIL_WIDTH}
-              loading="lazy"
-              className="w-full h-auto rounded-lg border border-border-light group-hover:border-accent/40"
-            />
-            <p className="text-xs font-semibold text-text-primary truncate m-0 group-hover:text-accent">{img.name}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 gap-4 overflow-y-auto pr-1 flex-1 content-start">
+        {previewImages.map((img, i) => {
+          const isActive = previewName && previewName.toLowerCase() === img.name.toLowerCase();
+          return (
+            <div
+              key={i}
+              className={`group flex flex-col gap-1.5 p-2 bg-bg-elevated border rounded-xl cursor-pointer hover:border-accent hover:bg-bg-hover transition-all duration-150 ${
+                isActive ? "border-accent bg-bg-hover" : "border-border-light"
+              }`}
+              onClick={() => handlePreviewSelect(img.name)}
+            >
+              <img
+                src={img.imageSrc}
+                alt={img.name}
+                width={PREVIEW_THUMBNAIL_WIDTH}
+                loading="lazy"
+                className={`w-full h-auto rounded-lg border group-hover:border-accent/40 ${
+                  isActive ? "border-accent/40" : "border-border-light"
+                }`}
+              />
+              <p className={`text-xs font-semibold truncate m-0 group-hover:text-accent ${
+                isActive ? "text-accent" : "text-text-primary"
+              }`}>{img.name}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
