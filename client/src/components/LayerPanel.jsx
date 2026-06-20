@@ -76,7 +76,7 @@ const LayerPanel = ({
           {!isCanvaConnected ? (
             <button
               type="button"
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-bg-primary font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer text-xs"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-black font-bold rounded-full shadow-sm hover:shadow-md transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer text-xs"
               onClick={handleConnectCanva}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -88,7 +88,7 @@ const LayerPanel = ({
             <div className="flex flex-col items-center gap-2 w-full">
               <button
                 type="button"
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-bg-primary font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer text-xs"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-black font-bold rounded-full shadow-sm hover:shadow-md transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer text-xs"
                 onClick={() => setIsCanvaModalOpen(true)}
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -98,7 +98,7 @@ const LayerPanel = ({
               </button>
               <button 
                 type="button" 
-                className="bg-transparent border border-border-custom text-xs font-medium text-text-muted cursor-pointer py-1 px-3 rounded-md transition-all duration-150 inline-flex items-center gap-1.5 hover:border-danger hover:text-danger hover:bg-danger/10"
+                className="bg-transparent border border-border-custom text-xs font-medium text-text-muted cursor-pointer py-1 px-3 rounded-full transition-all duration-150 inline-flex items-center gap-1.5 hover:border-danger hover:text-danger hover:bg-danger/10"
                 onClick={handleDisconnectCanva}
                 title="Securely unlink your Canva account"
               >

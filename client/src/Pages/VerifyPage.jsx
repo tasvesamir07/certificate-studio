@@ -104,7 +104,7 @@ const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
             </p>
             <button 
               onClick={() => navigate("/user/login")}
-              className="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-md font-bold text-xs uppercase tracking-wider transition-all duration-200 border-none cursor-pointer hover:-translate-y-0.5 shadow-xs"
+              className="bg-accent hover:bg-accent-hover text-black px-6 py-3 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-200 border-none cursor-pointer hover:-translate-y-0.5 shadow-xs"
             >
               Go to Studio
             </button>
@@ -151,13 +151,13 @@ const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
                 href={cert.certificateUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-md font-bold text-xs uppercase tracking-wider transition-all duration-200 border-none cursor-pointer hover:-translate-y-0.5 shadow-xs"
+                className="bg-accent hover:bg-accent-hover text-black px-6 py-3 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-200 border-none cursor-pointer hover:-translate-y-0.5 shadow-xs"
               >
                 View Certificate File
               </a>
               <button 
                 onClick={() => navigate("/user/login")}
-                className="bg-bg-elevated text-text-primary border border-border-custom hover:bg-bg-surface hover:border-accent px-6 py-3 rounded-md font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-none"
+                className="bg-bg-elevated text-text-primary border border-border-custom hover:bg-bg-surface hover:border-accent px-6 py-3 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-none"
               >
                 Create Certificate
               </button>

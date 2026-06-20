@@ -152,11 +152,15 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center bg-bg-primary p-6 md:p-12 gap-6 font-sans">
+    <div className="w-full min-h-screen flex flex-col items-center bg-bg-primary p-6 md:p-12 gap-6 font-sans relative overflow-hidden">
+      {/* Subtle ambient glows for visual depth */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-accent/5 rounded-full blur-[140px] pointer-events-none" />
+
       <Toaster position="bottom-right" />
-      <div className="max-w-[520px] w-full flex justify-start">
+      <div className="max-w-[520px] w-full flex justify-start relative z-10">
         <button 
-          className="inline-flex items-center gap-1.5 px-4 py-2 border border-border-light rounded-lg bg-bg-elevated text-text-secondary text-sm font-semibold hover:bg-bg-surface hover:text-accent hover:border-accent/40 active:translate-y-0 transition-all duration-150 cursor-pointer" 
+          className="inline-flex items-center gap-1.5 px-4 py-2 border border-border-custom rounded-full bg-bg-elevated text-text-secondary text-sm font-semibold hover:bg-bg-surface hover:text-accent hover:border-accent transition-all duration-150 cursor-pointer" 
           onClick={() => navigate("/generate-certifcate")}
         >
           <svg viewBox="0 0 24 24" width="20" height="20">
@@ -165,12 +169,13 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
           Back
         </button>
       </div>
-      <div className="max-w-[520px] w-full bg-bg-surface border border-border-light rounded-2xl p-8 shadow-sm">
+
+      <div className="max-w-[520px] w-full bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-lg p-8 shadow-card relative z-10">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-text-primary m-0 flex items-center gap-2">Profile</h2>
           {!isEditing ? (
             <button 
-              className="px-4 py-2 border border-border-light rounded-lg bg-bg-elevated text-text-secondary text-xs font-semibold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer" 
+              className="px-4 py-2 border border-border-custom rounded-full bg-bg-elevated text-text-secondary text-xs font-bold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer" 
               onClick={() => setIsEditing(true)}
             >
               Edit Profile
@@ -178,7 +183,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
           ) : (
             <div className="flex items-center gap-2">
               <button 
-                className="px-4 py-2 border border-border-light rounded-lg bg-bg-elevated text-text-secondary text-xs font-semibold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer mr-2" 
+                className="px-4 py-2 border border-border-custom rounded-full bg-bg-elevated text-text-secondary text-xs font-bold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer mr-2" 
                 onClick={() => {
                   setIsEditing(false);
                   setEditData({
@@ -192,7 +197,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 Cancel
               </button>
               <button 
-                className="px-4 py-2 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] text-xs shadow-sm hover:opacity-85 transition-all duration-150 cursor-pointer disabled:opacity-40" 
+                className="px-4 py-2 bg-accent hover:bg-accent-hover text-black font-bold uppercase tracking-wider rounded-full text-xs transition-all duration-150 cursor-pointer disabled:opacity-40" 
                 onClick={handleUpdateProfile} 
                 disabled={isSaving}
               >
@@ -211,14 +216,14 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
               onChange={(e) => setEditData({ ...editData, displayName: e.target.value })}
               placeholder="Enter your name"
               disabled={isSaving}
-              className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
+              className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
             />
           ) : (
             <input 
               type="text" 
               value={profileData.displayName || profileData.email?.split('@')[0] || "User"} 
               readOnly 
-              className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+              className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
             />
           )}
         </div>
@@ -229,7 +234,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
             type="text" 
             value={profileData.email || ""} 
             readOnly 
-            className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner" 
+            className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner" 
           />
           <small className="text-xs text-text-muted mt-1 block">Email cannot be changed.</small>
         </div>
@@ -250,7 +255,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                   autoFocus: true
                 }}
                 containerClass="!w-full !font-sans"
-                inputClass="!w-full !h-auto !pl-14 !pr-10 !py-2.5 !border !border-border-light !rounded-md !bg-bg-elevated !text-text-primary !text-sm !font-sans !outline-none !transition-all !duration-200 !shadow-inner focus:!border-accent focus:!bg-bg-surface focus:!ring-2 focus:!ring-accent-bg-glow"
+                inputClass="!w-full !h-auto !pl-14 !pr-10 !py-2.5 !border !border-border-custom !rounded-md !bg-bg-elevated !text-text-primary !text-sm !font-sans !outline-none !transition-all !duration-200 !shadow-inner focus:!border-accent focus:!bg-bg-surface focus:!ring-2 focus:!ring-accent-bg-glow"
               />
               {isValidPhone && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center z-10" title="Valid Phone Number">
@@ -265,13 +270,13 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
               type="text" 
               value={profileData.phone || "Not provided"} 
               readOnly 
-              className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+              className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
             />
           )}
         </div>
       </div>
 
-      <div className="max-w-[520px] w-full bg-bg-surface border border-border-light rounded-2xl p-8 shadow-sm">
+      <div className="max-w-[520px] w-full bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-lg p-8 shadow-card relative z-10">
         <div>
           <h2 className="text-xl font-bold text-text-primary m-0 mb-4 flex items-center gap-2">Account Status</h2>
           <p style={{ margin: 0 }} className="text-sm text-text-secondary">
@@ -281,7 +286,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
         </div>
       </div>
 
-      <div className="max-w-[520px] w-full bg-bg-surface border border-border-light rounded-2xl p-8 shadow-sm">
+      <div className="max-w-[520px] w-full bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-lg p-8 shadow-card relative z-10">
         <h2 className="text-xl font-bold text-text-primary m-0 mb-2 flex items-center gap-2">Change Password</h2>
         <p className="text-sm text-text-secondary mb-4">
           Update your password by filling in the fields below.
@@ -298,7 +303,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 placeholder="Enter current password"
                 autoComplete="current-password"
                 disabled={isChanging}
-                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
+                className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
               />
               <button
                 type="button"
@@ -332,7 +337,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 placeholder="Enter new password (min 6 chars)"
                 autoComplete="new-password"
                 disabled={isChanging}
-                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
+                className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
               />
               <button
                 type="button"
@@ -366,7 +371,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 placeholder="Confirm new password"
                 autoComplete="new-password"
                 disabled={isChanging}
-                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
+                className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
               />
               <button
                 type="button"
@@ -392,7 +397,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
           <button
             type="submit"
             disabled={isChanging}
-            className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+            className="w-full py-3 bg-accent text-black font-bold uppercase tracking-[1.5px] text-xs rounded-full hover:scale-102 hover:bg-accent-hover active:scale-100 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
           >
             {isChanging ? "Updating..." : "Update Password"}
           </button>

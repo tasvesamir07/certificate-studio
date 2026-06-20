@@ -698,7 +698,7 @@ const EmailSettingsPanel = ({
               isPreviewLoading ||
               (layoutIsRequired && !layoutReady)
             }
-            className="w-full py-3 bg-bg-elevated border border-border-light text-text-primary font-bold rounded-lg shadow-sm hover:bg-bg-hover transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs uppercase tracking-wider"
+            className="w-full py-3 bg-bg-elevated border border-border-custom text-text-primary font-bold rounded-full shadow-sm hover:bg-bg-hover transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs uppercase tracking-wider"
           >
             {isLoading
               ? "Generating..."
@@ -707,7 +707,7 @@ const EmailSettingsPanel = ({
           <button
             onClick={handleGenerateAndSend}
             disabled={!canAttemptEmailSend}
-            className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer flex items-center justify-center"
+            className="w-full py-3 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer flex items-center justify-center"
           >
             {sendButtonLabel}
           </button>
@@ -717,14 +717,14 @@ const EmailSettingsPanel = ({
               <button
                 onClick={onTogglePause}
                 type="button"
-                className="flex-1 py-2 px-3 border border-border-light bg-bg-elevated text-text-secondary rounded-lg text-xs font-bold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer"
+                className="flex-1 py-2 px-3 border border-border-custom bg-bg-elevated text-text-secondary rounded-full text-xs font-bold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer"
               >
                 {isPaused ? "▶ Resume" : "⏸ Pause"}
               </button>
               <button
                 onClick={handleStopSending}
                 type="button"
-                className="flex-1 py-2 px-3 bg-danger/15 border border-danger/30 text-danger rounded-lg text-xs font-bold hover:bg-danger/25 hover:border-danger/50 transition-all duration-150 cursor-pointer"
+                className="flex-1 py-2 px-3 bg-danger/15 border border-danger/30 text-danger rounded-full text-xs font-bold hover:bg-danger/25 hover:border-danger/50 transition-all duration-150 cursor-pointer"
               >
                 <span>Stop</span>
               </button>

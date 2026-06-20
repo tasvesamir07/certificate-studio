@@ -30,22 +30,22 @@ const Modal = ({
       onClick={onClose}
     >
       <div
-        className={`bg-canvas text-ink rounded-[var(--radius-lg)] w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col border border-hairline shadow-[var(--shadow-card)] ${className}`}
+        className={`bg-bg-surface text-text-primary rounded-lg w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col border border-border-custom shadow-card ${className}`}
         onClick={(e) => e.stopPropagation()}
         style={style}
         {...props}
       >
         {(title || showClose) && (
-          <div className="p-5 border-b border-hairline-soft flex justify-between items-center">
+          <div className="p-5 border-b border-border-light flex justify-between items-center">
             {title && (
-              <h3 className="m-0 text-lg font-[540] tracking-[-0.01em] text-ink">
+              <h3 className="m-0 text-lg font-bold tracking-tight text-text-primary">
                 {title}
               </h3>
             )}
             {showClose && (
               <button
                 type="button"
-                className="bg-transparent border-none text-ink opacity-40 hover:opacity-100 cursor-pointer p-1.5 flex items-center justify-center rounded-full hover:bg-surface-soft transition-all duration-100"
+                className="bg-transparent border-none text-text-muted hover:text-text-primary cursor-pointer p-1.5 flex items-center justify-center rounded-full hover:bg-bg-hover transition-all duration-100"
                 onClick={onClose}
                 aria-label="Close modal"
               >

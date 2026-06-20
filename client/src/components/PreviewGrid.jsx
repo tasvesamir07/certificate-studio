@@ -70,12 +70,12 @@ const PreviewGrid = ({
           <p className="text-xs text-text-muted leading-relaxed mb-3">
             Lock your layout in Step 3 to generate all previews.
           </p>
-          <button className="w-full py-2 bg-bg-elevated border border-border-light text-text-primary font-bold rounded-lg opacity-40 cursor-not-allowed text-xs uppercase tracking-wider text-center mb-4 flex items-center justify-center" disabled>
+          <button className="w-full py-2 bg-bg-elevated border border-border-custom text-text-primary font-bold rounded-full opacity-40 cursor-not-allowed text-xs uppercase tracking-wider text-center mb-4 flex items-center justify-center" disabled>
             Generate All {data.length} Previews
           </button>
         </>
       ) : isPreviewGridLoading ? (
-        <button className="w-full py-2 bg-bg-elevated border border-border-light text-text-primary font-bold rounded-lg opacity-40 cursor-not-allowed text-xs uppercase tracking-wider text-center mb-4 flex items-center justify-center" disabled>
+        <button className="w-full py-2 bg-bg-elevated border border-border-custom text-text-primary font-bold rounded-full opacity-40 cursor-not-allowed text-xs uppercase tracking-wider text-center mb-4 flex items-center justify-center" disabled>
           Generating Previews...
         </button>
       ) : previewImages.length === 0 ? (
@@ -84,7 +84,7 @@ const PreviewGrid = ({
             Ready to see what everyone's certificate will look like?
           </p>
           <button
-            className="w-full py-2 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer text-center mb-4 flex items-center justify-center"
+            className="w-full py-2.5 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer text-center mb-4 flex items-center justify-center"
             onClick={handleGeneratePreviews}
             disabled={!layoutReady || !data.length || !templateImageRef.current}
           >
@@ -93,7 +93,7 @@ const PreviewGrid = ({
         </>
       ) : (
         <button
-          className="w-full py-2 bg-transparent border border-border-light text-text-secondary font-semibold rounded-lg hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-center mb-4 flex items-center justify-center text-xs"
+          className="w-full py-2.5 bg-bg-elevated border border-border-custom text-text-secondary font-semibold rounded-full hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-center mb-4 flex items-center justify-center text-xs"
           onClick={() => setPreviewImages([])}
         >
           Clear Previews

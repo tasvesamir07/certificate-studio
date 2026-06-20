@@ -218,7 +218,7 @@ const CanvaDesignModal = ({ isOpen, onClose, onSelect, userId, apiBaseUrl }) => 
                               )}
                             </div>
                             <div className="flex flex-col gap-1.5 mt-2">
-                              <button className="w-full py-2 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-[11px] transition-all cursor-pointer border-none" onClick={() => onSelect(design.id, useBackSide ? [pageSelection.front, pageSelection.back] : [pageSelection.front])}>
+                              <button className="w-full py-2 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover uppercase tracking-wider text-[11px] transition-all duration-150 cursor-pointer border-none" onClick={() => onSelect(design.id, useBackSide ? [pageSelection.front, pageSelection.back] : [pageSelection.front])}>
                                 Confirm Import
                               </button>
                               <button className="w-full py-2 bg-transparent text-text-muted hover:text-text-primary font-semibold text-[11px] transition-colors cursor-pointer border-none" onClick={() => setCustomizingDesignId(null)}>
@@ -239,7 +239,7 @@ const CanvaDesignModal = ({ isOpen, onClose, onSelect, userId, apiBaseUrl }) => 
               {designs.length === 0 && (
                 <div className="py-12 text-center flex flex-col items-center gap-3">
                   <p className="text-sm text-text-muted">No designs found in your Canva account.</p>
-                  <button className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer max-w-[240px] border-none" onClick={handleCreateNew}>
+                  <button className="w-full py-3 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer max-w-[240px] border-none" onClick={handleCreateNew}>
                     Create Your First Design
                   </button>
                 </div>

@@ -37,14 +37,14 @@
 }
 
 body.theme-light {
-  --ink: #000000;
-  --canvas: #ffffff;
-  --inverse-canvas: #000000;
+  --ink: #121212;
+  --canvas: #fafafa;
+  --inverse-canvas: #121212;
   --inverse-ink: #ffffff;
   --on-inverse-soft: rgba(255,255,255,0.16);
-  --hairline: #e6e6e6;
-  --hairline-soft: #f1f1f1;
-  --surface-soft: #f7f7f5;
+  --hairline: #e0e0e0;
+  --hairline-soft: #f5f5f5;
+  --surface-soft: #ffffff;
   --block-lime: #dceeb1;
   --block-lilac: #c5b0f4;
   --block-cream: #f4ecd6;
@@ -52,39 +52,39 @@ body.theme-light {
   --block-mint: #c8e6cd;
   --block-coral: #f3c9b6;
   --block-navy: #1f1d3d;
-  --accent-magenta: #ff3d8b;
-  --semantic-success: #1ea64a;
-  --danger: #e74c3c;
+  --accent-magenta: #1db954;
+  --semantic-success: #1db954;
+  --danger: #ef4444;
   --overlay-scrim: rgba(0,0,0,0.6);
   --radius-pill: 9999px;
   --radius-full: 9999px;
-  --radius-md: 8px;
-  --radius-lg: 24px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
-  --accent: #000000;
-  --accent-hover: #000000;
-  --bg-primary: #ffffff;
+  --accent: #1db954; /* Spotify Green */
+  --accent-hover: #1aa34a;
+  --bg-primary: #fafafa;
   --bg-surface: #ffffff;
-  --bg-elevated: #f7f7f5;
-  --bg-hover: #eeeeee;
-  --text-primary: #000000;
-  --text-secondary: #000000;
-  --text-muted: #000000;
-  --border: #e6e6e6;
-  --border-light: #f1f1f1;
-  --accent-bg-glow: rgba(0,0,0,0.06);
-  --success: #1ea64a;
+  --bg-elevated: #f0f0f0;
+  --bg-hover: #e5e5e5;
+  --text-primary: #121212;
+  --text-secondary: #535353;
+  --text-muted: #7c7c7c;
+  --border: #e0e0e0;
+  --border-light: #f5f5f5;
+  --accent-bg-glow: rgba(29, 185, 84, 0.08);
+  --success: #1db954;
 }
 
 body.theme-dark {
   --ink: #ffffff;
-  --canvas: #111111;
+  --canvas: #121212;
   --inverse-canvas: #ffffff;
-  --inverse-ink: #000000;
+  --inverse-ink: #121212;
   --on-inverse-soft: rgba(0,0,0,0.16);
-  --hairline: #333333;
-  --hairline-soft: #222222;
-  --surface-soft: #1a1a1a;
+  --hairline: #282828;
+  --hairline-soft: #1f1f1f;
+  --surface-soft: #181818;
   --block-lime: #3a4a2a;
   --block-lilac: #3a2a5a;
   --block-cream: #4a3a2a;
@@ -93,27 +93,27 @@ body.theme-dark {
   --block-coral: #4a3a2a;
   --block-navy: #0a0a1a;
   --accent-magenta: #ff3d8b;
-  --semantic-success: #4ade80;
-  --danger: #ff6b6b;
+  --semantic-success: #1ed760;
+  --danger: #f3727f;
   --overlay-scrim: rgba(0,0,0,0.8);
   --radius-pill: 9999px;
   --radius-full: 9999px;
-  --radius-md: 8px;
-  --radius-lg: 24px;
-  --shadow-card: 0 4px 16px rgba(0,0,0,0.3);
-  --accent: #ffffff;
-  --accent-hover: #ffffff;
-  --bg-primary: #111111;
-  --bg-surface: #111111;
-  --bg-elevated: #1a1a1a;
-  --bg-hover: #222222;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.5);
+  --accent: #1ed760; /* Spotify Green */
+  --accent-hover: #1db954;
+  --bg-primary: #121212; /* Deepest black */
+  --bg-surface: #181818; /* Dark Surface */
+  --bg-elevated: #1f1f1f; /* Mid Dark button bg */
+  --bg-hover: #2a2a2a;
   --text-primary: #ffffff;
-  --text-secondary: #ffffff;
-  --text-muted: #ffffff;
-  --border: #333333;
-  --border-light: #222222;
-  --accent-bg-glow: rgba(255,255,255,0.06);
-  --success: #4ade80;
+  --text-secondary: #cbcbcb;
+  --text-muted: #b3b3b3;
+  --border: #282828;
+  --border-light: #1f1f1f;
+  --accent-bg-glow: rgba(30, 215, 96, 0.08);
+  --success: #1ed760;
 }
 
 * { box-sizing: border-box; }

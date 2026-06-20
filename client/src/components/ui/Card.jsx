@@ -7,18 +7,18 @@ const Card = React.forwardRef(({
   variant = "default",
   ...props
 }, ref) => {
-  let cardClass = "bg-canvas text-ink rounded-[var(--radius-lg)] p-6 border border-hairline transition-all duration-200";
+  let cardClass = "bg-bg-surface/80 backdrop-blur-md text-text-primary rounded-lg p-6 border border-border-custom shadow-card transition-all duration-200";
 
   if (variant === "interactive") {
-    cardClass = "bg-canvas text-ink rounded-[var(--radius-lg)] p-6 border border-hairline transition-all duration-200 hover:border-ink hover:shadow-[var(--shadow-card)] cursor-pointer";
+    cardClass = "bg-bg-surface/80 backdrop-blur-md text-text-primary rounded-lg p-6 border border-border-custom shadow-card transition-all duration-200 hover:border-accent hover:shadow-[0_0_20px_rgba(30,215,96,0.15)] cursor-pointer";
   } else if (variant === "lime") {
-    cardClass = "bg-block-lime text-ink rounded-[var(--radius-lg)] p-6 transition-all duration-200";
+    cardClass = "bg-block-lime text-text-primary rounded-lg p-6 transition-all duration-200";
   } else if (variant === "lilac") {
-    cardClass = "bg-block-lilac text-ink rounded-[var(--radius-lg)] p-6 transition-all duration-200";
+    cardClass = "bg-block-lilac text-text-primary rounded-lg p-6 transition-all duration-200";
   } else if (variant === "cream") {
-    cardClass = "bg-block-cream text-ink rounded-[var(--radius-lg)] p-6 transition-all duration-200";
+    cardClass = "bg-block-cream text-text-primary rounded-lg p-6 transition-all duration-200";
   } else if (variant === "navy") {
-    cardClass = "bg-block-navy text-inverse-ink rounded-[var(--radius-lg)] p-6 transition-all duration-200";
+    cardClass = "bg-block-navy text-inverse-ink rounded-lg p-6 transition-all duration-200";
   }
 
   return (

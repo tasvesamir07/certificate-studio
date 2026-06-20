@@ -92,7 +92,7 @@ const CanvasStage = memo(({
 
   return (
     <div className="flex-1 flex flex-col items-center bg-bg-primary p-7 h-[calc(100vh-56px)] overflow-auto relative">
-      <div className="w-full max-w-[600px] bg-bg-surface border border-border-light rounded-xl p-4 mb-4 flex flex-col gap-2 shadow-sm">
+      <div className="w-full max-w-[600px] bg-bg-surface border border-border-custom rounded-lg p-4 mb-4 flex flex-col gap-2 shadow-card">
         <div className="flex items-center justify-between text-xs font-bold text-text-primary">
           <label htmlFor="zoomSlider">
             Zoom: {Math.round(previewScale * 100)}%
@@ -117,7 +117,7 @@ const CanvasStage = memo(({
       </div>
 
       <div className="w-full max-w-[600px] flex items-center justify-between mb-4 gap-4">
-        <div className="px-3.5 py-1.5 bg-bg-surface border border-border-light rounded-full text-xs text-text-secondary shadow-sm font-medium">
+        <div className="px-3.5 py-1.5 bg-bg-surface border border-border-custom rounded-full text-xs text-text-secondary shadow-card font-medium">
           Previewing: <strong>{previewName || "Your Name Here"}</strong>
         </div>
 
@@ -125,8 +125,8 @@ const CanvasStage = memo(({
           <button
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150 ${
               showGrid 
-                ? "bg-accent text-bg-primary shadow-sm" 
-                : "bg-bg-surface border border-border-light text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
+                ? "bg-accent text-black shadow-card" 
+                : "bg-bg-surface border border-border-custom text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
             }`}
             onClick={() => setShowGrid(!showGrid)}
             disabled={!template}
@@ -136,10 +136,10 @@ const CanvasStage = memo(({
           </button>
 
           {templateBackURL && (
-            <div className="flex items-center bg-bg-elevated rounded-full p-0.5 border border-border-light">
+            <div className="flex items-center bg-bg-elevated rounded-full p-0.5 border border-border-custom">
               <button
                 className={`px-3.5 py-1 text-[11px] font-semibold rounded-full cursor-pointer transition-all duration-150 ${
-                  previewSide === "front" ? "bg-bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary"
+                  previewSide === "front" ? "bg-bg-surface text-text-primary shadow-card border border-border-custom" : "text-text-muted hover:text-text-primary"
                 }`}
                 onClick={() => setPreviewSide("front")}
               >
@@ -147,7 +147,7 @@ const CanvasStage = memo(({
               </button>
               <button
                 className={`px-3.5 py-1 text-[11px] font-semibold rounded-full cursor-pointer transition-all duration-150 ${
-                  previewSide === "back" ? "bg-bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary"
+                  previewSide === "back" ? "bg-bg-surface text-text-primary shadow-card border border-border-custom" : "text-text-muted hover:text-text-primary"
                 }`}
                 onClick={() => setPreviewSide("back")}
               >

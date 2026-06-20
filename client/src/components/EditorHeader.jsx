@@ -12,18 +12,18 @@ const EditorHeader = ({ navigate, onLogout }) => {
   };
 
   return (
-    <div className="sticky top-0 z-[100] flex items-center justify-between px-6 h-14 bg-canvas border-b border-hairline">
+    <div className="sticky top-0 z-[100] flex items-center justify-between px-6 h-14 bg-bg-surface border-b border-border-custom">
       <div className="flex items-center gap-5 h-full">
         <span
-          className="font-sans text-lg font-[540] tracking-[-0.01em] text-ink cursor-pointer select-none"
+          className="font-sans text-lg font-bold tracking-tight text-text-primary cursor-pointer select-none"
           onClick={() => navigate("/generate-certifcate")}
         >
           Certificate Studio
         </span>
         <button
           type="button"
-          className={`border-none bg-transparent px-3.5 py-1.5 font-sans text-sm font-[480] text-ink cursor-pointer transition-all duration-100 rounded-[var(--radius-pill)] ${
-            currentPath === "/generate-certifcate" ? "bg-ink text-canvas" : "opacity-50 hover:opacity-100 hover:bg-surface-soft"
+          className={`border-none bg-transparent px-3.5 py-1.5 font-sans text-sm font-bold text-text-primary cursor-pointer transition-all duration-150 rounded-full ${
+            currentPath === "/generate-certifcate" ? "bg-accent text-black" : "opacity-60 hover:opacity-100 hover:bg-bg-hover"
           }`}
           onClick={() => navigate("/generate-certifcate")}
         >
@@ -31,8 +31,8 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className={`border-none bg-transparent px-3.5 py-1.5 font-sans text-sm font-[480] text-ink cursor-pointer transition-all duration-100 rounded-[var(--radius-pill)] ${
-            currentPath === "/profile" ? "bg-ink text-canvas" : "opacity-50 hover:opacity-100 hover:bg-surface-soft"
+          className={`border-none bg-transparent px-3.5 py-1.5 font-sans text-sm font-bold text-text-primary cursor-pointer transition-all duration-150 rounded-full ${
+            currentPath === "/profile" ? "bg-accent text-black" : "opacity-60 hover:opacity-100 hover:bg-bg-hover"
           }`}
           onClick={() => navigate("/profile")}
         >
@@ -40,10 +40,10 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-sm font-[450] text-ink opacity-50 hidden sm:inline">{authUser || "Signed in"}</span>
+        <span className="text-sm font-medium text-text-secondary opacity-80 hidden sm:inline">{authUser || "Signed in"}</span>
         <button
           type="button"
-          className="bg-transparent border border-hairline text-ink opacity-60 hover:opacity-100 cursor-pointer px-2.5 py-1.5 text-xs font-[480] rounded-[var(--radius-pill)] transition-all duration-100 inline-flex items-center gap-1.5 hover:border-ink"
+          className="bg-transparent border border-border-custom text-text-secondary hover:text-text-primary cursor-pointer px-2.5 py-1.5 text-xs font-semibold rounded-full transition-all duration-150 inline-flex items-center gap-1.5 hover:border-accent"
           onClick={toggleLanguage}
           title="Toggle Language"
         >
@@ -56,7 +56,7 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className="bg-transparent border border-hairline text-ink opacity-60 hover:opacity-100 cursor-pointer px-2.5 py-1.5 text-xs font-[480] rounded-[var(--radius-pill)] transition-all duration-100 inline-flex items-center gap-1.5 hover:border-ink"
+          className="bg-transparent border border-border-custom text-text-secondary hover:text-text-primary cursor-pointer px-2.5 py-1.5 text-xs font-semibold rounded-full transition-all duration-150 inline-flex items-center gap-1.5 hover:border-accent"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           title="Toggle color theme"
         >
@@ -86,7 +86,7 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className="bg-transparent border-none text-ink opacity-50 hover:opacity-100 font-[480] text-sm cursor-pointer transition-all duration-100 underline px-2 py-1"
+          className="bg-transparent border-none text-text-secondary hover:text-accent font-semibold text-sm cursor-pointer transition-all duration-150 underline px-2 py-1"
           onClick={onLogout}
         >
           {t("logout")}

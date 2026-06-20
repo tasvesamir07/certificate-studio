@@ -288,7 +288,7 @@ const PropertiesPanel = ({
             !previewNameIsValid ||
             !layoutReady
           }
-          className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer flex items-center justify-center gap-2"
+          className="w-full py-3 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider text-xs"
         >
           {isPreviewLoading ? "Downloading..." : "Download Preview PDF"}
         </button>

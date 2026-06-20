@@ -264,7 +264,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+                className="w-full py-3 bg-accent text-black font-bold uppercase tracking-[1.5px] text-xs rounded-full hover:scale-102 hover:bg-accent-hover active:scale-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? "Sending..." : "Send OTP"}
               </button>
@@ -334,7 +334,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
                 type="button"
                 onClick={handleVerifyOTP}
                 disabled={isLoading || timerExpired || otp.join("").length !== 6}
-                className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+                className="w-full py-3 bg-accent text-black font-bold uppercase tracking-[1.5px] text-xs rounded-full hover:scale-102 hover:bg-accent-hover active:scale-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? "Verifying..." : "Verify OTP"}
               </button>
@@ -407,7 +407,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+                className="w-full py-3 bg-accent text-black font-bold uppercase tracking-[1.5px] text-xs rounded-full hover:scale-102 hover:bg-accent-hover active:scale-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoading ? "Resetting..." : "Reset Password"}
               </button>
@@ -424,7 +424,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
             <button
               type="button"
               onClick={() => navigate("/user/login")}
-              className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+              className="w-full py-3 bg-accent text-black font-bold uppercase tracking-[1.5px] text-xs rounded-full hover:scale-102 hover:bg-accent-hover active:scale-100 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               Go to Login
             </button>

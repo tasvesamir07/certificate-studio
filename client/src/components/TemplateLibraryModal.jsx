@@ -141,7 +141,7 @@ const TemplateLibraryModal = ({
                   <option value="Voucher" className="bg-bg-surface text-text-primary">Voucher</option>
                 </select>
               </div>
-              <button type="submit" className="w-full py-2 px-4 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-[11px] transition-all cursor-pointer border-none disabled:opacity-40 disabled:cursor-not-allowed h-9 flex items-center justify-center" disabled={isSaving || !currentTemplateUrl}>
+              <button type="submit" className="w-full py-2 px-4 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover uppercase tracking-wider text-[11px] transition-all duration-150 cursor-pointer border-none disabled:opacity-40 disabled:cursor-not-allowed h-9 flex items-center justify-center" disabled={isSaving || !currentTemplateUrl}>
                 {isSaving ? "Saving..." : "Save Configuration"}
               </button>
             </div>
