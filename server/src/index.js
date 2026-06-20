@@ -59,7 +59,8 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production") {
+    const isVercelPreview = /^https:\/\/certificate-studio-.*\.vercel\.app$/.test(origin);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production" || isVercelPreview) {
       return callback(null, true);
     }
     return callback(new Error("CORS policy violation: origin not allowed."));
