@@ -11,7 +11,9 @@ export function useFonts(apiBaseUrl) {
     try {
       setLoading(true);
       const fontsUrl = buildApiUrl(apiBaseUrl, "api/fonts");
-      const response = await axios.get(fontsUrl);
+      const token = window.localStorage.getItem("certificate-studio-session");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(fontsUrl, { headers });
       const fontsData = response.data || [];
       setFonts(fontsData);
 

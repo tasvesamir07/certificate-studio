@@ -44,7 +44,10 @@ function App() {
         setAuthUserId(storedUserId || "");
         
         try {
-          const res = await axios.get(buildApiUrl(API_BASE_URL, `api/canva/check-connection?userId=${storedUserId}`));
+          const res = await axios.get(
+            buildApiUrl(API_BASE_URL, `api/canva/check-connection?userId=${storedUserId}`),
+            { headers: { Authorization: `Bearer ${storedToken}` } }
+          );
           setIsCanvaConnected(res.data.isConnected);
         } catch (err) {}
       }
