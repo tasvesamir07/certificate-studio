@@ -4,12 +4,7 @@ import { useAppStore } from "../shared/store/useAppStore";
 
 const EditorHeader = ({ navigate, onLogout }) => {
   const { theme, setTheme, currentPath, authUser } = useAppStore();
-  const { t, i18n } = useTranslation();
-
-  const toggleLanguage = () => {
-    const nextLng = i18n.language === "en" ? "es" : "en";
-    i18n.changeLanguage(nextLng);
-  };
+  const { t } = useTranslation();
 
   return (
     <div className="sticky top-0 z-[100] flex items-center justify-between px-6 h-14 bg-bg-surface border-b border-border-custom">
@@ -45,19 +40,6 @@ const EditorHeader = ({ navigate, onLogout }) => {
       </div>
       <div className="flex items-center gap-3">
         <span className="text-sm font-medium text-text-secondary opacity-80 hidden sm:inline">{authUser || "Signed in"}</span>
-        <button
-          type="button"
-          className="bg-transparent border border-border-custom text-text-secondary hover:text-text-primary cursor-pointer px-2.5 py-1.5 text-xs font-semibold rounded-full transition-all duration-150 inline-flex items-center gap-1.5 hover:border-accent"
-          onClick={toggleLanguage}
-          title="Toggle Language"
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="2" y1="12" x2="22" y2="12" />
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-          </svg>
-          <span className="hidden sm:inline">{i18n.language === "en" ? "Español" : "English"}</span>
-        </button>
         <button
           type="button"
           className="bg-transparent border border-border-custom text-text-secondary hover:text-text-primary cursor-pointer px-2.5 py-1.5 text-xs font-semibold rounded-full transition-all duration-150 inline-flex items-center gap-1.5 hover:border-accent"
