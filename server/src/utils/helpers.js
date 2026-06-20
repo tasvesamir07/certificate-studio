@@ -53,9 +53,8 @@ const buildEmailBodies = (template = "", name = "", email = "") => {
 
   const escapedName = escapeHTML(safeName);
   const escapedEmail = escapeHTML(safeEmail);
-  const escapedTemplate = escapeHTML(baseTemplate);
 
-  const htmlPopulated = escapedTemplate
+  const htmlPopulated = baseTemplate
     .replace(NAME_TOKEN_REGEX, escapedName)
     .replace(EMAIL_TOKEN_REGEX, escapedEmail)
     .replace(/\r?\n/g, "<br />");
