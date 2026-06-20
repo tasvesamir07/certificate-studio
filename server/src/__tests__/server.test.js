@@ -97,4 +97,41 @@ describe('Server Route Integration Tests', () => {
     expect(res.status).toBe(404);
     expect(res.body.message).toContain('not found');
   });
+
+  test('POST /api/verify/issue successfully creates certificate mapping (userId from token)', async () => {
+    const mockCreatedCert = {
+      id: 'uuid-1234',
+      recipientName: 'Alice',
+      recipientEmail: 'alice@test.com',
+      certificateUrl: 'http://test.com/cert1.jpg',
+      issueDate: '2026-06-21T00:00:00Z'
+    };
+    vi.spyOn(pool, 'query').mockResolvedValueOnce({ rows: [mockCreatedCert] });
+
+    const res = await request(app)
+      .post('/api/verify/issue')
+      .set('Authorization', `Bearer ${testToken}`)
+      .send({
+        recipientName: 'Alice',
+        recipientEmail: 'alice@test.com',
+        certificateUrl: 'http://test.com/cert1.jpg'
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual(mockCreatedCert);
+  });
+
+  test('POST /api/verify/issue returns 400 if required fields are missing', async () => {
+    const res = await request(app)
+      .post('/api/verify/issue')
+      .set('Authorization', `Bearer ${testToken}`)
+      .send({
+        recipientName: '',
+        recipientEmail: 'alice@test.com',
+        certificateUrl: 'http://test.com/cert1.jpg'
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('required');
+  });
 });

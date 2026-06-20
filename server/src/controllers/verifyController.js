@@ -25,7 +25,8 @@ const getCertificate = async (req, res) => {
 };
 
 const issueCertificate = async (req, res) => {
-  const { id, userId, recipientName, recipientEmail, certificateUrl } = req.body;
+  const { id, recipientName, recipientEmail, certificateUrl } = req.body;
+  const userId = (req.user && req.user.id) || req.body.userId;
   if (!userId || !recipientName || !recipientEmail || !certificateUrl) {
     return res.status(400).send({ message: "userId, recipientName, recipientEmail, and certificateUrl are required." });
   }
