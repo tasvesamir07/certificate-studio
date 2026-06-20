@@ -2,14 +2,77 @@ import React from "react";
 import { useAppStore } from "../shared/store/useAppStore";
 import { isValidEmail } from "../utils/textHelpers";
 
-const escapeHtml = (text = "") => {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+const sanitizeHtml = (htmlString) => {
+  if (!htmlString) return "";
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, "text/html");
+    const allowedTags = ["b", "strong", "i", "em", "u", "a", "img", "br", "p", "span", "div"];
+    
+    const sanitizeNode = (node) => {
+      if (node.nodeType === 3) { // Node.TEXT_NODE
+        return document.createTextNode(node.nodeValue);
+      }
+      
+      if (node.nodeType === 1) { // Node.ELEMENT_NODE
+        const tagName = node.tagName.toLowerCase();
+        if (allowedTags.includes(tagName)) {
+          const cleanElement = document.createElement(tagName);
+          
+          Array.from(node.attributes).forEach((attr) => {
+            const attrName = attr.name.toLowerCase();
+            const attrValue = attr.value;
+            
+            if ((attrName === "href" || attrName === "src") && 
+                (attrValue.trim().toLowerCase().startsWith("javascript:") || 
+                 attrValue.trim().toLowerCase().startsWith("data:text/html"))) {
+              return;
+            }
+            
+            if (
+              attrName === "style" || 
+              attrName === "alt" || 
+              attrName === "title" || 
+              attrName === "width" || 
+              attrName === "height" ||
+              (tagName === "a" && attrName === "href") ||
+              (tagName === "a" && attrName === "target") ||
+              (tagName === "img" && attrName === "src")
+            ) {
+              cleanElement.setAttribute(attrName, attrValue);
+            }
+          });
+          
+          Array.from(node.childNodes).forEach((child) => {
+            const cleanChild = sanitizeNode(child);
+            if (cleanChild) {
+              cleanElement.appendChild(cleanChild);
+            }
+          });
+          
+          return cleanElement;
+        }
+      }
+      return null;
+    };
+    
+    const fragment = document.createDocumentFragment();
+    Array.from(doc.body.childNodes).forEach((node) => {
+      const cleanNode = sanitizeNode(node);
+      if (cleanNode) {
+        fragment.appendChild(cleanNode);
+      }
+    });
+    
+    const tempDiv = document.createElement("div");
+    tempDiv.appendChild(fragment);
+    return tempDiv.innerHTML;
+  } catch (e) {
+    console.error("HTML Sanitization failed:", e);
+    return "";
+  }
 };
+
 
 const EmailSettingsPanel = ({
   getSharedFileProps,
@@ -618,7 +681,7 @@ const EmailSettingsPanel = ({
             <div className="font-sans text-sm leading-relaxed text-text-secondary overflow-wrap-anywhere break-words w-full">
               <div
                 dangerouslySetInnerHTML={{
-                  __html: escapeHtml(emailSettings.template || "").replace(/\n/g, "<br/>"),
+                  __html: sanitizeHtml(emailSettings.template || "").replace(/\n/g, "<br/>"),
                 }}
               />
 
@@ -626,7 +689,7 @@ const EmailSettingsPanel = ({
 
               <div
                 dangerouslySetInnerHTML={{
-                  __html: escapeHtml(emailSettings.signature || "").replace(/\n/g, "<br/>"),
+                  __html: sanitizeHtml(emailSettings.signature || "").replace(/\n/g, "<br/>"),
                 }}
               />
             </div>
