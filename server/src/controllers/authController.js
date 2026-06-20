@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
+const { generateToken } = require("../middleware/auth");
 const pool = require("../models/db");
 const { createTransporter } = require("../services/mailer");
 const { wrapEmailInTemplate } = require("../utils/helpers");
@@ -36,7 +37,7 @@ const login = async (req, res) => {
       id: user.id,
       email: user.email,
       displayName: user.display_name,
-      sessionToken: uuidv4(),
+      sessionToken: generateToken({ id: user.id, email: user.email }),
     });
   } catch (error) {
     res.status(500).send({ message: error.message });

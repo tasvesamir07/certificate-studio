@@ -1,22 +1,7 @@
 import React from "react";
 import FontPicker from "./FontPicker";
 import { useAppStore } from "../shared/store/useAppStore";
-
-const MAX_FONT_SIZE = 1000;
-const COLOR_SWATCHES = [
-  "#000000",
-  "#FFFFFF",
-  "#6366f1", // Indigo
-  "#3b82f6", // Blue
-  "#10b981", // Emerald
-  "#f59e0b", // Amber
-  "#ef4444", // Red
-  "#ec4899", // Pink
-  "#8b5cf6", // Purple
-  "#14b8a6", // Teal
-  "#64748b", // Slate
-  "#1e293b", // Navy Slate
-];
+import { COLOR_SWATCHES, MAX_FONT_SIZE } from "../utils/canvasHelpers";
 
 const PropertiesPanel = ({
   handleLayoutChange,

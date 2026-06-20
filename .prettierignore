@@ -1,0 +1,9 @@
+node_modules/
+build/
+dist/
+package-lock.json
+.vercel/
+client/build/
+client/dist/
+server/node_modules/
+client/node_modules/

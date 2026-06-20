@@ -19,8 +19,20 @@ export const CANVAS_TEXT_ALIGN = {
   right: "right",
 };
 
-export const CERTIFICATE_RENDER_SCALE = 1.6;
-export const CERTIFICATE_JPEG_QUALITY = 0.82;
+export const COLOR_SWATCHES = [
+  "#000000",
+  "#FFFFFF",
+  "#6366f1", // Indigo
+  "#3b82f6", // Blue
+  "#10b981", // Emerald
+  "#f59e0b", // Amber
+  "#ef4444", // Red
+  "#ec4899", // Pink
+  "#8b5cf6", // Purple
+  "#14b8a6", // Teal
+  "#64748b", // Slate
+  "#1e293b", // Navy Slate
+];
 
 export const fitFontSizeToBox = (
   ctx,
@@ -259,7 +271,7 @@ export const generateCertificatePDF = async (
     templateImage,
     layout,
     fullName,
-    { drawName: true, multiplier: CERTIFICATE_RENDER_SCALE, ...options }
+    { drawName: true, ...options }
   );
 
   const doc = new jsPDF({
@@ -269,8 +281,8 @@ export const generateCertificatePDF = async (
     format: [width, height],
   });
 
-  const imgData = canvas.toDataURL("image/jpeg", CERTIFICATE_JPEG_QUALITY);
-  doc.addImage(imgData, "JPEG", 0, 0, width, height, undefined, "MEDIUM");
+  const imgData = canvas.toDataURL("image/png");
+  doc.addImage(imgData, "PNG", 0, 0, width, height, undefined, "FAST");
 
   if (templateBackImage) {
     const backImg = templateBackImage;

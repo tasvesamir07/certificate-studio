@@ -397,7 +397,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
           <button
             type="submit"
             disabled={isChanging}
-            className="w-full py-3 bg-accent text-black font-bold uppercase tracking-[1.5px] text-xs rounded-full hover:scale-102 hover:bg-accent-hover active:scale-100 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
+            className="w-full py-3 bg-accent text-black font-bold uppercase tracking-[1.5px] text-xs rounded-full hover:scale-[1.02] hover:bg-accent-hover active:scale-100 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
           >
             {isChanging ? "Updating..." : "Update Password"}
           </button>

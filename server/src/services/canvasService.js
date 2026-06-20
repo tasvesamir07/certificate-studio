@@ -150,59 +150,8 @@ async function drawTextOnPDF(templateBuffer, layout, fullName, options = {}) {
   return Buffer.from(doc.output("arraybuffer"));
 }
 
-async function compressImageBuffer(buffer, mimeType, options = {}) {
-  const { maxSize = 1024, quality = 80 } = options;
-  try {
-    const img = await loadImage(buffer);
-    let width = img.width;
-    let height = img.height;
-
-    // Check if resize is needed
-    if (width > maxSize || height > maxSize) {
-      if (width > height) {
-        height = Math.round((height * maxSize) / width);
-        width = maxSize;
-      } else {
-        width = Math.round((width * maxSize) / height);
-        height = maxSize;
-      }
-    } else if (mimeType !== "image/jpeg" && mimeType !== "image/jpg") {
-      // For PNG/WebP, if they don't exceed max size, no need to re-encode them
-      return buffer;
-    }
-
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, width, height);
-
-    let format = "png";
-    let encodeOptions = {};
-
-    let targetMime = mimeType === "image/jpg" ? "image/jpeg" : mimeType;
-    if (targetMime === "image/jpeg") {
-      format = "jpeg";
-      encodeOptions = { quality };
-    } else if (targetMime === "image/webp") {
-      format = "webp";
-      encodeOptions = { quality };
-    }
-
-    const compressed = await canvas.encode(format, encodeOptions);
-    
-    // Only return compressed if it is smaller than original
-    if (compressed.length < buffer.length) {
-      return compressed;
-    }
-    return buffer;
-  } catch (err) {
-    console.warn("Failed to compress image on server, using original:", err);
-    return buffer;
-  }
-}
-
 module.exports = {
   drawTextOnCanvas,
-  drawTextOnPDF,
-  compressImageBuffer
+  drawTextOnPDF
 };
 

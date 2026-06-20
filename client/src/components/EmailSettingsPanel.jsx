@@ -2,6 +2,15 @@ import React from "react";
 import { useAppStore } from "../shared/store/useAppStore";
 import { isValidEmail } from "../utils/textHelpers";
 
+const escapeHtml = (text = "") => {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 const EmailSettingsPanel = ({
   getSharedFileProps,
   getSharedFileInputProps,
@@ -333,7 +342,7 @@ const EmailSettingsPanel = ({
               disabled={
                 !selectedMessagePresetId || isSavingMessagePreset || isSending
               }
-              className="align-self-start px-4 py-2 bg-danger text-white rounded-lg text-xs font-bold shadow-sm hover:bg-danger-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="self-start px-4 py-2 bg-danger text-white rounded-lg text-xs font-bold shadow-sm hover:bg-danger-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               title="Delete selected preset"
             >
               Delete
@@ -357,7 +366,7 @@ const EmailSettingsPanel = ({
                 isSavingMessagePreset ||
                 isSending
               }
-              className="align-self-start px-4 py-2 bg-accent text-bg-primary rounded-lg text-xs font-bold shadow-sm hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="self-start px-4 py-2 bg-accent text-bg-primary rounded-lg text-xs font-bold shadow-sm hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSavingMessagePreset ? "Saving..." : "Save As Preset"}
             </button>
@@ -482,7 +491,7 @@ const EmailSettingsPanel = ({
                 isSavingSignaturePreset ||
                 isSending
               }
-              className="align-self-start px-4 py-2 bg-danger text-white rounded-lg text-xs font-bold shadow-sm hover:bg-danger-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="self-start px-4 py-2 bg-danger text-white rounded-lg text-xs font-bold shadow-sm hover:bg-danger-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               title="Delete selected preset"
             >
               Delete
@@ -506,7 +515,7 @@ const EmailSettingsPanel = ({
                 isSavingSignaturePreset ||
                 isSending
               }
-              className="align-self-start px-4 py-2 bg-accent text-bg-primary rounded-lg text-xs font-bold shadow-sm hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="self-start px-4 py-2 bg-accent text-bg-primary rounded-lg text-xs font-bold shadow-sm hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSavingSignaturePreset ? "Saving..." : "Save As Preset"}
             </button>
@@ -609,7 +618,7 @@ const EmailSettingsPanel = ({
             <div className="font-sans text-sm leading-relaxed text-text-secondary overflow-wrap-anywhere break-words w-full">
               <div
                 dangerouslySetInnerHTML={{
-                  __html: (emailSettings.template || "").replace(/\n/g, "<br/>"),
+                  __html: escapeHtml(emailSettings.template || "").replace(/\n/g, "<br/>"),
                 }}
               />
 
@@ -617,7 +626,7 @@ const EmailSettingsPanel = ({
 
               <div
                 dangerouslySetInnerHTML={{
-                  __html: (emailSettings.signature || "").replace(/\n/g, "<br/>"),
+                  __html: escapeHtml(emailSettings.signature || "").replace(/\n/g, "<br/>"),
                 }}
               />
             </div>

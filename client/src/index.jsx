@@ -4,8 +4,15 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./i18n";
 import { initObservability } from "./observability";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 
 initObservability();
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
+root.render(
+  <React.StrictMode>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  </React.StrictMode>
+);

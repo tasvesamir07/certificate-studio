@@ -4,7 +4,7 @@ const Sentry = require("@sentry/node");
 if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    tracesSampleRate: 1.0,
+    tracesSampleRate: 0.1,
   });
   console.log("✅ Sentry server-side initialized.");
 }
@@ -50,8 +50,20 @@ app.use(
   })
 );
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:3000",
+  "https://certificate-studio-69kt.vercel.app",
+].filter(Boolean);
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS policy violation: origin not allowed."));
+  },
   credentials: true,
   exposedHeaders: ["Content-Type", "Content-Disposition"],
 }));

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 
 const Select = React.forwardRef(({
   label,
@@ -9,7 +9,8 @@ const Select = React.forwardRef(({
   style = {},
   ...props
 }, ref) => {
-  const generatedId = id || `select-${Math.random().toString(36).substring(2, 9)}`;
+  const reactId = useId();
+  const generatedId = id || reactId;
 
   return (
     <div className="grid gap-1.5 w-full" style={style}>

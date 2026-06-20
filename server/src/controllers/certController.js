@@ -4,7 +4,7 @@ const JSZip = require("jszip");
 const axios = require("axios");
 const XLSX = require("xlsx");
 const { v4: uuidv4 } = require("uuid");
-const { drawTextOnCanvas, drawTextOnPDF, compressImageBuffer } = require("../services/canvasService");
+const { drawTextOnCanvas, drawTextOnPDF } = require("../services/canvasService");
 const { getColumnValue, sanitizeFileName, stripExtension, parseBoolean, toTitleCase, buildEmailBodies } = require("../utils/helpers");
 const { createTransporter } = require("../services/mailer");
 const { storeFile, getFile, deleteFile } = require("../services/fileStore");
@@ -89,8 +89,7 @@ const getFontFile = (req, res) => {
 const uploadImage = async (req, res) => {
   if (!req.file) return res.status(400).send({ message: "No image file uploaded." });
   try {
-    const rawBuffer = fs.readFileSync(req.file.path);
-    const buffer = await compressImageBuffer(rawBuffer, req.file.mimetype, { maxSize: 1024, quality: 80 });
+    const buffer = fs.readFileSync(req.file.path);
     const fileId = await storeFile(buffer, req.file.originalname, req.file.mimetype);
     fs.unlinkSync(req.file.path);
     const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get("host")}`;

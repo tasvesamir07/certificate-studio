@@ -13,6 +13,9 @@ vi.mock('../services/mailer', () => {
 import request from 'supertest';
 import app from '../index';
 const pool = require('../models/db');
+import { generateToken } from '../middleware/auth';
+
+const testToken = generateToken({ id: 42, email: 'test@test.com' });
 
 describe('Server Route Integration Tests', () => {
   beforeEach(() => {
@@ -50,7 +53,9 @@ describe('Server Route Integration Tests', () => {
 
   // --- Templates Tests ---
   test('GET /api/templates requires userId', async () => {
-    const res = await request(app).get('/api/templates');
+    const res = await request(app)
+      .get('/api/templates')
+      .set('Authorization', `Bearer ${testToken}`);
     expect(res.status).toBe(400);
     expect(res.body.message).toContain('userId is required');
   });
@@ -61,7 +66,9 @@ describe('Server Route Integration Tests', () => {
     ];
     vi.spyOn(pool, 'query').mockResolvedValueOnce({ rows: mockTemplates });
 
-    const res = await request(app).get('/api/templates?userId=42');
+    const res = await request(app)
+      .get('/api/templates?userId=42')
+      .set('Authorization', `Bearer ${testToken}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual(mockTemplates);
   });

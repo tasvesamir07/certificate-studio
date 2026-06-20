@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 const Modal = ({
   isOpen,
@@ -10,6 +10,8 @@ const Modal = ({
   showClose = true,
   ...props
 }) => {
+  const modalRef = useRef(null);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -21,6 +23,63 @@ const Modal = ({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        if (!modalRef.current) return;
+        const focusableElements = modalRef.current.querySelectorAll(
+          'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]'
+        );
+        
+        if (focusableElements.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Shift focus to the modal when opened
+    if (modalRef.current) {
+      const focusableElements = modalRef.current.querySelectorAll(
+        'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]'
+      );
+      if (focusableElements.length > 0) {
+        // Focus the first focusable element inside the modal
+        focusableElements[0].focus();
+      } else {
+        modalRef.current.focus();
+      }
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
@@ -30,7 +89,12 @@ const Modal = ({
       onClick={onClose}
     >
       <div
-        className={`bg-bg-surface text-text-primary rounded-lg w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col border border-border-custom shadow-card ${className}`}
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        tabIndex="-1"
+        className={`bg-bg-surface text-text-primary rounded-lg w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col border border-border-custom shadow-card outline-none ${className}`}
         onClick={(e) => e.stopPropagation()}
         style={style}
         {...props}
@@ -38,7 +102,7 @@ const Modal = ({
         {(title || showClose) && (
           <div className="p-5 border-b border-border-light flex justify-between items-center">
             {title && (
-              <h3 className="m-0 text-lg font-bold tracking-tight text-text-primary">
+              <h3 id="modal-title" className="m-0 text-lg font-bold tracking-tight text-text-primary">
                 {title}
               </h3>
             )}

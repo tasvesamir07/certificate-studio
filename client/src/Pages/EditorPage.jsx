@@ -15,6 +15,10 @@ import { buildApiUrl } from "../utils/api";
 import { useAppStore } from "../shared/store/useAppStore";
 import { useFonts } from "../shared/hooks/useFonts";
 import { useApi } from "../shared/hooks/useApi";
+import { useEmailSending } from "../shared/hooks/useEmailSending";
+import { useSheetImport } from "../shared/hooks/useSheetImport";
+import { useTemplateUpload } from "../shared/hooks/useTemplateUpload";
+import { useManualRecipients, createManualRecipient } from "../shared/hooks/useManualRecipients";
 
 // Helper utilities
 import {
@@ -32,6 +36,7 @@ import {
   generateCertificatePDF,
   drawCertificateToCanvasThumbnail,
   fitFontSizeToBox,
+  COLOR_SWATCHES,
 } from "../utils/canvasHelpers";
 
 import {
@@ -44,9 +49,6 @@ import {
   getCellKeyAndValue,
   getCellValue,
 } from "../utils/textHelpers";
-
-import { compressImage } from "../utils/imageCompressor";
-
 
 // Lazy Loaded Components
 const CanvaDesignModal = React.lazy(() => import("../components/CanvaDesignModal"));
@@ -62,30 +64,10 @@ import PropertiesPanel from "../components/PropertiesPanel";
 import CanvasStage from "../components/CanvasStage";
 import PreviewGrid from "../components/PreviewGrid";
 
-const COLOR_SWATCHES = [
-  "#000000",
-  "#FFFFFF",
-  "#6366f1", // Indigo
-  "#3b82f6", // Blue
-  "#10b981", // Emerald
-  "#f59e0b", // Amber
-  "#ef4444", // Red
-  "#ec4899", // Pink
-  "#8b5cf6", // Purple
-  "#14b8a6", // Teal
-  "#64748b", // Slate
-  "#1e293b", // Navy Slate
-];
 
-const MAX_MANUAL_RECIPIENTS = 5;
+
 const MAX_BATCH_SIZE = 100;
 const LAYOUT_STORAGE_KEY = "certificate-designer-layouts";
-
-const createManualRecipient = () => ({
-  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  name: "",
-  email: "",
-});
 
 const API_BASE_URL = resolveApiBase();
 
@@ -205,16 +187,35 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
   const templateNaturalSizeRef = useRef(DEFAULT_TEMPLATE_SIZE);
   const resizeStartLayoutRef = useRef(null);
   const savedLayoutsRef = useRef({});
-  const [isSendingPaused, setIsSendingPaused] = React.useState(false);
-  const isSendingPausedRef = useRef(false);
-  const stopSendingRef = useRef(false);
+  const { onDataDrop } = useSheetImport();
+  const {
+    emailReadyRows,
+    manualReadyRecipients,
+    totalReadyRecipients,
+    isSendingPaused,
+    setIsSendingPaused,
+    isSendingPausedRef,
+    stopSendingRef,
+    handleStopSending,
+    handleGenerateAndSend,
+    handleRetryFailed,
+    prepareRowsForExport,
+  } = useEmailSending({ templateImageRef, templateBackImageRef });
 
-  const handleStopSending = () => {
-    stopSendingRef.current = true;
-    toast("Stopping... finishing current email then halting.", {
-      icon: "🛑",
-    });
-  };
+  const { onTemplateDrop, onTemplateBackDrop } = useTemplateUpload({
+    templateImageRef,
+    templateBackImageRef,
+    templateNaturalSizeRef,
+    savedLayoutsRef,
+    preloadFonts,
+  });
+
+  const {
+    handleManualRecipientChange,
+    addManualRecipient,
+    removeManualRecipient,
+    manualRecipientLimitReached,
+  } = useManualRecipients();
 
   const templateNaturalWidth =
     templateNaturalSizeRef.current.width || DEFAULT_TEMPLATE_SIZE.width;
@@ -223,21 +224,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
   const layoutWidth = layout?.width || MIN_LAYOUT_WIDTH;
   const layoutHeight = layout?.height || MIN_LAYOUT_HEIGHT;
 
-  const prepareRowsForExport = useCallback(
-    (rows) => {
-      if (!originalExcelKeys || originalExcelKeys.length === 0) return rows;
-      return rows.map((r) => {
-        const cleanRow = {};
-        originalExcelKeys.forEach((key) => {
-          if (Object.prototype.hasOwnProperty.call(r, key)) {
-            cleanRow[key] = r[key];
-          }
-        });
-        return cleanRow;
-      });
-    },
-    [originalExcelKeys]
-  );
+  // prepareRowsForExport is now retrieved from useEmailSending
 
   // Initialize manualRecipients if empty
   useEffect(() => {
@@ -269,219 +256,9 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
     return () => window.removeEventListener("resize", handleResize);
   }, [previewScale, setPreviewScale, setTemplateSize]);
 
-  const onTemplateDrop = useCallback(
-    (acceptedFiles) => {
-      const file = acceptedFiles[0];
-      if (!file) return;
+  // onTemplateDrop and onTemplateBackDrop are now retrieved from useTemplateUpload
 
-      const toastId = toast.loading("Loading template...");
-
-      setTemplate(file);
-      setLastGenerationInfo(null);
-      setPreviewImages([]);
-      setPreviewName((prev) => (prev && prev !== "-") ? prev : "Your Name Here");
-      setPreviewSide("front");
-      templateImageRef.current = null;
-
-      const objectUrl = URL.createObjectURL(file);
-
-      if (templateURL) {
-        URL.revokeObjectURL(templateURL);
-      }
-      setTemplateURL(objectUrl);
-
-      const img = new Image();
-      img.onload = () => {
-        templateImageRef.current = img;
-        const naturalWidth =
-          img.naturalWidth || img.width || DEFAULT_TEMPLATE_SIZE.width;
-        const naturalHeight =
-          img.naturalHeight || img.height || DEFAULT_TEMPLATE_SIZE.height;
-        const signature = `${naturalWidth}x${naturalHeight}`;
-
-        templateNaturalSizeRef.current = {
-          width: naturalWidth,
-          height: naturalHeight,
-        };
-        setTemplateSignature(signature);
-
-        const initialScale = calculateAutoScale(naturalWidth, naturalHeight);
-        
-        setPreviewScale(initialScale);
-        setTemplateSize({
-          width: Math.round(naturalWidth * initialScale),
-          height: Math.round(naturalHeight * initialScale),
-        });
-
-        toast.success("Template loaded.", { id: toastId });
-
-        setLayout((prev) => {
-          const signature = `${naturalWidth}x${naturalHeight}`;
-          const savedLayout = savedLayoutsRef.current?.[signature];
-          if (savedLayout) {
-            if (savedLayout.fontFamily) preloadFonts([savedLayout.fontFamily]);
-            return { ...savedLayout };
-          }
-
-          const newLayout = prev ? {
-            ...prev,
-            width: Math.min(naturalWidth, prev.width),
-            height: Math.min(naturalHeight, prev.height),
-            x: Math.min(prev.x, Math.max(0, naturalWidth - prev.width)),
-            y: Math.min(prev.y, Math.max(0, naturalHeight - prev.height)),
-          } : createInitialLayout(naturalWidth, naturalHeight);
-
-          if (newLayout.fontFamily) preloadFonts([newLayout.fontFamily]);
-          return newLayout;
-        });
-      };
-      img.onerror = () => {
-        toast.error("Failed to read template dimensions.", { id: toastId });
-        templateImageRef.current = null;
-        templateNaturalSizeRef.current = DEFAULT_TEMPLATE_SIZE;
-        setPreviewScale(1);
-        setTemplateSize(DEFAULT_TEMPLATE_SIZE);
-      };
-      img.src = objectUrl;
-    },
-    [templateURL, setTemplate, setLastGenerationInfo, setPreviewImages, setPreviewName, setPreviewSide, setTemplateURL, setTemplateSignature, setPreviewScale, setTemplateSize, setLayout, preloadFonts]
-  );
-
-  const onTemplateBackDrop = useCallback(
-    (acceptedFiles) => {
-      const file = acceptedFiles[0];
-      if (!file) return;
-
-      const toastId = toast.loading("Loading back side template...");
-
-      setTemplateBack(file);
-      const objectUrl = URL.createObjectURL(file);
-
-      if (templateBackURL) {
-        URL.revokeObjectURL(templateBackURL);
-      }
-      setTemplateBackURL(objectUrl);
-
-      const img = new Image();
-      img.onload = () => {
-        templateBackImageRef.current = img;
-        const { naturalWidth, naturalHeight } = img;
-        const autoScale = calculateAutoScale(naturalWidth, naturalHeight);
-        setPreviewScale(autoScale);
-        setTemplateSize({
-          width: Math.round(naturalWidth * autoScale),
-          height: Math.round(naturalHeight * autoScale),
-        });
-        toast.success("Back side template loaded.", { id: toastId });
-      };
-      img.onerror = () => {
-        toast.error("Failed to load back side image.", { id: toastId });
-      };
-      img.src = objectUrl;
-    },
-    [templateBackURL, setTemplateBack, setTemplateBackURL, setPreviewScale, setTemplateSize]
-  );
-
-  const onDataDrop = useCallback((acceptedFiles) => {
-    const file = acceptedFiles[0];
-    setLastGenerationInfo(null);
-    setEmailSummary(null);
-    setDataFile(file);
-    setSheetName("");
-    setPreviewImages([]);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target.result;
-        const workbook = XLSX.read(data, { type: "array" });
-        const firstSheetName = workbook.SheetNames?.[0] || "";
-        const worksheet = workbook.Sheets[firstSheetName];
-        if (!worksheet) {
-          toast.error("Excel workbook must contain at least one sheet.");
-          setDataFile(null);
-          setData([]);
-          setSheetName("");
-          return;
-        }
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-        if (jsonData.length === 0) {
-          toast.error('Excel must have a "Name" column!');
-          setDataFile(null);
-          setData([]);
-          setSheetName("");
-          return;
-        }
-
-        const keys = jsonData.length > 0 ? Object.keys(jsonData[0]) : [];
-        setOriginalExcelKeys(keys);
-
-        const namesData = jsonData
-          .map((row) => {
-            const nameMatch = getCellKeyAndValue(row, "Name");
-            const emailMatch = getCellKeyAndValue(row, "Email");
-
-            const formattedName = toTitleCase(nameMatch.value || "");
-            if (!formattedName) return null;
-
-            const emailValue = (emailMatch.value || "").toString().trim();
-
-            const newRow = { ...row };
-            if (nameMatch.key) newRow[nameMatch.key] = formattedName;
-            if (emailMatch.key) newRow[emailMatch.key] = emailValue;
-
-            newRow.Name = formattedName;
-            newRow.Email = emailValue;
-
-            return newRow;
-          })
-          .filter(Boolean);
-
-        if (!namesData.length) {
-          toast.error('Excel must have a "Name" column!');
-          setDataFile(null);
-          setData([]);
-          setSheetName("");
-          return;
-        }
-
-        const fileBaseName = stripExtension(file?.name || "");
-        const normalizedSheetName =
-          firstSheetName || fileBaseName || "certificates";
-        const sanitizedSheetName = sanitizeFileBaseName(
-          normalizedSheetName,
-          fileBaseName || "certificates"
-        );
-
-        const hasEmails = namesData.some((row) => row.Email);
-
-        setSheetName(sanitizedSheetName);
-        setData(namesData);
-        setPreviewName(namesData[0]?.Name || "");
-        toast.success(`Loaded ${namesData.length} names.`);
-
-        if (!hasEmails) {
-          toast(
-            "Optional: add an Email column to send certificates directly.",
-            {
-              icon: "📧",
-            }
-          );
-        }
-      } catch (err) {
-        toast.error("Failed to parse Excel file: " + err.message);
-        setDataFile(null);
-        setData([]);
-        setSheetName("");
-      }
-    };
-    reader.onerror = (err) => {
-      toast.error("Failed to read file: " + err.message);
-      setSheetName("");
-    };
-    reader.readAsArrayBuffer(file);
-  }, [setLastGenerationInfo, setEmailSummary, setDataFile, setSheetName, setPreviewImages, setData, setOriginalExcelKeys, setPreviewName]);
+  // onDataDrop is now retrieved from useSheetImport
 
   const onSharedFileDrop = useCallback((acceptedFiles) => {
     if (!acceptedFiles?.length) return;
@@ -665,15 +442,11 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const toastId = toast.loading("Compressing image...");
+    const toastId = toast.loading("Uploading image...");
     try {
-      const compressedFile = await compressImage(file, { maxSize: 1024, quality: 0.8 });
-      
       const formData = new FormData();
-      formData.append("image", compressedFile);
+      formData.append("image", file);
 
-      toast.loading("Uploading image...", { id: toastId });
-      
       const uploadUrl = buildApiUrl(API_BASE_URL, "api/upload-image");
       const response = await axios.post(uploadUrl, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -902,31 +675,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
     }
   };
 
-  const handleManualRecipientChange = useCallback((id, field, value) => {
-    const nextValue = field === "name" ? formatNameInput(value || "") : value;
-    setManualRecipients((prev) =>
-      prev.map((recipient) =>
-        recipient.id === id ? { ...recipient, [field]: nextValue } : recipient
-      )
-    );
-  }, [setManualRecipients]);
-
-  const addManualRecipient = useCallback(() => {
-    setManualRecipients((prev) => {
-      if (prev.length >= MAX_MANUAL_RECIPIENTS) return prev;
-      return [...prev, createManualRecipient()];
-    });
-  }, [setManualRecipients]);
-
-  const removeManualRecipient = useCallback((id) => {
-    setManualRecipients((prev) => {
-      if (prev.length <= 1) {
-        return [createManualRecipient()];
-      }
-      const next = prev.filter((recipient) => recipient.id !== id);
-      return next.length ? next : [createManualRecipient()];
-    });
-  }, [setManualRecipients]);
+  // Manual recipient handlers are now retrieved from useManualRecipients
 
   const handleLayoutChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -1239,33 +988,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
     });
   }, [previewScale, templateURL, setTemplateSize]);
 
-  const emailReadyRows = useMemo(() => {
-    if (!data.length) return [];
-
-    const seen = new Set();
-    return data.filter((row) => {
-      const value = row?.Email?.toString().trim();
-      if (!value || !isValidEmail(value)) return false;
-
-      const emailLower = value.toLowerCase();
-      if (skipDuplicates) {
-        if (seen.has(emailLower)) return false;
-        seen.add(emailLower);
-      }
-      return true;
-    });
-  }, [data, skipDuplicates]);
-
-  const manualReadyRecipients = useMemo(() => {
-    return manualRecipients.filter((recipient) => {
-      const name = recipient?.name?.toString().trim();
-      const email = recipient?.email?.toString().trim();
-      return !!name && !!email && isValidEmail(email);
-    });
-  }, [manualRecipients]);
-
-  const totalReadyRecipients =
-    manualReadyRecipients.length + emailReadyRows.length;
+  // Derived recipient values are now retrieved from useEmailSending
 
   const isPreviewFromData = useMemo(() => {
     if (!data.length) return false;
@@ -1277,8 +1000,6 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
   const layoutReady = !!layout && isLayoutLocked;
   const templateAssetsReady = !!template && layoutReady;
   const excelDataReady = hasExcelRecipients ? !!dataFile : true;
-  const manualRecipientLimitReached =
-    manualRecipients.length >= MAX_MANUAL_RECIPIENTS;
   const previewNameIsValid = !!previewName?.trim();
 
   const canAttemptEmailSend =
@@ -1712,426 +1433,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
       setIsLoading(false);
     }
   };
-
-  const executeEmailSendProcess = async (toSend, remaining = [], originalAttemptCount = null) => {
-    const totalRecipients = toSend.length;
-    const emailNoun = `personalized email${totalRecipients === 1 ? "" : "s"}`;
-    const toastId = toast.loading(`Preparing to send ${emailNoun}...`);
-
-    const service = emailSettings.service.trim();
-    const senderEmail = emailSettings.email.trim();
-    const password = emailSettings.password.trim();
-    const subject = emailSettings.subject.trim();
-    const templateMessage = emailSettings.template.trim();
-
-    try {
-      if (emailAttachmentType === "shared" && sharedAttachmentFiles.length > 0) {
-        const totalSize = sharedAttachmentFiles.reduce((acc, file) => acc + (file?.size || 0), 0);
-        if (totalSize > 25 * 1024 * 1024) {
-          toast(
-            "Caution: Your attachments exceed 25MB. Many email providers (like Gmail) may reject these emails.",
-            { icon: "⚠️", duration: 6000 }
-          );
-        }
-      }
-
-      const fullMessage = emailSettings.signature
-        ? `${templateMessage}\n\n${emailSettings.signature}`
-        : templateMessage;
-
-      let successCount = 0;
-      let failures = [];
-      let sharedRemoteAttachments = [];
-
-      setIsSending(true);
-      isSendingPausedRef.current = false;
-      setIsSendingPaused(false);
-      stopSendingRef.current = false;
-
-      if (emailAttachmentType === "shared" && sharedAttachmentFiles.length > 0) {
-        toast.loading("Uploading shared attachments once...", { id: toastId });
-        try {
-          for (const file of sharedAttachmentFiles) {
-            if (!file) continue;
-            const uploadedAttachment = await uploadAttachment(file, "shared");
-            sharedRemoteAttachments.push(uploadedAttachment);
-          }
-        } catch (uploadErr) {
-          if (sharedRemoteAttachments.length) {
-            try {
-              await cleanupAttachments(sharedRemoteAttachments);
-            } catch (cleanupErr) {
-              console.error("Shared attachment cleanup failed:", cleanupErr);
-            }
-          }
-          throw new Error(
-            "Failed to pre-upload shared attachments. " +
-              (uploadErr.response?.data?.message || uploadErr.message)
-          );
-        }
-      }
-
-      const CONCURRENCY_LIMIT = 10;
-      let nextIndex = 0;
-      let processedCount = 0;
-
-      const emailService = service;
-      const emailUser = senderEmail;
-      const emailPass = password;
-      const senderName = emailSettings.senderName || "";
-      const emailSubject = subject;
-      const emailTemplate = fullMessage;
-      const attachmentMode = emailAttachmentType;
-      const personalizeWithNames = true;
-      const API_SEND_SINGLE_URL = buildApiUrl(API_BASE_URL, "api/send-single");
-
-      const sendNext = async (workerId) => {
-        while (true) {
-          let i;
-          if (nextIndex < toSend.length) {
-            i = nextIndex++;
-          } else {
-            break;
-          }
-
-          if (i >= toSend.length || stopSendingRef.current) break;
-
-          // PAUSE CHECK
-          while (isSendingPausedRef.current && !stopSendingRef.current) {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-          }
-          if (stopSendingRef.current) break;
-
-          const recipientSnapshot = { ...toSend[i] };
-          const { name: rName, email: rEmail } = recipientSnapshot;
-          let recipientRemoteAttachments = [];
-
-          try {
-            const formData = new FormData();
-            formData.append("emailService", emailService);
-            formData.append("emailUser", emailUser);
-            formData.append("emailPass", emailPass);
-            formData.append("senderName", senderName);
-            formData.append("emailSubject", emailSubject);
-            formData.append("emailTemplate", emailTemplate);
-            formData.append("recipientName", rName);
-            formData.append("recipientEmail", rEmail);
-
-            let verificationCode = "";
-            let filePublicUrl = "";
-
-            if (attachmentMode === "certificate") {
-              const pdfBlob = await generateCertificatePDF(
-                templateImageRef.current,
-                layout,
-                rName,
-                { drawName: personalizeWithNames },
-                templateBackImageRef.current
-              );
-              const pdfFile = new File(
-                [pdfBlob],
-                `${sanitizeFileBaseName(rName, "certificate")}.pdf`,
-                { type: "application/pdf" }
-              );
-              const uploadedAttachment = await uploadAttachment(pdfFile, "certificate");
-              recipientRemoteAttachments = [uploadedAttachment];
-              filePublicUrl = uploadedAttachment.publicUrl || uploadedAttachment.url || "";
-
-              formData.append(
-                "remoteAttachments",
-                JSON.stringify(recipientRemoteAttachments)
-              );
-              formData.append("autoCleanupRemoteAttachments", "true");
-
-              // Save issued certificate in DB for verification
-              try {
-                const issueRes = await axios.post(`${API_BASE_URL}/api/verify/issue`, {
-                  userId: authUserId || window.localStorage.getItem("certificate-studio-userId"),
-                  recipientName: rName,
-                  recipientEmail: rEmail,
-                  certificateUrl: filePublicUrl,
-                });
-                verificationCode = issueRes.data.id;
-              } catch (dbErr) {
-                console.error("Failed to register certificate in verification DB:", dbErr);
-              }
-            } else if (attachmentMode === "shared" && sharedRemoteAttachments.length) {
-              formData.append(
-                "remoteAttachments",
-                JSON.stringify(sharedRemoteAttachments)
-              );
-              formData.append("autoCleanupRemoteAttachments", "false");
-            }
-
-            await axios.post(API_SEND_SINGLE_URL, formData, {
-              headers: { "Content-Type": "multipart/form-data" },
-            });
-
-            successCount++;
-          } catch (error) {
-            const reason = error.response?.data?.message || error.message || "Unknown error";
-            failures.push({
-              name: rName,
-              email: rEmail,
-              reason: reason,
-            });
-            if (recipientRemoteAttachments.length) {
-              cleanupAttachments(recipientRemoteAttachments).catch((cleanupErr) => {
-                console.error("Recipient attachment cleanup failed:", cleanupErr);
-              });
-            }
-          } finally {
-            processedCount++;
-            const pct = Math.round((processedCount / toSend.length) * 100);
-            toast.loading(
-              `Sending... ${processedCount}/${toSend.length} (${pct}%) ${isSendingPausedRef.current ? "[PAUSED]" : ""}`,
-              {
-                id: toastId,
-              }
-            );
-            setSendProgress({
-              processed: processedCount,
-              total: toSend.length,
-            });
-          }
-        }
-      };
-
-      try {
-        const workers = Array.from(
-          { length: Math.min(CONCURRENCY_LIMIT, toSend.length) },
-          (_, idx) => sendNext(idx + 1)
-        );
-        await Promise.all(workers);
-
-        if (stopSendingRef.current) {
-          toast("Sending stopped by user.", { id: toastId, icon: "⚠️" });
-          const stoppedRemaining = [...toSend.slice(nextIndex), ...remaining];
-          if (stoppedRemaining.length > 0) {
-            const ws = XLSX.utils.json_to_sheet(
-              prepareRowsForExport(stoppedRemaining)
-            );
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Stopped Remaining");
-            const excelBuffer = XLSX.write(wb, {
-              bookType: "xlsx",
-              type: "array",
-            });
-            const dataBlob = new Blob([excelBuffer], {
-              type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-            saveAs(dataBlob, `stopped-remaining-${Date.now()}.xlsx`);
-            toast.success(
-              `Downloaded ${stoppedRemaining.length} remaining recipients.`,
-              { icon: "📥" }
-            );
-          }
-        }
-      } finally {
-        if (sharedRemoteAttachments.length) {
-          try {
-            await cleanupAttachments(sharedRemoteAttachments);
-          } catch (cleanupErr) {
-            console.error("Cleanup failed:", cleanupErr);
-          }
-        }
-      }
-
-      setSendProgress(null);
-      setIsSending(false);
-      setIsSendingPaused(false);
-      isSendingPausedRef.current = false;
-
-      const finalStatus = failures.length
-        ? successCount
-          ? "partial_failure"
-          : "failed"
-        : "success";
-      
-      const attemptedCount = originalAttemptCount || totalRecipients;
-
-      setEmailSummary({
-        timestamp: new Date().toLocaleString(),
-        status: finalStatus,
-        successCount,
-        failureCount: failures.length,
-        attempted: attemptedCount,
-        failures,
-      });
-
-      if (finalStatus === "success") {
-        toast.success(`Successfully sent ${successCount} emails.`, {
-          id: toastId,
-        });
-      } else {
-        toast.error(
-          `Sent ${successCount} emails, but ${failures.length} failed.`,
-          { id: toastId }
-        );
-      }
-    } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Unable to send certificates.";
-      toast.error(message, { id: toastId });
-      setIsSending(false);
-      setIsSendingPaused(false);
-      isSendingPausedRef.current = false;
-    }
-  };
-
-  const handleGenerateAndSend = async () => {
-    if (isSending) return;
-
-    if (!emailDeliveryEnabled) {
-      toast.error("Enable email delivery before sending.");
-      return;
-    }
-
-    const manualTargets = manualReadyRecipients.map((recipient) => ({
-      name: toTitleCase(recipient.name?.toString().trim() || ""),
-      email: recipient.email?.toString().trim(),
-    }));
-
-    const totalRecipients = manualTargets.length + emailReadyRows.length;
-
-    if (!totalRecipients) {
-      toast.error(
-        "Add at least one recipient via your Excel sheet or the manual section."
-      );
-      return;
-    }
-
-    if (emailAttachmentType === "certificate") {
-      if (!template) {
-        toast.error("Upload a template image before attaching certificates.");
-        return;
-      }
-      if (layoutIsRequired && !layout) {
-        toast.error("Position the layout before sending attachments.");
-        return;
-      }
-      if (layoutIsRequired && !isLayoutLocked) {
-        toast.error("Please lock the layout before sending attachments.");
-        return;
-      }
-    } else if (emailAttachmentType === "shared") {
-      if (!sharedAttachmentFiles.length) {
-        toast.error(
-          "Upload at least one shared file (PDF, DOCX, etc.) to attach."
-        );
-        return;
-      }
-    }
-
-    if (emailReadyRows.length && !dataFile) {
-      toast.error("Re-upload the Excel file to reach spreadsheet recipients.");
-      return;
-    }
-
-    const service = emailSettings.service.trim();
-    const senderEmail = emailSettings.email.trim();
-    const password = emailSettings.password.trim();
-    const subject = emailSettings.subject.trim();
-    const templateMessage = emailSettings.template.trim();
-
-    if (!service) {
-      toast.error("Enter the email service (e.g., gmail, outlook).");
-      return;
-    }
-    if (!senderEmail) {
-      toast.error("Enter the sender email address.");
-      return;
-    }
-    if (!isValidEmail(senderEmail)) {
-      toast.error(
-        "Sender email looks invalid. Please use a valid email address."
-      );
-      return;
-    }
-    if (!password) {
-      toast.error("Enter the email app password.");
-      return;
-    }
-    if (!subject) {
-      toast.error("Add an email subject line.");
-      return;
-    }
-    if (!templateMessage) {
-      toast.error("Add the message template that includes {name}.");
-      return;
-    }
-
-    const invalidManual = manualRecipients.find((recipient) => {
-      const email = recipient?.email?.toString().trim();
-      const name = recipient?.name?.toString().trim();
-      return name && email && !isValidEmail(email);
-    });
-
-    if (invalidManual) {
-      toast.error(
-        `Invalid email for ${invalidManual.name || "a manual recipient"}. Please fix before sending.`
-      );
-      return;
-    }
-
-    let excelTargets = [];
-    if (emailReadyRows.length && dataFile) {
-      excelTargets = emailReadyRows
-        .map((row) => {
-          const name = toTitleCase(getCellValue(row, "Name") || "");
-          const email = (getCellValue(row, "Email") || "").toString().trim();
-          return { ...row, name, email };
-        })
-        .filter((r) => r.name && isValidEmail(r.email));
-    }
-
-    let recipients = [...excelTargets, ...manualTargets];
-    if (skipDuplicates) {
-      const seenEmails = new Set();
-      recipients = recipients.filter((r) => {
-        const lowerEmail = r.email.toLowerCase();
-        if (seenEmails.has(lowerEmail)) return false;
-        seenEmails.add(lowerEmail);
-        return true;
-      });
-    }
-
-    if (!recipients.length) {
-      toast.error("No valid recipients found with both Name and Email.");
-      return;
-    }
-
-    let toSend = recipients;
-    let remaining = [];
-    if (recipients.length > MAX_BATCH_SIZE) {
-      toSend = recipients.slice(0, MAX_BATCH_SIZE);
-      remaining = recipients.slice(MAX_BATCH_SIZE);
-      toast(`Batch limit reached: Only the first ${MAX_BATCH_SIZE} will be sent. The rest will be provided for download.`, {
-        icon: "⚡",
-        duration: 6000,
-      });
-
-      const ws = XLSX.utils.json_to_sheet(remaining);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Remaining Recipients");
-      const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      const dataBlob = new Blob([excelBuffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      saveAs(dataBlob, `remaining-recipients-${Date.now()}.xlsx`);
-      toast.success(`Remaining ${remaining.length} recipients downloaded.`, { icon: "📥" });
-    }
-
-    await executeEmailSendProcess(toSend, remaining);
-  };
-
-  const handleRetryFailed = useCallback(async () => {
-    if (!emailSummary || !emailSummary.failures || !emailSummary.failures.length) return;
-    const toRetry = [...emailSummary.failures];
-    await executeEmailSendProcess(toRetry, [], emailSummary.attempted);
-  }, [emailSummary, executeEmailSendProcess]);
+  // Email generation and send processes are now retrieved from useEmailSending
 
   const handleDownloadPreview = async () => {
     if (!template) {

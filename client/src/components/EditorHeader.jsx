@@ -72,7 +72,7 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className="bg-transparent border-none text-text-secondary hover:text-accent font-semibold text-sm cursor-pointer transition-all duration-150 underline px-2 py-1"
+          className="bg-transparent border-none text-text-secondary hover:text-accent font-semibold text-sm cursor-pointer transition-all duration-150 px-2 py-1"
           onClick={onLogout}
         >
           {t("logout")}
