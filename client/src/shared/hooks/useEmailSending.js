@@ -220,7 +220,8 @@ export function useEmailSending({ templateImageRef, templateBackImageRef }) {
                 );
                 const uploadedAttachment = await uploadAttachment(pdfFile, "certificate");
                 recipientRemoteAttachments = [uploadedAttachment];
-                filePublicUrl = uploadedAttachment.publicUrl || uploadedAttachment.url || "";
+                const resolvedBase = API_BASE_URL || window.location.origin;
+                filePublicUrl = uploadedAttachment.publicUrl || uploadedAttachment.url || `${resolvedBase}/api/files/${uploadedAttachment.fileId}`;
 
                 formData.append(
                   "remoteAttachments",
