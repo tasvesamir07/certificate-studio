@@ -161,7 +161,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
       <div className="max-w-[520px] w-full flex justify-start relative z-10">
         <button 
           className="inline-flex items-center gap-1.5 px-4 py-2 border border-border-custom rounded-full bg-bg-elevated text-text-secondary text-sm font-semibold hover:bg-bg-surface hover:text-accent hover:border-accent transition-all duration-150 cursor-pointer" 
-          onClick={() => navigate("/generate-certifcate")}
+          onClick={() => navigate("/generate-certificate")}
         >
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>

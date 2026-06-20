@@ -13,14 +13,6 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- User Access table (subscription/access status)
-CREATE TABLE IF NOT EXISTS user_access (
-    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    access_expires_at TIMESTAMP WITH TIME ZONE,
-    last_renewal_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE
-);
-
 -- Email Presets
 CREATE TABLE IF NOT EXISTS email_presets (
     id SERIAL PRIMARY KEY,
@@ -95,7 +87,6 @@ CREATE INDEX IF NOT EXISTS idx_user_font_favorites_user_id ON user_font_favorite
 
 -- Row Level Security (enable on all tables)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_access ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_presets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_canva_tokens ENABLE ROW LEVEL SECURITY;
 

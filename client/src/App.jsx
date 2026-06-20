@@ -10,6 +10,7 @@ import { buildApiUrl } from "./utils/api";
 
 const EditorPage = React.lazy(() => import("./Pages/EditorPage"));
 const ProfilePage = React.lazy(() => import("./Pages/ProfilePage"));
+const LandingPage = React.lazy(() => import("./Pages/LandingPage"));
 const AUTH_KEYS = { auth: "certificate-studio-auth", user: "certificate-studio-user", token: "certificate-studio-session" };
 const API_BASE_URL = resolveApiBase();
 
@@ -52,12 +53,18 @@ function App() {
   }, [setIsAuthenticated, setAuthUser, setAuthUserId, setIsCanvaConnected]);
 
   useEffect(() => {
-    const handlePop = () => setCurrentPath(window.location.pathname || "/user/login");
+    const handlePop = () => setCurrentPath(window.location.pathname || "/");
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
   }, [setCurrentPath]);
 
   const effAuth = isAuthenticated || (localStorage.getItem(AUTH_KEYS.auth) === "true" && localStorage.getItem(AUTH_KEYS.user));
+
+  useEffect(() => {
+    if (effAuth && currentPath === "/") {
+      navigate("/generate-certificate");
+    }
+  }, [effAuth, currentPath]);
 
   const handleLogout = () => {
     Object.values(AUTH_KEYS).forEach(k => localStorage.removeItem(k));
@@ -72,7 +79,7 @@ function App() {
     localStorage.setItem(AUTH_KEYS.user, email);
     localStorage.setItem("certificate-studio-userId", id);
     localStorage.setItem(AUTH_KEYS.token, code);
-    navigate("/generate-certifcate");
+    navigate("/generate-certificate");
   };
 
   const isVerifyPath = currentPath.startsWith("/verify/");
@@ -81,22 +88,34 @@ function App() {
   if (isVerifyPath) {
     return <VerifyPage code={verifyCode} apiBaseUrl={API_BASE_URL} navigate={navigate} />;
   }
-  if (!effAuth && (currentPath.startsWith("/user/login") || (currentPath !== "/forgot-password" && currentPath !== "/canva-success"))) {
-    return <LoginPage defaultEmail={loginPrefill || authUser} onSuccess={handleLoginSuccess} apiBaseUrl={API_BASE_URL} navigate={navigate} />;
-  }
-  if (currentPath === "/forgot-password") return <ForgotPasswordPage apiBaseUrl={API_BASE_URL} navigate={navigate} />;
-  if (!effAuth && currentPath === "/canva-success") return <div className="loading-screen">Finalizing Canva connection...</div>;
-  if (effAuth && currentPath === "/profile") {
-    return <React.Suspense fallback={<div className="loading-screen">Loading Profile...</div>}><ProfilePage authUser={authUser} onLogout={handleLogout} apiBaseUrl={API_BASE_URL} navigate={navigate} /></React.Suspense>;
-  }
-  if (effAuth) {
+
+  if (currentPath === "/") {
+    if (effAuth) {
+      return <div className="loading-screen">Redirecting to Studio...</div>;
+    }
     return (
-      <React.Suspense fallback={<div className="loading-screen">Loading Editor...</div>}>
-        <EditorPage authUser={authUser} onLogout={handleLogout} navigate={navigate} />
+      <React.Suspense fallback={<div className="loading-screen">Loading...</div>}>
+        <LandingPage navigate={navigate} />
       </React.Suspense>
     );
   }
-  return <div>Loading...</div>;
+
+  if (!effAuth) {
+    if (currentPath === "/forgot-password") return <ForgotPasswordPage apiBaseUrl={API_BASE_URL} navigate={navigate} />;
+    if (currentPath === "/canva-success") return <div className="loading-screen">Finalizing Canva connection...</div>;
+    return <LoginPage defaultEmail={loginPrefill || authUser} onSuccess={handleLoginSuccess} apiBaseUrl={API_BASE_URL} navigate={navigate} />;
+  }
+
+  if (currentPath === "/forgot-password") return <ForgotPasswordPage apiBaseUrl={API_BASE_URL} navigate={navigate} />;
+  if (currentPath === "/profile") {
+    return <React.Suspense fallback={<div className="loading-screen">Loading Profile...</div>}><ProfilePage authUser={authUser} onLogout={handleLogout} apiBaseUrl={API_BASE_URL} navigate={navigate} /></React.Suspense>;
+  }
+
+  return (
+    <React.Suspense fallback={<div className="loading-screen">Loading Editor...</div>}>
+      <EditorPage authUser={authUser} onLogout={handleLogout} navigate={navigate} />
+    </React.Suspense>
+  );
 }
 
 export default App;

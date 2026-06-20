@@ -6,7 +6,6 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "legacy": "nodemon server.js",
     "test": "vitest run"
   },
   "dependencies": {
@@ -25,7 +24,6 @@
     "multer": "^2.1.1",
     "nodemailer": "^8.0.11",
     "pg": "^8.21.0",
-    "sslcommerz-lts": "^1.2.0",
     "uuid": "^9.0.1",
     "xlsx": "^0.18.5"
   },

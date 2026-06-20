@@ -11,18 +11,18 @@ const EditorHeader = ({ navigate, onLogout }) => {
       <div className="flex items-center gap-5 h-full">
         <span
           className="font-sans text-lg font-bold tracking-tight text-text-primary cursor-pointer select-none"
-          onClick={() => navigate("/generate-certifcate")}
+          onClick={() => navigate("/generate-certificate")}
         >
           Certificate Studio
         </span>
         <button
           type="button"
           className={`border-none px-3.5 py-1.5 font-sans text-sm font-bold cursor-pointer transition-all duration-150 rounded-full ${
-            currentPath === "/generate-certifcate" 
+            currentPath === "/generate-certificate" 
               ? "bg-accent text-black" 
               : "bg-transparent text-text-primary opacity-60 hover:opacity-100 hover:bg-bg-hover"
           }`}
-          onClick={() => navigate("/generate-certifcate")}
+          onClick={() => navigate("/generate-certificate")}
         >
           Generate
         </button>

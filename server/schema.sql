@@ -13,14 +13,6 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- User Access table to manage subscription/access status
-CREATE TABLE IF NOT EXISTS user_access (
-    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    access_expires_at TIMESTAMP WITH TIME ZONE,
-    last_renewal_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE
-);
-
 -- Email Presets table to store user-specific email templates and signatures
 CREATE TABLE IF NOT EXISTS email_presets (
     id SERIAL PRIMARY KEY,

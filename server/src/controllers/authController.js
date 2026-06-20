@@ -70,26 +70,11 @@ const signup = async (req, res) => {
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10;
     const hash = await bcrypt.hash(password, saltRounds);
 
-    const client = await pool.connect();
     try {
-      await client.query("BEGIN");
-
-      const userResult = await client.query(
+      const userResult = await pool.query(
         "INSERT INTO users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, email, display_name",
         [email.trim(), hash, sanitizedDisplayName]
       );
-
-      const userId = userResult.rows[0].id;
-
-      await client.query(
-        `INSERT INTO user_access (user_id, access_expires_at, last_renewal_date, is_active)
-         VALUES ($1, '2099-12-31T23:59:59Z', NOW(), TRUE)
-         ON CONFLICT (user_id)
-         DO UPDATE SET access_expires_at = '2099-12-31T23:59:59Z', is_active = TRUE`,
-        [userId]
-      );
-
-      await client.query("COMMIT");
 
       const transporter = createTransporter({
         service: process.env.PURCHASE_EMAIL_SERVICE,
@@ -116,13 +101,10 @@ const signup = async (req, res) => {
 
       res.status(201).send(userResult.rows[0]);
     } catch (innerErr) {
-      await client.query("ROLLBACK");
       if (innerErr.code === "23505") {
         return res.status(400).send({ message: "Email already exists." });
       }
       throw innerErr;
-    } finally {
-      client.release();
     }
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -133,11 +115,10 @@ const getProfile = async (req, res) => {
   const { email } = req.params;
   try {
     const result = await pool.query(
-      `SELECT u.id, u.email, u.display_name as "displayName", u.phone,
-              ua.access_expires_at as "accessExpiresAt", ua.is_active as "isActive"
-       FROM users u
-       LEFT JOIN user_access ua ON u.id = ua.user_id
-       WHERE u.email = $1`,
+      `SELECT id, email, display_name as "displayName", phone,
+              NULL as "accessExpiresAt", TRUE as "isActive"
+       FROM users
+       WHERE email = $1`,
       [email.trim()]
     );
     if (result.rows.length === 0) return res.status(404).send({ message: "User not found." });
