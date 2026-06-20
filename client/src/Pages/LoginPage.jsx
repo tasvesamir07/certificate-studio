@@ -27,17 +27,19 @@ const PasswordStrengthIndicator = ({ password }) => {
   if (!hasValue) return null;
 
   return (
-    <div style={{ marginTop: 8 }}>
-      <div className="strength-bar-bg">
-        <div className="strength-bar" style={{ width: `${score}%`, backgroundColor: barColor }} />
+    <div className="mt-2">
+      <div className="h-[4px] bg-border-light rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-300 ease-in-out" style={{ width: `${score}%`, backgroundColor: barColor }} />
       </div>
-      <div className="strength-badges-list">
+      <div className="flex gap-1.5 flex-wrap mt-2.5">
         {PASSWORD_RULES.map((rule) => {
           const ok = rule.test(password);
           return (
-            <span key={rule.label} className={`strength-badge ${ok ? "ok" : ""}`}>
+            <span key={rule.label} className={`text-[10px] px-2 py-0.5 rounded-full border transition-all duration-200 inline-flex items-center gap-1 ${
+              ok ? "bg-success/15 border-success/30 text-success" : "bg-bg-elevated border-border-light text-text-muted"
+            }`}>
               {ok ? (
-                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, display: "inline-block", verticalAlign: "middle" }}>
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               ) : "\u2022"} {rule.label}
@@ -45,7 +47,7 @@ const PasswordStrengthIndicator = ({ password }) => {
           );
         })}
       </div>
-      {label && <span style={{ fontSize: 11, color: barColor, marginTop: 4, display: "block" }}>{label}</span>}
+      {label && <span style={{ fontSize: 11, color: barColor, marginTop: 4, display: "block" }} className="font-semibold">{label}</span>}
     </div>
   );
 };
@@ -150,14 +152,36 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
   };
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center bg-bg-primary p-6 box-border">
+    <div className="w-full min-h-screen flex items-center justify-center bg-bg-primary p-6 box-border font-sans relative overflow-hidden">
+      {/* Decorative background glows */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-violet-500/10 rounded-full blur-[140px] pointer-events-none" />
+      
       <Toaster position="bottom-right" />
-      <div className="login-card-container">
-        <div className="flex mb-7 bg-bg-elevated rounded-md p-1 gap-1">
+      
+      <div className="relative z-10 w-full max-w-[440px] bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-2xl p-8 md:p-10 shadow-2xl flex flex-col transition-all duration-300 hover:shadow-[0_0_50px_rgba(99,102,241,0.15)] hover:border-accent/30">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent rounded-t-2xl" />
+        
+        {/* Brand Logo & Header */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-accent to-accent-hover flex items-center justify-center shadow-lg shadow-accent/20 mb-3 animate-pulse">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <polyline points="9 11 11 13 15 9"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">Certificate Studio</h1>
+          <p className="text-xs text-text-secondary mt-1 text-center">Design, verify, and email professional credentials</p>
+        </div>
+
+        {/* Tab switchers */}
+        <div className="flex mb-6 bg-bg-elevated rounded-xl p-1 gap-1 border border-border-light">
           <button 
             type="button" 
-            className={`flex-1 py-2 text-center text-xs font-medium font-sans rounded-md cursor-pointer transition-all duration-200 ${
-              tab === "login" ? "bg-bg-surface text-text-primary shadow-xs" : "text-text-muted hover:text-text-primary"
+            className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg cursor-pointer transition-all duration-200 ${
+              tab === "login" 
+                ? "bg-bg-surface text-text-primary shadow-sm border border-border-light" 
+                : "text-text-muted hover:text-text-primary"
             }`} 
             onClick={() => { setTab("login"); setError(""); }}
           >
@@ -165,8 +189,10 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
           </button>
           <button 
             type="button" 
-            className={`flex-1 py-2 text-center text-xs font-medium font-sans rounded-md cursor-pointer transition-all duration-200 ${
-              tab === "signup" ? "bg-bg-surface text-text-primary shadow-xs" : "text-text-muted hover:text-text-primary"
+            className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg cursor-pointer transition-all duration-200 ${
+              tab === "signup" 
+                ? "bg-bg-surface text-text-primary shadow-sm border border-border-light" 
+                : "text-text-muted hover:text-text-primary"
             }`} 
             onClick={() => { setTab("signup"); setError(""); }}
           >
@@ -225,7 +251,7 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
             <button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+              className="w-full py-3.5 bg-gradient-to-r from-accent to-accent-hover text-white font-bold rounded-xl shadow-lg hover:shadow-accent/25 uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
             >
               {isLoading ? "Logging In..." : "Login"}
             </button>
@@ -339,7 +365,7 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
             <button 
               type="submit" 
               disabled={isLoading || !allRulesPass} 
-              className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+              className="w-full py-3.5 bg-gradient-to-r from-accent to-accent-hover text-white font-bold rounded-xl shadow-lg hover:shadow-accent/25 uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
             >
               {isLoading ? "Creating Account..." : "Create Account"}
             </button>

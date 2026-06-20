@@ -202,7 +202,11 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
     step === 2 ? secondsLeft / OTP_DURATION_SECONDS : 0;
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center bg-bg-primary p-6 box-border font-sans relative">
+    <div className="w-full min-h-screen flex items-center justify-center bg-bg-primary p-6 box-border font-sans relative overflow-hidden">
+      {/* Decorative background glows */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-violet-500/10 rounded-full blur-[140px] pointer-events-none" />
+      
       <Toaster position="bottom-right" />
       <div className="absolute top-4 right-4 flex gap-2 z-50">
         <button
@@ -214,7 +218,8 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
         </button>
       </div>
 
-      <div className="bg-bg-surface border border-border-light border-t-4 border-t-accent rounded-2xl p-10 max-w-[420px] w-full shadow-lg backdrop-blur-md">
+      <div className="relative z-10 bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-2xl p-8 md:p-10 max-w-[420px] w-full shadow-2xl transition-all duration-300 hover:shadow-[0_0_50px_rgba(99,102,241,0.15)] hover:border-accent/30">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent rounded-t-2xl" />
         {/* Step indicators */}
         <div className="flex items-center justify-center gap-0 mb-6">
           <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all duration-200 ${

@@ -43,13 +43,17 @@ const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-bg-primary text-text-primary p-6 box-border transition-all duration-300">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-bg-primary text-text-primary p-6 box-border transition-all duration-300 relative overflow-hidden font-sans">
+      {/* Decorative background glows */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-violet-500/10 rounded-full blur-[140px] pointer-events-none" />
+      
       <Toaster position="bottom-right" />
       
       {/* Floating Theme Switcher */}
       <button 
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        className="absolute top-5 right-6 bg-bg-elevated border border-border-custom rounded-md px-4 py-2.5 cursor-pointer text-text-primary text-xs font-bold transition-all duration-200 flex items-center gap-2 hover:bg-bg-surface hover:border-accent"
+        className="absolute top-5 right-6 bg-bg-elevated border border-border-custom rounded-md px-4 py-2.5 cursor-pointer text-text-primary text-xs font-bold transition-all duration-200 flex items-center gap-2 hover:bg-bg-surface hover:border-accent z-50"
       >
         {theme === "dark" ? (
           <>
@@ -76,7 +80,8 @@ const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
         )}
       </button>
  
-      <div className="bg-bg-surface/80 backdrop-blur-md border border-border-custom rounded-xl p-10 max-w-[500px] w-full shadow-2xl text-center box-border relative">
+      <div className="relative z-10 bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-2xl p-8 md:p-10 max-w-[500px] w-full shadow-2xl text-center box-border transition-all duration-300 hover:shadow-[0_0_50px_rgba(99,102,241,0.15)] hover:border-accent/30">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent rounded-t-2xl" />
         {loading ? (
           <div className="py-10">
             <div className="w-10 h-10 border-3 border-border-light border-t-accent rounded-full mx-auto mb-4 animate-spin"></div>
