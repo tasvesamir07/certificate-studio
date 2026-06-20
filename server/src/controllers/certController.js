@@ -250,7 +250,10 @@ const sendSingle = async (req, res) => {
       subject: emailSubject || "Update from Certificate Studio",
       text: bodies.text,
       html: bodies.html,
-      attachments: [...localAttachments, ...remoteMailAttachments]
+      attachments: [...localAttachments, ...remoteMailAttachments],
+      headers: {
+        "X-Mailer": "CertificateStudioMailer",
+      }
     });
 
     res.status(200).send({ status: "success", message: `Sent to ${recipientEmail}` });
@@ -324,6 +327,10 @@ const sendEmailBatch = async (job = {}) => {
         text: bodies.text,
         html: bodies.html,
         attachments,
+        headers: {
+          "Precedence": "bulk",
+          "X-Mailer": "CertificateStudioMailer",
+        }
       });
 
       successCount++;

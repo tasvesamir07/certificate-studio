@@ -12,18 +12,18 @@ const EditorHeader = ({ navigate, onLogout }) => {
   };
 
   return (
-    <div className="top-nav">
-      <div className="nav-left">
+    <div className="sticky top-0 z-[100] flex items-center justify-between px-7 h-14 bg-bg-surface border-b border-border-custom shadow-xs">
+      <div className="flex items-center gap-6 h-full">
         <span
-          className="nav-brand"
+          className="font-sans text-[1.25rem] font-[800] bg-gradient-to-br from-accent to-accent-hover bg-clip-text text-transparent cursor-pointer select-none tracking-[-0.03em]"
           onClick={() => navigate("/generate-certifcate")}
         >
           Certificate Studio
         </span>
         <button
           type="button"
-          className={`nav-link ${
-            currentPath === "/generate-certifcate" ? "active" : ""
+          className={`border-none bg-transparent px-4 py-2 font-sans font-medium text-[0.9rem] text-text-secondary cursor-pointer transition-all duration-200 rounded-md hover:text-accent hover:bg-accent-bg-glow ${
+            currentPath === "/generate-certifcate" ? "text-accent font-bold bg-accent-bg-glow border border-border-custom" : ""
           }`}
           onClick={() => navigate("/generate-certifcate")}
         >
@@ -31,36 +31,38 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className={`nav-link ${currentPath === "/profile" ? "active" : ""}`}
+          className={`border-none bg-transparent px-4 py-2 font-sans font-medium text-[0.9rem] text-text-secondary cursor-pointer transition-all duration-200 rounded-md hover:text-accent hover:bg-accent-bg-glow ${
+            currentPath === "/profile" ? "text-accent font-bold bg-accent-bg-glow border border-border-custom" : ""
+          }`}
           onClick={() => navigate("/profile")}
         >
           Profile
         </button>
       </div>
-      <div className="nav-right">
-        <span className="nav-user">{authUser || "Signed in"}</span>
+      <div className="flex items-center gap-4">
+        <span className="text-[0.9rem] font-medium text-text-secondary">{authUser || "Signed in"}</span>
         <button
           type="button"
-          className="theme-toggle"
+          className="border border-border-custom bg-bg-elevated text-text-primary rounded-md px-3 py-2 inline-flex items-center gap-2 text-[0.85rem] font-semibold cursor-pointer transition-all duration-200 hover:bg-accent-bg-glow hover:border-accent"
           onClick={toggleLanguage}
           title="Toggle Language"
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle" }}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="2" y1="12" x2="22" y2="12" />
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
           </svg>
-          <span style={{ marginLeft: 6 }}>{i18n.language === "en" ? "Español" : "English"}</span>
+          <span>{i18n.language === "en" ? "Español" : "English"}</span>
         </button>
         <button
           type="button"
-          className="theme-toggle"
+          className="border border-border-custom bg-bg-elevated text-text-primary rounded-md px-3 py-2 inline-flex items-center gap-2 text-[0.85rem] font-semibold cursor-pointer transition-all duration-200 hover:bg-accent-bg-glow hover:border-accent"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           title="Toggle color theme"
         >
           {theme === "dark" ? (
             <>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle" }}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="5" />
                 <line x1="12" y1="1" x2="12" y2="3" />
                 <line x1="12" y1="21" x2="12" y2="23" />
@@ -71,18 +73,22 @@ const EditorHeader = ({ navigate, onLogout }) => {
                 <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
                 <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
               </svg>
-              <span style={{ marginLeft: 6 }}>Light</span>
+              <span>Light</span>
             </>
           ) : (
             <>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle" }}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
-              <span style={{ marginLeft: 6 }}>Dark</span>
+              <span>Dark</span>
             </>
           )}
         </button>
-        <button type="button" className="nav-logout" onClick={onLogout}>
+        <button 
+          type="button" 
+          className="bg-transparent border-none text-text-muted font-semibold text-[0.9rem] cursor-pointer transition-colors duration-200 underline px-2 py-1 hover:text-danger" 
+          onClick={onLogout}
+        >
           {t("logout")}
         </button>
       </div>

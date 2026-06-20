@@ -152,44 +152,58 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
   };
 
   return (
-    <div className="profile-page">
+    <div className="w-full min-h-screen flex flex-col items-center bg-bg-primary p-6 md:p-12 gap-6 font-sans">
       <Toaster position="bottom-right" />
-      <div className="back-button-container">
-        <button className="profile-back-btn" onClick={() => navigate("/generate-certifcate")}>
+      <div className="max-w-[520px] w-full flex justify-start">
+        <button 
+          className="inline-flex items-center gap-1.5 px-4 py-2 border border-border-light rounded-lg bg-bg-elevated text-text-secondary text-sm font-semibold hover:bg-bg-surface hover:text-accent hover:border-accent/40 active:translate-y-0 transition-all duration-150 cursor-pointer" 
+          onClick={() => navigate("/generate-certifcate")}
+        >
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
           </svg>
           Back
         </button>
       </div>
-      <div className="profile-card">
-        <div className="profile-header">
-          <h2>Profile</h2>
+      <div className="max-w-[520px] w-full bg-bg-surface border border-border-light rounded-2xl p-8 shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-text-primary m-0 flex items-center gap-2">Profile</h2>
           {!isEditing ? (
-            <button className="edit-profile-btn" onClick={() => setIsEditing(true)}>
+            <button 
+              className="px-4 py-2 border border-border-light rounded-lg bg-bg-elevated text-text-secondary text-xs font-semibold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer" 
+              onClick={() => setIsEditing(true)}
+            >
               Edit Profile
             </button>
           ) : (
-            <div className="edit-actions">
-              <button className="cancel-edit-btn" onClick={() => {
-                setIsEditing(false);
-                setEditData({
-                  displayName: profileData.displayName || "",
-                  phone: profileData.phone || ""
-                });
-                validatePhone(profileData.phone || "");
-              }} disabled={isSaving}>
+            <div className="flex items-center gap-2">
+              <button 
+                className="px-4 py-2 border border-border-light rounded-lg bg-bg-elevated text-text-secondary text-xs font-semibold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer mr-2" 
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditData({
+                    displayName: profileData.displayName || "",
+                    phone: profileData.phone || ""
+                  });
+                  validatePhone(profileData.phone || "");
+                }} 
+                disabled={isSaving}
+              >
                 Cancel
               </button>
-              <button className="save-profile-btn" onClick={handleUpdateProfile} disabled={isSaving}>
+              <button 
+                className="px-4 py-2 bg-gradient-to-br from-accent to-accent-hover text-white rounded-lg text-xs font-bold shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer disabled:opacity-50" 
+                onClick={handleUpdateProfile} 
+                disabled={isSaving}
+              >
                 {isSaving ? "Saving..." : "Save Changes"}
               </button>
             </div>
           )}
         </div>
 
-        <div className="profile-field">
-          <label>Name</label>
+        <div className="flex flex-col gap-1.5 mb-4">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Name</label>
           {isEditing ? (
             <input
               type="text"
@@ -197,22 +211,33 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
               onChange={(e) => setEditData({ ...editData, displayName: e.target.value })}
               placeholder="Enter your name"
               disabled={isSaving}
+              className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
             />
           ) : (
-            <input type="text" value={profileData.displayName || profileData.email?.split('@')[0] || "User"} readOnly />
+            <input 
+              type="text" 
+              value={profileData.displayName || profileData.email?.split('@')[0] || "User"} 
+              readOnly 
+              className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+            />
           )}
         </div>
 
-        <div className="profile-field">
-          <label>Email</label>
-          <input type="text" value={profileData.email || ""} readOnly className="read-only-email" />
-          <small className="field-note">Email cannot be changed.</small>
+        <div className="flex flex-col gap-1.5 mb-4">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email</label>
+          <input 
+            type="text" 
+            value={profileData.email || ""} 
+            readOnly 
+            className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner" 
+          />
+          <small className="text-xs text-text-muted mt-1 block">Email cannot be changed.</small>
         </div>
 
-        <div className="profile-field phone-field-container">
-          <label>Phone</label>
+        <div className="flex flex-col gap-1.5 mb-4 relative">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Phone</label>
           {isEditing ? (
-            <div className="phone-input-wrapper">
+            <div className="relative flex items-center w-full">
               <PhoneInput
                 country={'bd'}
                 value={editData.phone}
@@ -224,11 +249,11 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                   required: true,
                   autoFocus: true
                 }}
-                containerClass="custom-phone-container"
-                inputClass="custom-phone-input"
+                containerClass="!w-full !font-sans"
+                inputClass="!w-full !h-auto !pl-14 !pr-10 !py-2.5 !border !border-border-light !rounded-md !bg-bg-elevated !text-text-primary !text-sm !font-sans !outline-none !transition-all !duration-200 !shadow-inner focus:!border-accent focus:!bg-bg-surface focus:!ring-2 focus:!ring-accent-bg-glow"
               />
               {isValidPhone && (
-                <div className="phone-valid-indicator" title="Valid Phone Number">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center z-10" title="Valid Phone Number">
                   <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="#10b981" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                   </svg>
@@ -236,30 +261,35 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
               )}
             </div>
           ) : (
-            <input type="text" value={profileData.phone || "Not provided"} readOnly />
+            <input 
+              type="text" 
+              value={profileData.phone || "Not provided"} 
+              readOnly 
+              className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+            />
           )}
         </div>
       </div>
 
-      <div className="profile-card subscription-card">
+      <div className="max-w-[520px] w-full bg-bg-surface border border-border-light rounded-2xl p-8 shadow-sm">
         <div>
-          <h2>Account Status</h2>
-          <p style={{ margin: 0 }}>
+          <h2 className="text-xl font-bold text-text-primary m-0 mb-4 flex items-center gap-2">Account Status</h2>
+          <p style={{ margin: 0 }} className="text-sm text-text-secondary">
             <strong>Status:</strong>{" "}
-            <span className="subscription-status">Active - Full Access</span>
+            <span className="text-success font-semibold">Active - Full Access</span>
           </p>
         </div>
       </div>
 
-      <div className="profile-card change-password-card">
-        <h2>Change Password</h2>
-        <p className="profile-note">
+      <div className="max-w-[520px] w-full bg-bg-surface border border-border-light rounded-2xl p-8 shadow-sm">
+        <h2 className="text-xl font-bold text-text-primary m-0 mb-2 flex items-center gap-2">Change Password</h2>
+        <p className="text-sm text-text-secondary mb-4">
           Update your password by filling in the fields below.
         </p>
-        <form className="change-password-form" onSubmit={handleChangePassword}>
-          <div className="profile-field">
-            <label htmlFor="currentPassword">Current Password</label>
-            <div className="password-input-wrapper">
+        <form className="flex flex-col gap-4" onSubmit={handleChangePassword}>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="currentPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Current Password</label>
+            <div className="relative">
               <input
                 id="currentPassword"
                 type={showCurrent ? "text" : "password"}
@@ -268,10 +298,11 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 placeholder="Enter current password"
                 autoComplete="current-password"
                 disabled={isChanging}
+                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
               />
               <button
                 type="button"
-                className="password-toggle-btn"
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md"
                 onClick={() => setShowCurrent(!showCurrent)}
                 tabIndex={-1}
               >
@@ -290,9 +321,9 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
             </div>
           </div>
 
-          <div className="profile-field">
-            <label htmlFor="newPassword">New Password</label>
-            <div className="password-input-wrapper">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="newPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">New Password</label>
+            <div className="relative">
               <input
                 id="newPassword"
                 type={showNew ? "text" : "password"}
@@ -301,10 +332,11 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 placeholder="Enter new password (min 6 chars)"
                 autoComplete="new-password"
                 disabled={isChanging}
+                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
               />
               <button
                 type="button"
-                className="password-toggle-btn"
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md"
                 onClick={() => setShowNew(!showNew)}
                 tabIndex={-1}
               >
@@ -323,9 +355,9 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
             </div>
           </div>
 
-          <div className="profile-field">
-            <label htmlFor="confirmPassword">Confirm New Password</label>
-            <div className="password-input-wrapper">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="confirmPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Confirm New Password</label>
+            <div className="relative">
               <input
                 id="confirmPassword"
                 type={showConfirm ? "text" : "password"}
@@ -334,10 +366,11 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 placeholder="Confirm new password"
                 autoComplete="new-password"
                 disabled={isChanging}
+                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
               />
               <button
                 type="button"
-                className="password-toggle-btn"
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md"
                 onClick={() => setShowConfirm(!showConfirm)}
                 tabIndex={-1}
               >
@@ -358,8 +391,8 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
 
           <button
             type="submit"
-            className="change-password-btn"
             disabled={isChanging}
+            className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
           >
             {isChanging ? "Updating..." : "Update Password"}
           </button>

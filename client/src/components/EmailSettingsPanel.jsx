@@ -141,31 +141,32 @@ const EmailSettingsPanel = ({
       : "Generate & Send Emails";
 
   return (
-    <div className="control-group">
-      <label>6. Email Delivery (Optional)</label>
-      <p className="layout-hint">
+    <div className="flex flex-col gap-2 mb-4">
+      <label className="text-xs font-bold text-text-primary uppercase tracking-wide">6. Email Delivery (Optional)</label>
+      <p className="text-xs text-text-muted mb-2 leading-relaxed">
         Personalize your email with <code>{"{name}"}</code> to insert each
         recipient's name automatically.
       </p>
-      <label className="email-toggle">
+      <label className="flex items-center gap-2 text-xs font-bold text-text-primary mb-2 cursor-pointer">
         <input
           type="checkbox"
           checked={emailDeliveryEnabled}
           onChange={(event) => {
             setEmailDeliveryEnabled(event.target.checked);
           }}
+          className="w-4 h-4 rounded border-border-light text-accent bg-bg-elevated focus:ring-2 focus:ring-accent-bg-glow cursor-pointer"
         />
         Enable Generate & Send
       </label>
 
       <div
-        className={`email-settings ${
-          emailDeliveryEnabled ? "active" : "disabled"
+        className={`flex flex-col gap-3 transition-all duration-200 ${
+          emailDeliveryEnabled ? "opacity-100 pointer-events-auto" : "opacity-40 pointer-events-none"
         }`}
       >
-        <label>Email Attachment</label>
-        <div className="radio-group">
-          <label className="radio-label">
+        <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email Attachment</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer hover:text-text-primary transition-colors duration-150">
             <input
               type="radio"
               name="emailAttachmentType"
@@ -173,10 +174,11 @@ const EmailSettingsPanel = ({
               checked={emailAttachmentType === "certificate"}
               onChange={(e) => setEmailAttachmentType(e.target.value)}
               disabled={!emailDeliveryEnabled || isSending}
+              className="w-4 h-4 text-accent bg-bg-elevated border-border-light focus:ring-2 focus:ring-accent-bg-glow cursor-pointer"
             />
             Attach Personalized Certificate
           </label>
-          <label className="radio-label">
+          <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer hover:text-text-primary transition-colors duration-150">
             <input
               type="radio"
               name="emailAttachmentType"
@@ -184,10 +186,11 @@ const EmailSettingsPanel = ({
               checked={emailAttachmentType === "shared"}
               onChange={(e) => setEmailAttachmentType(e.target.value)}
               disabled={!emailDeliveryEnabled || isSending}
+              className="w-4 h-4 text-accent bg-bg-elevated border-border-light focus:ring-2 focus:ring-accent-bg-glow cursor-pointer"
             />
             Attach Shared File(s)
           </label>
-          <label className="radio-label">
+          <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer hover:text-text-primary transition-colors duration-150">
             <input
               type="radio"
               name="emailAttachmentType"
@@ -195,6 +198,7 @@ const EmailSettingsPanel = ({
               checked={emailAttachmentType === "none"}
               onChange={(e) => setEmailAttachmentType(e.target.value)}
               disabled={!emailDeliveryEnabled || isSending}
+              className="w-4 h-4 text-accent bg-bg-elevated border-border-light focus:ring-2 focus:ring-accent-bg-glow cursor-pointer"
             />
             Send Email Only (No Attachment)
           </label>
@@ -203,17 +207,17 @@ const EmailSettingsPanel = ({
         {emailAttachmentType === "shared" && (
           <div
             {...getSharedFileProps({
-              className: "dropzone shared-file-dropzone",
+              className: "border-[1.5px] border-dashed border-border-custom rounded-xl py-5 px-4 text-center bg-bg-elevated text-text-muted cursor-pointer transition-all duration-200 text-xs hover:border-accent hover:bg-accent-bg-glow hover:text-accent flex flex-col items-center justify-center",
             })}
           >
             <input {...getSharedFileInputProps()} />
             <p>Drop one or more shared files here (PDF, DOCX, etc.)</p>
             {sharedAttachmentFiles.map((file, index) => (
-              <div className="file-chip" key={`${file.name}-${index}`}>
-                <span className="file-name">{file.name}</span>
+              <div className="flex items-center justify-between p-2 bg-accent/10 border border-accent/20 rounded-lg mt-2 w-full max-w-full overflow-hidden" key={`${file.name}-${index}`}>
+                <span className="text-xs font-semibold text-accent truncate max-w-[80%]">{file.name}</span>
                 <button
                   type="button"
-                  className="file-remove-button"
+                  className="border-none bg-transparent text-text-muted cursor-pointer px-1.5 py-0.5 text-sm transition-all duration-150 rounded-md hover:text-danger hover:bg-danger/10"
                   onClick={(event) => {
                     event.stopPropagation();
                     event.preventDefault();
@@ -229,20 +233,20 @@ const EmailSettingsPanel = ({
         )}
 
         {emailAttachmentType === "certificate" && (
-          <p className="layout-hint">
+          <p className="text-xs text-text-muted mb-2 leading-relaxed">
             This will generate and attach a unique PNG for each recipient.
           </p>
         )}
         {emailAttachmentType === "shared" && (
-          <p className="layout-hint">
+          <p className="text-xs text-text-muted mb-2 leading-relaxed">
             Everyone will receive the same shared file(s) you upload here.
           </p>
         )}
         {emailAttachmentType === "none" && (
-          <p className="email-warning">No attachments will be sent.</p>
+          <p className="text-xs text-amber-500 font-semibold mb-2">No attachments will be sent.</p>
         )}
 
-        <label htmlFor="emailService">Email Service</label>
+        <label htmlFor="emailService" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email Service</label>
         <input
           id="emailService"
           name="service"
@@ -251,8 +255,9 @@ const EmailSettingsPanel = ({
           value={emailSettings.service}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
+          className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
-        <label htmlFor="senderName">Sender Name (optional)</label>
+        <label htmlFor="senderName" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Sender Name (optional)</label>
         <input
           id="senderName"
           name="senderName"
@@ -261,8 +266,9 @@ const EmailSettingsPanel = ({
           value={emailSettings.senderName}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
+          className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
-        <label htmlFor="senderEmail">Sender Email Address</label>
+        <label htmlFor="senderEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Sender Email Address</label>
         <input
           id="senderEmail"
           name="email"
@@ -272,8 +278,9 @@ const EmailSettingsPanel = ({
           value={emailSettings.email}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
+          className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
-        <label htmlFor="emailPassword">Email App Password</label>
+        <label htmlFor="emailPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email App Password</label>
         <input
           id="emailPassword"
           name="password"
@@ -283,8 +290,9 @@ const EmailSettingsPanel = ({
           value={emailSettings.password}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
+          className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
-        <label htmlFor="emailSubject">Email Subject</label>
+        <label htmlFor="emailSubject" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email Subject</label>
         <input
           id="emailSubject"
           name="subject"
@@ -293,54 +301,26 @@ const EmailSettingsPanel = ({
           value={emailSettings.subject}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
+          className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
 
-        <div
-          className="presets-section"
-          style={{
-            marginTop: "16px",
-            padding: "16px",
-            background: "rgba(99, 102, 241, 0.05)",
-            borderRadius: "8px",
-            border: "1px solid rgba(99, 102, 241, 0.2)",
-          }}
-        >
-          <label
-            style={{
-              margin: "0 0 12px 0",
-              fontSize: "14px",
-              fontWeight: 600,
-              color: "var(--text-color)",
-              display: "block",
-            }}
-          >
+        <div className="mt-4 p-4 bg-accent/5 rounded-xl border border-accent/20">
+          <label className="text-xs font-bold text-text-primary uppercase tracking-wide mb-3 block">
             Message Template Presets
           </label>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              marginBottom: "12px",
-            }}
-          >
+          <div className="flex flex-col gap-2 mb-3">
             <select
               value={selectedMessagePresetId}
               onChange={(e) => handleLoadPreset(e, "message")}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-              }}
               disabled={isSavingMessagePreset || isSending}
+              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
             >
               <option value="">-- Load a saved message --</option>
               {presets
                 .filter((p) => p.presetType === "message")
                 .map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id} className="bg-bg-surface text-text-primary">
                     {p.presetName}
                   </option>
                 ))}
@@ -353,38 +333,21 @@ const EmailSettingsPanel = ({
               disabled={
                 !selectedMessagePresetId || isSavingMessagePreset || isSending
               }
-              style={{
-                alignSelf: "flex-start",
-                padding: "8px 16px",
-                background: "#ef4444",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                opacity:
-                  !selectedMessagePresetId || isSavingMessagePreset || isSending
-                    ? 0.5
-                    : 1,
-              }}
+              className="align-self-start px-4 py-2 bg-danger text-white rounded-lg text-xs font-bold shadow-sm hover:bg-danger-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               title="Delete selected preset"
             >
               Delete
             </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div className="flex flex-col gap-2">
             <input
               type="text"
               placeholder="New message preset name..."
               value={newMessagePresetName}
               onChange={(e) => setNewMessagePresetName(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-              }}
               disabled={isSavingMessagePreset || isSending}
+              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-surface text-text-primary text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
             />
             <button
               type="button"
@@ -394,36 +357,22 @@ const EmailSettingsPanel = ({
                 isSavingMessagePreset ||
                 isSending
               }
-              style={{
-                alignSelf: "flex-start",
-                padding: "10px 16px",
-                background: "#6366f1",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                opacity:
-                  !newMessagePresetName.trim() ||
-                  isSavingMessagePreset ||
-                  isSending
-                    ? 0.5
-                    : 1,
-              }}
+              className="align-self-start px-4 py-2 bg-accent text-bg-primary rounded-lg text-xs font-bold shadow-sm hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSavingMessagePreset ? "Saving..." : "Save As Preset"}
             </button>
           </div>
         </div>
 
-        <label htmlFor="emailTemplate" style={{ marginTop: "16px" }}>
+        <label htmlFor="emailTemplate" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5 mt-2">
           Message Template
         </label>
-        <div className="formatting-toolbar">
+        <div className="flex items-center gap-1 p-1 bg-bg-elevated border border-border-light rounded-t-lg border-b-0">
           <button
             type="button"
             onClick={() => insertFormat("b")}
             title="Bold copy"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             <b>B</b>
           </button>
@@ -431,7 +380,7 @@ const EmailSettingsPanel = ({
             type="button"
             onClick={() => insertFormat("i")}
             title="Italic copy"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             <i>I</i>
           </button>
@@ -439,19 +388,16 @@ const EmailSettingsPanel = ({
             type="button"
             onClick={() => insertFormat("u")}
             title="Underline copy"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             <u>U</u>
           </button>
-          <div
-            className="divider"
-            style={{ width: "1px", background: "#ccc", margin: "0 5px" }}
-          />
+          <div className="w-[1px] h-4 bg-border-light mx-1" />
           <button
             type="button"
             onClick={() => insertLink("emailTemplate")}
             title="Insert Link"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             🔗
           </button>
@@ -459,14 +405,13 @@ const EmailSettingsPanel = ({
             type="button"
             onClick={() => promptForImage("emailTemplate")}
             title="Insert Image via URL"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             🌐
           </button>
           <label
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
             title="Upload Image"
-            style={{ display: "inline-flex", alignItems: "center", marginBottom: 0 }}
           >
             📤
             <input
@@ -476,29 +421,21 @@ const EmailSettingsPanel = ({
               onChange={(e) => handleImageUpload(e, "emailTemplate")}
             />
           </label>
-          <div
-            className="divider"
-            style={{ width: "1px", background: "#ccc", margin: "0 5px" }}
-          />
-          <div
-            className="placeholder-buttons"
-            style={{ display: "inline-flex", gap: "5px" }}
-          >
+          <div className="w-[1px] h-4 bg-border-light mx-1" />
+          <div className="inline-flex gap-1.5">
             <button
               type="button"
               onClick={() => insertPlaceholder("name", "emailTemplate")}
-              className="format-btn placeholder-btn"
+              className="px-2 h-8 flex items-center justify-center bg-transparent border-none text-accent rounded hover:bg-bg-hover hover:text-accent-hover transition-all duration-150 cursor-pointer text-xs font-bold"
               title="Insert Name Placeholder"
-              style={{ fontSize: "12px", fontWeight: "bold", color: "#6366f1" }}
             >
               {`{name}`}
             </button>
             <button
               type="button"
               onClick={() => insertPlaceholder("email", "emailTemplate")}
-              className="format-btn placeholder-btn"
+              className="px-2 h-8 flex items-center justify-center bg-transparent border-none text-accent rounded hover:bg-bg-hover hover:text-accent-hover transition-all duration-150 cursor-pointer text-xs font-bold"
               title="Insert Email Placeholder"
-              style={{ fontSize: "12px", fontWeight: "bold", color: "#6366f1" }}
             >
               {`{email}`}
             </button>
@@ -511,54 +448,26 @@ const EmailSettingsPanel = ({
           value={emailSettings.template}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
+          className="w-full min-h-[120px] px-3 py-2 border border-border-light rounded-b-lg rounded-t-none bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 resize-y"
         />
 
-        <div
-          className="presets-section"
-          style={{
-            marginTop: "24px",
-            padding: "16px",
-            background: "rgba(99, 102, 241, 0.05)",
-            borderRadius: "8px",
-            border: "1px solid rgba(99, 102, 241, 0.2)",
-          }}
-        >
-          <label
-            style={{
-              margin: "0 0 12px 0",
-              fontSize: "14px",
-              fontWeight: 600,
-              color: "var(--text-color)",
-              display: "block",
-            }}
-          >
+        <div className="mt-4 p-4 bg-accent/5 rounded-xl border border-accent/20">
+          <label className="text-xs font-bold text-text-primary uppercase tracking-wide mb-3 block">
             Email Signature Presets
           </label>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              marginBottom: "12px",
-            }}
-          >
+          <div className="flex flex-col gap-2 mb-3">
             <select
               value={selectedSignaturePresetId}
               onChange={(e) => handleLoadPreset(e, "signature")}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-              }}
               disabled={isSavingSignaturePreset || isSending}
+              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
             >
               <option value="">-- Load a saved signature --</option>
               {presets
                 .filter((p) => p.presetType === "signature")
                 .map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id} className="bg-bg-surface text-text-primary">
                     {p.presetName}
                   </option>
                 ))}
@@ -573,40 +482,21 @@ const EmailSettingsPanel = ({
                 isSavingSignaturePreset ||
                 isSending
               }
-              style={{
-                alignSelf: "flex-start",
-                padding: "8px 16px",
-                background: "#ef4444",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                opacity:
-                  !selectedSignaturePresetId ||
-                  isSavingSignaturePreset ||
-                  isSending
-                    ? 0.5
-                    : 1,
-              }}
+              className="align-self-start px-4 py-2 bg-danger text-white rounded-lg text-xs font-bold shadow-sm hover:bg-danger-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               title="Delete selected preset"
             >
               Delete
             </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div className="flex flex-col gap-2">
             <input
               type="text"
               placeholder="New signature preset name..."
               value={newSignaturePresetName}
               onChange={(e) => setNewSignaturePresetName(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #cbd5e1",
-              }}
               disabled={isSavingSignaturePreset || isSending}
+              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-surface text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
             />
             <button
               type="button"
@@ -616,36 +506,22 @@ const EmailSettingsPanel = ({
                 isSavingSignaturePreset ||
                 isSending
               }
-              style={{
-                alignSelf: "flex-start",
-                padding: "10px 16px",
-                background: "#6366f1",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                opacity:
-                  !newSignaturePresetName.trim() ||
-                  isSavingSignaturePreset ||
-                  isSending
-                    ? 0.5
-                    : 1,
-              }}
+              className="align-self-start px-4 py-2 bg-accent text-bg-primary rounded-lg text-xs font-bold shadow-sm hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSavingSignaturePreset ? "Saving..." : "Save As Preset"}
             </button>
           </div>
         </div>
 
-        <label htmlFor="emailSignature" style={{ marginTop: "16px" }}>
+        <label htmlFor="emailSignature" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5 mt-2">
           Email Signature
         </label>
-        <div className="formatting-toolbar">
+        <div className="flex items-center gap-1 p-1 bg-bg-elevated border border-border-light rounded-t-lg border-b-0">
           <button
             type="button"
             onClick={() => insertFormat("b", "emailSignature")}
             title="Bold"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             <b>B</b>
           </button>
@@ -653,7 +529,7 @@ const EmailSettingsPanel = ({
             type="button"
             onClick={() => insertFormat("i", "emailSignature")}
             title="Italic"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             <i>I</i>
           </button>
@@ -661,19 +537,16 @@ const EmailSettingsPanel = ({
             type="button"
             onClick={() => insertFormat("u", "emailSignature")}
             title="Underline"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             <u>U</u>
           </button>
-          <div
-            className="divider"
-            style={{ width: "1px", background: "#ccc", margin: "0 5px" }}
-          />
+          <div className="w-[1px] h-4 bg-border-light mx-1" />
           <button
             type="button"
             onClick={() => insertLink("emailSignature")}
             title="Insert Link"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             🔗
           </button>
@@ -681,14 +554,13 @@ const EmailSettingsPanel = ({
             type="button"
             onClick={() => promptForImage("emailSignature")}
             title="Insert Image via URL"
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
           >
             🌐
           </button>
           <label
-            className="format-btn"
+            className="w-8 h-8 flex items-center justify-center bg-transparent border-none text-text-secondary rounded hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer text-xs"
             title="Upload Image"
-            style={{ display: "inline-flex", alignItems: "center", marginBottom: 0 }}
           >
             📤
             <input
@@ -698,29 +570,21 @@ const EmailSettingsPanel = ({
               onChange={(e) => handleImageUpload(e, "emailSignature")}
             />
           </label>
-          <div
-            className="divider"
-            style={{ width: "1px", background: "#ccc", margin: "0 5px" }}
-          />
-          <div
-            className="placeholder-buttons"
-            style={{ display: "inline-flex", gap: "5px" }}
-          >
+          <div className="w-[1px] h-4 bg-border-light mx-1" />
+          <div className="inline-flex gap-1.5">
             <button
               type="button"
               onClick={() => insertPlaceholder("name", "emailSignature")}
-              className="format-btn placeholder-btn"
+              className="px-2 h-8 flex items-center justify-center bg-transparent border-none text-accent rounded hover:bg-bg-hover hover:text-accent-hover transition-all duration-150 cursor-pointer text-xs font-bold"
               title="Insert Name Placeholder"
-              style={{ fontSize: "12px", fontWeight: "bold", color: "#6366f1" }}
             >
               {`{name}`}
             </button>
             <button
               type="button"
               onClick={() => insertPlaceholder("email", "emailSignature")}
-              className="format-btn placeholder-btn"
+              className="px-2 h-8 flex items-center justify-center bg-transparent border-none text-accent rounded hover:bg-bg-hover hover:text-accent-hover transition-all duration-150 cursor-pointer text-xs font-bold"
               title="Insert Email Placeholder"
-              style={{ fontSize: "12px", fontWeight: "bold", color: "#6366f1" }}
             >
               {`{email}`}
             </button>
@@ -733,48 +597,16 @@ const EmailSettingsPanel = ({
           value={emailSettings.signature}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
-          style={{ minHeight: "80px" }}
+          className="w-full min-h-[80px] px-3 py-2 border border-border-light rounded-b-lg rounded-t-none bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 resize-y"
         />
 
         {/* Combined Email Preview */}
         {(emailSettings.template || emailSettings.signature) && (
-          <div
-            className="email-preview-container"
-            style={{
-              marginTop: "15px",
-              padding: "16px",
-              border: "1px solid #e2e8f0",
-              borderRadius: "12px",
-              background: "#ffffff",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
-          >
-            <p
-              style={{
-                margin: "0 0 8px",
-                fontSize: "0.85rem",
-                color: "#64748b",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
+          <div className="mt-4 p-4 border border-border-light rounded-xl bg-bg-surface shadow-sm w-full box-border">
+            <p className="m-0 mb-2 text-[10px] text-text-muted font-bold uppercase tracking-wider">
               Email Preview
             </p>
-            <div
-              className="email-content-preview"
-              style={{
-                fontFamily: "sans-serif",
-                fontSize: "14px",
-                lineHeight: "1.5",
-                color: "#334155",
-                overflowWrap: "anywhere",
-                wordBreak: "break-word",
-                width: "100%",
-              }}
-            >
+            <div className="font-sans text-sm leading-relaxed text-text-secondary overflow-wrap-anywhere break-words w-full">
               <div
                 dangerouslySetInnerHTML={{
                   __html: (emailSettings.template || "").replace(/\n/g, "<br/>"),
@@ -792,78 +624,39 @@ const EmailSettingsPanel = ({
           </div>
         )}
 
-        <p className="template-hint">
+        <p className="text-[11px] text-text-muted leading-relaxed">
           Tip: We'll automatically replace <code>{"{name}"}</code> with each
           recipient's name and attach their certificate as a PNG.
         </p>
       </div>
 
-      <div className="control-group">
-        <label>7. Generate & Deliver</label>
+      <div className="flex flex-col gap-2 mb-4 mt-4 border-t border-border-light pt-4">
+        <label className="text-xs font-bold text-text-primary uppercase tracking-wide">7. Generate & Deliver</label>
 
-        <div className="email-delivery-stats" style={{ marginBottom: "15px" }}>
-          <p
-            style={{ margin: "0 0 10px 0", color: "#000000", fontWeight: "bold" }}
-          >
+        <div className="mb-4">
+          <p className="m-0 mb-2.5 text-xs text-text-primary font-bold">
             Emails detected: {emailReadyRows.length}/{data.length || 0}
-            <span style={{ margin: "0 10px", color: "#ccc" }}>|</span>
+            <span className="mx-2 text-text-muted font-normal">|</span>
             Manual: {manualReadyRecipients.length}
           </p>
 
-          <label
-            className="toggle-label"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              cursor: emailDeliveryEnabled ? "pointer" : "default",
-              color: emailDeliveryEnabled ? "#000000" : "#94a3b8",
-              fontWeight: "bold",
-              opacity: emailDeliveryEnabled ? 1 : 0.6,
-            }}
-          >
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-text-primary">
             <input
               type="checkbox"
               checked={skipDuplicates}
               onChange={(e) => setSkipDuplicates(e.target.checked)}
               disabled={!emailDeliveryEnabled}
-              style={{
-                width: "16px",
-                height: "16px",
-                cursor: emailDeliveryEnabled ? "pointer" : "default",
-              }}
+              className="w-4 h-4 rounded border-border-light text-accent bg-bg-elevated focus:ring-2 focus:ring-accent-bg-glow cursor-pointer disabled:opacity-50"
             />
             Skip Duplicate Emails
           </label>
         </div>
 
-        <div className="generation-actions">
+        <div className="flex flex-col gap-2">
           {emailDeliveryEnabled && rowsMissingEmails.length > 0 && (
-            <div
-              className="missing-emails-warning"
-              style={{
-                marginBottom: "15px",
-                padding: "12px",
-                backgroundColor: "#fff3cd",
-                border: "1px solid #ffeeba",
-                borderRadius: "6px",
-                fontSize: "0.9rem",
-                color: "#856404",
-                position: "relative",
-                zIndex: 10,
-                isolation: "isolate",
-              }}
-            >
-              <p
-                style={{
-                  margin: "0 0 8px 0",
-                  fontWeight: "bold",
-                  position: "relative",
-                  zIndex: 10,
-                  color: "#856404",
-                }}
-              >
-                <span style={{ color: "#856404", position: "relative", zIndex: 10 }}>
+            <div className="mb-4 p-3.5 bg-danger-bg border border-danger/25 rounded-lg text-xs text-danger relative z-10">
+              <p className="m-0 mb-2 font-bold text-danger">
+                <span>
                   ⚠️ Warning: {rowsMissingEmails.length} recipients have a Name
                   but missing/invalid Email.
                 </span>
@@ -871,53 +664,17 @@ const EmailSettingsPanel = ({
               <button
                 type="button"
                 onClick={handleDownloadMissingEmails}
-                style={{
-                  fontSize: "0.85rem",
-                  padding: "6px 14px",
-                  backgroundColor: "#ef5350",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "inline-block",
-                  fontWeight: "bold",
-                  position: "relative",
-                  zIndex: 10,
-                }}
+                className="text-xs px-3.5 py-1.5 bg-danger text-white rounded font-bold hover:bg-danger-hover transition-all cursor-pointer border-none"
               >
-                <span style={{ color: "#ffffff" }}>
-                  Download These Entries (.xlsx)
-                </span>
+                Download These Entries (.xlsx)
               </button>
             </div>
           )}
 
           {emailDeliveryEnabled && rowsWithDuplicateEmails.length > 0 && (
-            <div
-              className="duplicate-emails-warning"
-              style={{
-                marginBottom: "15px",
-                padding: "12px",
-                backgroundColor: "#e3f2fd",
-                border: "1px solid #bbdefb",
-                borderRadius: "6px",
-                fontSize: "0.9rem",
-                color: "#0d47a1",
-                position: "relative",
-                zIndex: 10,
-                isolation: "isolate",
-              }}
-            >
-              <p
-                style={{
-                  margin: "0 0 8px 0",
-                  fontWeight: "bold",
-                  position: "relative",
-                  zIndex: 10,
-                  color: "#0d47a1",
-                }}
-              >
-                <span style={{ color: "#0d47a1", position: "relative", zIndex: 10 }}>
+            <div className="mb-4 p-3.5 bg-accent-bg-glow border border-accent/25 rounded-lg text-xs text-text-primary relative z-10">
+              <p className="m-0 mb-2 font-bold text-text-primary">
+                <span>
                   {skipDuplicates
                     ? `⚠️ Detect: ${rowsWithDuplicateEmails.length} duplicates found (Skipping enabled).`
                     : `⚠️ Detect: ${rowsWithDuplicateEmails.length} Duplicate Email Entries found.`}
@@ -926,28 +683,13 @@ const EmailSettingsPanel = ({
               <button
                 type="button"
                 onClick={handleDownloadDuplicateEmails}
-                style={{
-                  fontSize: "0.85rem",
-                  padding: "6px 14px",
-                  backgroundColor: "#42a5f5",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  display: "inline-block",
-                  fontWeight: "bold",
-                  position: "relative",
-                  zIndex: 10,
-                }}
+                className="text-xs px-3.5 py-1.5 bg-accent text-bg-primary rounded font-bold hover:bg-accent-hover transition-all cursor-pointer border-none"
               >
-                <span style={{ color: "#ffffff" }}>
-                  Download Duplicates (.xlsx)
-                </span>
+                Download Duplicates (.xlsx)
               </button>
             </div>
           )}
           <button
-            className="generate-button"
             onClick={handleGenerate}
             disabled={
               !template ||
@@ -956,34 +698,33 @@ const EmailSettingsPanel = ({
               isPreviewLoading ||
               (layoutIsRequired && !layoutReady)
             }
+            className="w-full py-3 bg-bg-elevated border border-border-light text-text-primary font-bold rounded-lg shadow-sm hover:bg-bg-hover transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs uppercase tracking-wider"
           >
             {isLoading
               ? "Generating..."
               : `Generate ${data.length} Certificates`}
           </button>
           <button
-            className="send-button"
             onClick={handleGenerateAndSend}
             disabled={!canAttemptEmailSend}
+            className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer flex items-center justify-center"
           >
             {sendButtonLabel}
           </button>
 
           {isSending && (
-            <div style={{ display: "flex", gap: "8px", width: "100%", marginTop: "8px" }}>
+            <div className="flex gap-2 w-full mt-2">
               <button
-                className="action-button secondary"
-                style={{ flex: 1, padding: "8px 12px", fontSize: "12px" }}
                 onClick={onTogglePause}
                 type="button"
+                className="flex-1 py-2 px-3 border border-border-light bg-bg-elevated text-text-secondary rounded-lg text-xs font-bold hover:bg-bg-hover hover:text-text-primary transition-all duration-150 cursor-pointer"
               >
                 {isPaused ? "▶ Resume" : "⏸ Pause"}
               </button>
               <button
-                className="stop-button"
-                style={{ flex: 1, padding: "8px 12px", fontSize: "12px", background: "#f3727f", color: "#000" }}
                 onClick={handleStopSending}
                 type="button"
+                className="flex-1 py-2 px-3 bg-danger/15 border border-danger/30 text-danger rounded-lg text-xs font-bold hover:bg-danger/25 hover:border-danger/50 transition-all duration-150 cursor-pointer"
               >
                 <span>Stop</span>
               </button>
@@ -991,7 +732,7 @@ const EmailSettingsPanel = ({
           )}
         </div>
         {lastGenerationInfo && (
-          <div className="generation-summary">
+          <div className="mt-4 p-3 bg-bg-elevated border border-border-light rounded-lg text-xs text-text-secondary flex flex-col gap-1">
             <p>
               <strong>Last download:</strong> {lastGenerationInfo.timestamp}
             </p>
@@ -1000,12 +741,12 @@ const EmailSettingsPanel = ({
             </p>
             <p>
               <strong>ZIP Name:</strong>{" "}
-              <code>{lastGenerationInfo.fileName || "-"}</code>
+              <code className="bg-bg-surface px-1.5 py-0.5 rounded border border-border-light text-[11px]">{lastGenerationInfo.fileName || "-"}</code>
             </p>
           </div>
         )}
         {emailSummary && (
-          <div className="generation-summary email-summary">
+          <div className="mt-4 p-3 bg-bg-elevated border border-border-light rounded-lg text-xs text-text-secondary flex flex-col gap-1">
             <p>
               <strong>Last send:</strong> {emailSummary.timestamp}
             </p>
@@ -1019,9 +760,9 @@ const EmailSettingsPanel = ({
             </p>
             {emailSummary.failureCount > 0 && (
               <>
-                <details>
-                  <summary>Failed deliveries ({emailSummary.failureCount})</summary>
-                  <ul className="failure-list">
+                <details className="mt-1 cursor-pointer">
+                  <summary className="text-[11px] font-bold text-danger">Failed deliveries ({emailSummary.failureCount})</summary>
+                  <ul className="list-disc pl-5 mt-1.5 flex flex-col gap-1 text-[11px] text-danger">
                     {(emailSummary.failures || [])
                       .slice(0, 5)
                       .map((failure, i) => (
@@ -1035,10 +776,9 @@ const EmailSettingsPanel = ({
                   </ul>
                 </details>
                 <button
-                  className="action-button secondary"
                   onClick={handleRetryFailed}
                   type="button"
-                  style={{ marginTop: "12px", width: "100%", background: "#ffa42b", color: "#000", fontSize: "12px", padding: "8px" }}
+                  className="mt-3 w-full py-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg text-xs font-bold hover:bg-amber-500/20 hover:border-amber-500/40 transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   🔄 Retry Failed Deliveries ({emailSummary.failureCount})
                 </button>

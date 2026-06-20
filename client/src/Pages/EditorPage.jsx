@@ -65,10 +65,16 @@ import PreviewGrid from "../components/PreviewGrid";
 const COLOR_SWATCHES = [
   "#000000",
   "#FFFFFF",
-  "#C67F0E",
-  "#0D47A1",
-  "#C2185B",
-  "#388E3C",
+  "#6366f1", // Indigo
+  "#3b82f6", // Blue
+  "#10b981", // Emerald
+  "#f59e0b", // Amber
+  "#ef4444", // Red
+  "#ec4899", // Pink
+  "#8b5cf6", // Purple
+  "#14b8a6", // Teal
+  "#64748b", // Slate
+  "#1e293b", // Navy Slate
 ];
 
 const MAX_MANUAL_RECIPIENTS = 5;
@@ -2299,7 +2305,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
   };
 
   return (
-    <div className="App">
+    <div className="min-h-screen w-full flex flex-col bg-bg-primary">
       <Toaster position="bottom-right" />
       <EditorHeader
         currentPath={currentPath}
@@ -2308,9 +2314,11 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
         onLogout={onLogout}
       />
 
-      <div className="main-layout">
-        <div className={`controls-panel ${isBottomSheetOpen ? "mobile-open" : ""}`}>
-          <div className="bottom-sheet-handle" onClick={() => setIsBottomSheetOpen(false)} />
+      <div className="flex flex-col xl:flex-row w-full flex-1 min-h-0 relative">
+        <div className={`fixed xl:static inset-x-0 bottom-0 z-40 bg-bg-surface border-t xl:border-t-0 border-border-custom rounded-t-2xl xl:rounded-none p-5 xl:p-7 xl:w-[360px] xl:shrink-0 xl:h-[calc(100vh-56px)] xl:sticky xl:top-[56px] xl:border-r flex flex-col gap-3 overflow-y-auto max-h-[85vh] xl:max-h-none transition-transform duration-300 ease-in-out ${
+          isBottomSheetOpen ? "translate-y-0" : "translate-y-full xl:translate-y-0"
+        }`}>
+          <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-2 cursor-pointer xl:hidden hover:bg-text-muted transition-colors" onClick={() => setIsBottomSheetOpen(false)} />
           <LayerPanel
             template={template}
             onOpenTemplateLibrary={() => setIsTemplateModalOpen(true)}
@@ -2355,7 +2363,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
             layoutReady={layoutReady}
           />
 
-          <React.Suspense fallback={<div className="panel-loader">Loading recipients...</div>}>
+          <React.Suspense fallback={<div className="flex items-center justify-center p-6 text-sm text-text-secondary animate-pulse">Loading recipients...</div>}>
             <ManualRecipientsPanel
               MAX_MANUAL_RECIPIENTS={MAX_MANUAL_RECIPIENTS}
               manualRecipients={manualRecipients}
@@ -2371,7 +2379,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
             />
           </React.Suspense>
 
-          <React.Suspense fallback={<div className="panel-loader">Loading email settings...</div>}>
+          <React.Suspense fallback={<div className="flex items-center justify-center p-6 text-sm text-text-secondary animate-pulse">Loading email settings...</div>}>
             <EmailSettingsPanel
               emailDeliveryEnabled={emailDeliveryEnabled}
               setEmailDeliveryEnabled={setEmailDeliveryEnabled}
@@ -2474,7 +2482,9 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
           handlePreviewSelect={handlePreviewSelect}
           PREVIEW_THUMBNAIL_WIDTH={PREVIEW_THUMBNAIL_WIDTH}
           handleDownloadAllZIP={handleDownloadAllZIP}
-          className={isDrawerOpen ? "mobile-open" : ""}
+          className={`fixed xl:static inset-x-0 bottom-0 z-40 rounded-t-2xl xl:rounded-none border-t xl:border-t-0 p-5 xl:p-7 max-h-[85vh] xl:max-h-none transition-transform duration-300 ease-in-out ${
+            isDrawerOpen ? "translate-y-0" : "translate-y-full xl:translate-y-0"
+          }`}
           onCloseDrawer={() => setIsDrawerOpen(false)}
         />
       </div>
@@ -2502,7 +2512,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
       {/* Backdrop overlay for mobile bottom sheet / drawer */}
       {(isBottomSheetOpen || isDrawerOpen) && (
         <div
-          className="mobile-backdrop"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity duration-300 xl:hidden"
           onClick={() => {
             setIsBottomSheetOpen(false);
             setIsDrawerOpen(false);
@@ -2511,10 +2521,12 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
       )}
 
       {/* Mobile Sticky Navigation Bar */}
-      <div className="mobile-bottom-bar">
+      <div className="fixed bottom-0 inset-x-0 h-16 bg-bg-surface border-t border-border-custom flex items-center justify-around z-50 xl:hidden shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
         <button
           type="button"
-          className={`mobile-bar-btn ${isBottomSheetOpen ? "active" : ""}`}
+          className={`flex-1 h-full flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all duration-150 ${
+            isBottomSheetOpen ? "text-accent" : "text-text-secondary hover:text-text-primary"
+          }`}
           onClick={() => {
             setIsBottomSheetOpen(!isBottomSheetOpen);
             setIsDrawerOpen(false);
@@ -2525,7 +2537,9 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
         </button>
         <button
           type="button"
-          className={`mobile-bar-btn ${isDrawerOpen ? "active" : ""}`}
+          className={`flex-1 h-full flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all duration-150 ${
+            isDrawerOpen ? "text-accent" : "text-text-secondary hover:text-text-primary"
+          }`}
           onClick={() => {
             setIsDrawerOpen(!isDrawerOpen);
             setIsBottomSheetOpen(false);

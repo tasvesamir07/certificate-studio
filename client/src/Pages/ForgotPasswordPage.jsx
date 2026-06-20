@@ -202,30 +202,36 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
     step === 2 ? secondsLeft / OTP_DURATION_SECONDS : 0;
 
   return (
-    <div className="App login-screen">
+    <div className="w-full min-h-screen flex items-center justify-center bg-bg-primary p-6 box-border font-sans relative">
       <Toaster position="bottom-right" />
-      <div className="floating-action-bar">
+      <div className="absolute top-4 right-4 flex gap-2 z-50">
         <button
           type="button"
-          className="action-button secondary"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-border-light rounded-lg bg-bg-elevated text-text-secondary text-sm font-semibold hover:bg-bg-surface hover:text-text-primary hover:border-accent/40 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer"
           onClick={() => navigate("/user/login")}
         >
           Back to Login
         </button>
       </div>
 
-      <div className="login-card forgot-password-card">
+      <div className="bg-bg-surface border border-border-light border-t-4 border-t-accent rounded-2xl p-10 max-w-[420px] w-full shadow-lg backdrop-blur-md">
         {/* Step indicators */}
-        <div className="step-indicator">
-          <div className={`step-dot ${step >= 1 ? "active" : ""} ${step > 1 ? "completed" : ""}`}>
+        <div className="flex items-center justify-center gap-0 mb-6">
+          <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all duration-200 ${
+            step > 1 ? "bg-success text-bg-primary" : step >= 1 ? "bg-accent text-bg-primary" : "bg-bg-elevated text-text-muted"
+          }`}>
             {step > 1 ? "✓" : "1"}
           </div>
-          <div className={`step-line ${step > 1 ? "active" : ""}`} />
-          <div className={`step-dot ${step >= 2 ? "active" : ""} ${step > 2 ? "completed" : ""}`}>
+          <div className={`w-10 h-0.5 rounded-[2px] transition-all duration-200 ${step > 1 ? "bg-accent" : "bg-border-light"}`} />
+          <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all duration-200 ${
+            step > 2 ? "bg-success text-bg-primary" : step >= 2 ? "bg-accent text-bg-primary" : "bg-bg-elevated text-text-muted"
+          }`}>
             {step > 2 ? "✓" : "2"}
           </div>
-          <div className={`step-line ${step > 2 ? "active" : ""}`} />
-          <div className={`step-dot ${step >= 3 ? "active" : ""} ${step > 3 ? "completed" : ""}`}>
+          <div className={`w-10 h-0.5 rounded-[2px] transition-all duration-200 ${step > 2 ? "bg-accent" : "bg-border-light"}`} />
+          <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all duration-200 ${
+            step > 3 ? "bg-success text-bg-primary" : step >= 3 ? "bg-accent text-bg-primary" : "bg-bg-elevated text-text-muted"
+          }`}>
             {step > 3 ? "✓" : "3"}
           </div>
         </div>
@@ -233,24 +239,27 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
         {/* === Step 1: Email === */}
         {step === 1 && (
           <>
-            <h1>Reset Password</h1>
-            <p>Enter your email to receive a one-time password (OTP).</p>
-            <form className="login-form" onSubmit={handleSendOTP}>
-              <label htmlFor="forgotEmail">Email Address</label>
-              <input
-                id="forgotEmail"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-                disabled={isLoading}
-                autoFocus
-              />
+            <h1 className="text-xl font-bold text-text-primary text-center m-0 mb-2">Reset Password</h1>
+            <p className="text-sm text-text-secondary text-center m-0 mb-6">Enter your email to receive a one-time password (OTP).</p>
+            <form className="grid gap-4" onSubmit={handleSendOTP}>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="forgotEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email Address</label>
+                <input
+                  id="forgotEmail"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  disabled={isLoading}
+                  autoFocus
+                  className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
+                />
+              </div>
               <button
                 type="submit"
-                className="login-button"
                 disabled={isLoading}
+                className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
               >
                 {isLoading ? "Sending..." : "Send OTP"}
               </button>
@@ -261,22 +270,22 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
         {/* === Step 2: OTP === */}
         {step === 2 && (
           <>
-            <h1>Enter OTP</h1>
-            <p>
-              A 6-character OTP was sent to <strong>{email}</strong>
+            <h1 className="text-xl font-bold text-text-primary text-center m-0 mb-2">Enter OTP</h1>
+            <p className="text-sm text-text-secondary text-center m-0 mb-4">
+              A 6-character OTP was sent to <strong className="text-text-primary">{email}</strong>
             </p>
 
             {/* Timer */}
-            <div className="otp-timer-wrapper">
-              <svg className="otp-timer-ring" viewBox="0 0 80 80">
+            <div className="flex flex-col items-center my-5 relative">
+              <svg className="w-[72px] h-[72px] -rotate-90" viewBox="0 0 80 80">
                 <circle
-                  className="otp-timer-bg"
+                  className="fill-none stroke-border-light stroke-[4px]"
                   cx="40"
                   cy="40"
                   r="35"
                 />
                 <circle
-                  className="otp-timer-progress"
+                  className="fill-none stroke-accent stroke-[4px] stroke-linecap-round stroke-dasharray-[220] transition-all duration-1000 ease-linear"
                   cx="40"
                   cy="40"
                   r="35"
@@ -286,7 +295,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
                 />
               </svg>
               <span
-                className={`otp-timer-text ${timerExpired ? "expired" : ""}`}
+                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-base ${timerExpired ? "text-danger text-xs" : "text-accent"}`}
               >
                 {timerExpired ? "Expired" : formatTime(secondsLeft)}
               </span>
@@ -294,7 +303,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
 
             {/* OTP Inputs */}
             <form
-              className="otp-input-group"
+              className="flex gap-2 justify-center my-4"
               onSubmit={handleVerifyOTP}
             >
               {otp.map((digit, i) => (
@@ -304,32 +313,32 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
                   type="text"
                   inputMode="text"
                   maxLength={1}
-                  className="otp-input"
                   value={digit}
                   onChange={(e) => handleOtpChange(i, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
                   onPaste={i === 0 ? handleOtpPaste : undefined}
                   disabled={isLoading || timerExpired}
                   autoComplete="one-time-code"
+                  className="w-11 h-[52px] text-center text-xl font-bold border border-border-light rounded-lg bg-bg-elevated text-text-primary outline-none transition-all duration-200 focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow disabled:opacity-50"
                 />
               ))}
             </form>
 
-            <div className="otp-actions">
+            <div className="flex flex-col gap-2.5">
               <button
                 type="button"
-                className="login-button"
                 onClick={handleVerifyOTP}
                 disabled={isLoading || timerExpired || otp.join("").length !== 6}
+                className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
               >
                 {isLoading ? "Verifying..." : "Verify OTP"}
               </button>
 
               <button
                 type="button"
-                className="otp-resend-btn"
                 onClick={handleResendOTP}
                 disabled={isLoading || (!timerExpired && secondsLeft > 0)}
+                className="w-full py-2.5 bg-transparent border border-border-light rounded-lg text-xs font-semibold text-text-muted hover:border-accent hover:text-accent transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isLoading ? "Sending..." : "Resend OTP"}
               </button>
@@ -340,54 +349,60 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
         {/* === Step 3: New Password === */}
         {step === 3 && (
           <>
-            <h1>Set New Password</h1>
-            <p>Enter your new password below.</p>
-            <form className="login-form" onSubmit={handleResetPassword}>
-              <label htmlFor="newResetPassword">New Password</label>
-              <div className="password-input-wrapper">
-                <input
-                  id="newResetPassword"
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                  autoComplete="new-password"
-                  disabled={isLoading}
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  className="password-toggle-btn"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  tabIndex={-1}
-                >
-                  {showNewPassword ? "🙈" : "👁️"}
-                </button>
+            <h1 className="text-xl font-bold text-text-primary text-center m-0 mb-2">Set New Password</h1>
+            <p className="text-sm text-text-secondary text-center m-0 mb-6">Enter your new password below.</p>
+            <form className="grid gap-4" onSubmit={handleResetPassword}>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="newResetPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">New Password</label>
+                <div className="relative">
+                  <input
+                    id="newResetPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    autoComplete="new-password"
+                    disabled={isLoading}
+                    autoFocus
+                    className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md"
+                  >
+                    {showNewPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </div>
-              <label htmlFor="confirmResetPassword">Confirm Password</label>
-              <div className="password-input-wrapper">
-                <input
-                  id="confirmResetPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter new password"
-                  autoComplete="new-password"
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  className="password-toggle-btn"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  tabIndex={-1}
-                >
-                  {showConfirmPassword ? "🙈" : "👁️"}
-                </button>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="confirmResetPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    id="confirmResetPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    autoComplete="new-password"
+                    disabled={isLoading}
+                    className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md"
+                  >
+                    {showConfirmPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"
-                className="login-button"
                 disabled={isLoading}
+                className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
               >
                 {isLoading ? "Resetting..." : "Reset Password"}
               </button>
@@ -397,14 +412,14 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
 
         {/* === Step 4: Success === */}
         {step === 4 && (
-          <div className="reset-success">
-            <div className="success-icon">✅</div>
-            <h1>Password Reset!</h1>
-            <p>Your password has been updated. You can now log in.</p>
+          <div className="text-center py-5 flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full bg-success/10 border border-success/20 text-success flex items-center justify-center text-3xl mb-5">✅</div>
+            <h1 className="text-xl font-bold text-text-primary mb-2">Password Reset!</h1>
+            <p className="text-sm text-text-secondary mb-6">Your password has been updated. You can now log in.</p>
             <button
               type="button"
-              className="login-button"
               onClick={() => navigate("/user/login")}
+              className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
             >
               Go to Login
             </button>

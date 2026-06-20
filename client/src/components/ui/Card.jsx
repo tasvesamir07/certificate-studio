@@ -7,12 +7,12 @@ const Card = React.forwardRef(({
   variant = "default", // 'default' | 'glass' | 'interactive'
   ...props
 }, ref) => {
-  let cardClass = "custom-card";
+  let cardClass = "bg-bg-surface border border-border-light rounded-lg p-6 shadow-sm text-text-primary transition-all duration-200";
 
   if (variant === "glass") {
-    cardClass = "custom-card glass";
+    cardClass = "bg-bg-surface/80 backdrop-blur-md border border-border-light rounded-lg p-6 shadow-md text-text-primary transition-all duration-200";
   } else if (variant === "interactive") {
-    cardClass = "custom-card interactive";
+    cardClass = "bg-bg-surface border border-border-light rounded-lg p-6 shadow-sm text-text-primary transition-all duration-200 hover:border-accent hover:shadow-md cursor-pointer transform hover:-translate-y-0.5";
   }
 
   return (

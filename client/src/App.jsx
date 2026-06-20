@@ -38,24 +38,24 @@ function App() {
       const storedUserId = localStorage.getItem("certificate-studio-userId");
 
       if (storedAuth === "true" && storedUser && storedToken) {
-        if (!isAuthenticated) {
-          setIsAuthenticated(true);
-          setAuthUser(storedUser);
-          setAuthUserId(storedUserId || "");
-        }
-        if (storedUserId && !isCanvaConnected) {
-          try {
-            const res = await axios.get(buildApiUrl(API_BASE_URL, `api/canva/check-connection?userId=${storedUserId}`));
-            setIsCanvaConnected(res.data.isConnected);
-          } catch (err) {}
-        }
+        setIsAuthenticated(true);
+        setAuthUser(storedUser);
+        setAuthUserId(storedUserId || "");
+        
+        try {
+          const res = await axios.get(buildApiUrl(API_BASE_URL, `api/canva/check-connection?userId=${storedUserId}`));
+          setIsCanvaConnected(res.data.isConnected);
+        } catch (err) {}
       }
     };
     restore();
+  }, [setIsAuthenticated, setAuthUser, setAuthUserId, setIsCanvaConnected]);
+
+  useEffect(() => {
     const handlePop = () => setCurrentPath(window.location.pathname || "/user/login");
     window.addEventListener("popstate", handlePop);
     return () => window.removeEventListener("popstate", handlePop);
-  }, [isAuthenticated, isCanvaConnected, setIsAuthenticated, setAuthUser, setAuthUserId, setIsCanvaConnected, setCurrentPath]);
+  }, [setCurrentPath]);
 
   const effAuth = isAuthenticated || (localStorage.getItem(AUTH_KEYS.auth) === "true" && localStorage.getItem(AUTH_KEYS.user));
 

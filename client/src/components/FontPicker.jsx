@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import './FontPicker.css';
 
 const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -467,32 +466,34 @@ const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
   }, []);
 
   return (
-    <div className="custom-font-picker" ref={pickerRef}>
+    <div className="relative w-full mb-3" ref={pickerRef}>
       <button 
         type="button"
-        className="picker-trigger" 
+        className="w-full bg-bg-elevated border border-border-light rounded-lg px-4 py-3 flex justify-between items-center cursor-pointer text-base text-text-primary transition-all duration-200 shadow-sm text-left hover:bg-bg-surface hover:border-accent hover:shadow-md focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-bg-glow" 
         onClick={() => setIsOpen(!isOpen)}
         style={{ fontFamily: activeFontFamily }}
       >
         <span>{activeFontFamily || 'Select Font'}</span>
-        <span className="chevron">▾</span>
+        <span className="text-xs text-text-muted transition-transform duration-200">▾</span>
       </button>
 
       {isOpen && (
-        <div className="picker-dropdown">
-          <div className="picker-categories">
+        <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-bg-surface/95 backdrop-blur-md border border-border-custom rounded-xl shadow-lg z-[1000] overflow-hidden">
+          <div className="flex flex-wrap gap-1.5 p-3 border-b border-border-light bg-bg-surface/95">
             {CATEGORIES.map(cat => (
               <button 
                 key={cat}
                 type="button"
-                className={`category-btn ${activeCategory === cat ? 'active' : ''}`}
+                className={`px-3 py-1.5 border border-border-light bg-bg-elevated rounded-full text-xs text-text-secondary cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-accent hover:text-accent ${
+                  activeCategory === cat ? 'bg-accent border-accent !text-bg-primary shadow-sm' : ''
+                }`}
                 onClick={() => setActiveCategory(cat)}
               >
                 {cat}
               </button>
             ))}
           </div>
-          <div className="picker-search">
+          <div className="p-3 border-b border-border-light bg-bg-surface/95">
             <input 
               type="text" 
               placeholder="Search or type any Google Font..." 
@@ -502,14 +503,17 @@ const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
                 setLoadingState('idle'); // Reset error/loading state when user types
               }}
               autoFocus
+              className="w-full px-3.5 py-2 border border-border-light rounded-md text-sm bg-bg-elevated text-text-primary transition-colors duration-200 outline-none focus:border-accent"
             />
           </div>
-          <ul className="picker-list">
+          <ul className="list-none m-0 p-1 max-h-[300px] overflow-y-auto pr-1">
             {filteredFonts.map(font => (
               <li key={font.family}>
                 <button 
                   type="button"
-                  className={font.family === activeFontFamily ? 'active' : ''}
+                  className={`w-full px-4 py-3 border-none bg-transparent cursor-pointer text-left text-base text-text-secondary rounded-lg transition-all duration-150 mb-0.5 hover:bg-accent-bg-glow hover:text-accent hover:translate-x-1 ${
+                    font.family === activeFontFamily ? 'bg-accent-bg-glow !text-accent font-semibold' : ''
+                  }`}
                   onClick={() => {
                     onChange({ family: font.family });
                     setIsOpen(false);
@@ -521,8 +525,8 @@ const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
               </li>
             ))}
             {shouldShowLoadExternal && (
-              <li className="load-external">
-                <p>Not found in our list?</p>
+              <li className="p-4 bg-accent-bg-glow border-t border-dashed border-border-custom mt-2 text-center">
+                <p className="text-xs text-text-muted mb-2">Not found in our list?</p>
                 <button 
                   type="button"
                   onClick={async () => {
@@ -533,12 +537,8 @@ const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
                     
                     try {
                         const fontSpec = `400 16px "${family}"`;
-                        
-                        // Use FontFace API for more reliable loading and validation
-                        // First, we need to fetch the CSS to find the TTF URL
                         const googleUrl = `https://fonts.googleapis.com/css2?family=${family.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
                         
-                        // We still inject the link tag because it's the easiest way to handle all variants (bold, italic, etc.)
                         const fontId = `font-load-${family.replace(/\s+/g, '-')}`;
                         let link = document.getElementById(fontId);
                         if (!link) {
@@ -549,14 +549,10 @@ const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
                             document.head.appendChild(link);
                         }
 
-                        // Wait for the browser to recognize the font
-                        // document.fonts.load is the most accurate way to check if a font specified in CSS is actually loaded
-                        await new Promise(r => setTimeout(r, 600)); // Increased buffer for CSS fetching and parsing
+                        await new Promise(r => setTimeout(r, 600));
                         const loadedFonts = await document.fonts.load(fontSpec);
                         
-                        // If loadedFonts is empty, it means the font failed to load or doesn't exist
                         if (loadedFonts && loadedFonts.length > 0) {
-                           // SUCCESS
                            if (!externalFonts.find(f => f.family.toLowerCase() === family.toLowerCase())) {
                                setExternalFonts(prev => [{ family, category: 'External' }, ...prev]);
                            }
@@ -576,10 +572,11 @@ const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
                   }}
                   disabled={loadingState === 'loading'}
                   style={{ fontFamily: search }}
+                  className="w-full p-2.5 bg-accent text-bg-primary font-bold rounded-lg text-sm cursor-pointer transition-all duration-200 shadow-sm hover:bg-accent-hover hover:-translate-y-0.5 hover:shadow-md disabled:opacity-80 disabled:cursor-wait border-none"
                 >
                   {loadingState === 'loading' ? (
-                    <span className="font-loader-span">
-                       <span className="spinner-mini"></span> Downloading...
+                    <span className="flex items-center justify-center gap-2">
+                       <span className="w-3.5 h-3.5 border-2 border-border-light border-t-accent rounded-full animate-spin"></span> Downloading...
                     </span>
                   ) : loadingState === 'error' ? (
                     "Failed to load. Try another?"
@@ -588,12 +585,12 @@ const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
                   )}
                 </button>
                 {loadingState === 'error' && (
-                    <p className="error-hint">This font might not be on Google Fonts or is spelled incorrectly.</p>
+                    <p className="text-[11px] text-danger mt-2 italic text-center">This font might not be on Google Fonts or is spelled incorrectly.</p>
                 )}
               </li>
             )}
             {filteredFonts.length === 0 && !shouldShowLoadExternal && (
-              <li className="no-results">No fonts found</li>
+              <li className="p-6 text-center text-text-muted italic text-xs">No fonts found</li>
             )}
           </ul>
         </div>

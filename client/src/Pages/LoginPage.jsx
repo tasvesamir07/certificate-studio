@@ -150,33 +150,63 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
   };
 
   return (
-    <div className="login-page">
+    <div className="w-full min-h-screen flex items-center justify-center bg-bg-primary p-6 box-border">
       <Toaster position="bottom-right" />
       <div className="login-card-container">
-        <div className="login-tabs">
-          <button type="button" className={`login-tab-btn ${tab === "login" ? "active" : ""}`} onClick={() => { setTab("login"); setError(""); }}>Login</button>
-          <button type="button" className={`login-tab-btn ${tab === "signup" ? "active" : ""}`} onClick={() => { setTab("signup"); setError(""); }}>Sign Up</button>
+        <div className="flex mb-7 bg-bg-elevated rounded-md p-1 gap-1">
+          <button 
+            type="button" 
+            className={`flex-1 py-2 text-center text-xs font-medium font-sans rounded-md cursor-pointer transition-all duration-200 ${
+              tab === "login" ? "bg-bg-surface text-text-primary shadow-xs" : "text-text-muted hover:text-text-primary"
+            }`} 
+            onClick={() => { setTab("login"); setError(""); }}
+          >
+            Login
+          </button>
+          <button 
+            type="button" 
+            className={`flex-1 py-2 text-center text-xs font-medium font-sans rounded-md cursor-pointer transition-all duration-200 ${
+              tab === "signup" ? "bg-bg-surface text-text-primary shadow-xs" : "text-text-muted hover:text-text-primary"
+            }`} 
+            onClick={() => { setTab("signup"); setError(""); }}
+          >
+            Sign Up
+          </button>
         </div>
 
         {tab === "login" ? (
-          <form onSubmit={handleLogin} className="login-form-container">
-            <div className="login-field-group">
-              <label htmlFor="loginEmail">Email</label>
-              <input id="loginEmail" type="email" value={email}
+          <form onSubmit={handleLogin} className="grid gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="loginEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email</label>
+              <input 
+                id="loginEmail" 
+                type="email" 
+                value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email" required disabled={isLoading}
-                className="custom-input" />
+                autoComplete="email" 
+                required 
+                disabled={isLoading}
+                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow" 
+              />
             </div>
-            <div className="login-field-group">
-              <label htmlFor="loginPassword">Password</label>
-              <div style={{ position: "relative" }}>
-                <input id="loginPassword" type={showPassword ? "text" : "password"} value={password}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="loginPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Password</label>
+              <div className="relative">
+                <input 
+                  id="loginPassword" 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password" required disabled={isLoading}
-                  className="custom-input" style={{ paddingRight: 44 }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle-btn"
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                  autoComplete="current-password" 
+                  required 
+                  disabled={isLoading}
+                  className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11" 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md hover:bg-accent-subtle"
+                >
                   {showPassword ? (
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
@@ -191,44 +221,71 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                 </button>
               </div>
             </div>
-            {error && <p style={{ color: "var(--danger)", margin: 0, fontSize: 13 }}>{error}</p>}
-            <button type="submit" disabled={isLoading} className="login-button">
+            {error && <p className="text-danger m-0 text-[13px]">{error}</p>}
+            <button 
+              type="submit" 
+              disabled={isLoading} 
+              className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+            >
               {isLoading ? "Logging In..." : "Login"}
             </button>
-            <p style={{ margin: "4px 0 0", textAlign: "center", fontSize: 13, color: "var(--text-muted)" }}>
+            <p className="mt-1 text-center text-[13px] text-text-muted">
               Forgot your password?{" "}
-              <button type="button" onClick={() => navigate("/forgot-password")}
-                style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 13, fontWeight: 700, padding: 0, textDecoration: "underline" }}>
+              <button 
+                type="button" 
+                onClick={() => navigate("/forgot-password")}
+                className="bg-transparent border-none text-accent cursor-pointer text-[13px] font-bold p-0 underline hover:text-accent-hover"
+              >
                 Reset it here
               </button>
             </p>
           </form>
         ) : (
-          <form onSubmit={handleSignup} className="login-form-container">
-            <div className="login-field-group">
-              <label htmlFor="signupName">Display Name</label>
-              <input id="signupName" type="text" value={displayName}
+          <form onSubmit={handleSignup} className="grid gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="signupName" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Display Name</label>
+              <input 
+                id="signupName" 
+                type="text" 
+                value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                autoComplete="name" required disabled={isLoading}
-                className="custom-input" />
+                autoComplete="name" 
+                required 
+                disabled={isLoading}
+                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow" 
+              />
             </div>
-            <div className="login-field-group">
-              <label htmlFor="signupEmail">Email</label>
-              <input id="signupEmail" type="email" value={email}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="signupEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email</label>
+              <input 
+                id="signupEmail" 
+                type="email" 
+                value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email" required disabled={isLoading}
-                className="custom-input" />
+                autoComplete="email" 
+                required 
+                disabled={isLoading}
+                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow" 
+              />
             </div>
-            <div className="login-field-group">
-              <label htmlFor="signupPassword">Password</label>
-              <div style={{ position: "relative" }}>
-                <input id="signupPassword" type={showPassword ? "text" : "password"} value={password}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="signupPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Password</label>
+              <div className="relative">
+                <input 
+                  id="signupPassword" 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password" required disabled={isLoading}
-                  className="custom-input" style={{ paddingRight: 44 }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle-btn"
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                  autoComplete="new-password" 
+                  required 
+                  disabled={isLoading}
+                  className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11" 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md hover:bg-accent-subtle"
+                >
                   {showPassword ? (
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
@@ -244,20 +301,26 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
               </div>
               <PasswordStrengthIndicator password={password} />
             </div>
-            <div className="login-field-group">
-              <label htmlFor="signupConfirm">Confirm Password</label>
-              <div style={{ position: "relative" }}>
-                <input id="signupConfirm" type={showPassword ? "text" : "password"} value={confirmPassword}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="signupConfirm" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Confirm Password</label>
+              <div className="relative">
+                <input 
+                  id="signupConfirm" 
+                  type={showPassword ? "text" : "password"} 
+                  value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password" required disabled={isLoading}
-                  className="custom-input"
-                  style={{
-                    paddingRight: 44,
-                    borderColor: confirmPassword && password !== confirmPassword ? "var(--danger)" : ""
-                  }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle-btn"
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                  autoComplete="new-password" 
+                  required 
+                  disabled={isLoading}
+                  className={`w-full px-3.5 py-2.5 border rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11 ${
+                    confirmPassword && password !== confirmPassword ? "border-danger focus:border-danger focus:ring-danger/20" : "border-border-light focus:border-accent"
+                  }`} 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md hover:bg-accent-subtle"
+                >
                   {showPassword ? (
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
@@ -272,8 +335,12 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                 </button>
               </div>
             </div>
-            {error && <p style={{ color: "var(--danger)", margin: 0, fontSize: 13 }}>{error}</p>}
-            <button type="submit" disabled={isLoading || !allRulesPass} className="login-button">
+            {error && <p className="text-danger m-0 text-[13px]">{error}</p>}
+            <button 
+              type="submit" 
+              disabled={isLoading || !allRulesPass} 
+              className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+            >
               {isLoading ? "Creating Account..." : "Create Account"}
             </button>
           </form>

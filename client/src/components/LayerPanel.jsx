@@ -25,54 +25,37 @@ const LayerPanel = ({
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <h2>Design Studio</h2>
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-sm font-bold text-text-primary m-0 flex items-center gap-2">Design Studio</h2>
         <button
           type="button"
           onClick={onOpenTemplateLibrary}
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "999px",
-            color: "#fff",
-            padding: "6px 12px",
-            fontSize: "12px",
-            fontWeight: "700",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            transition: "all 0.2s"
-          }}
+          className="bg-white/5 border border-white/10 rounded-full text-white py-1 px-3 text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all duration-200 hover:bg-white/10 hover:border-white/20"
         >
           📚 Library
         </button>
       </div>
-      <p className="panel-intro">
+      <p className="text-xs text-text-muted leading-relaxed mb-3">
         Upload your artwork, decide whether to personalize it, then send or
         download everything in one place.
       </p>
 
-      <div className="control-group">
-        <label>1. Upload Template Image</label>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-          }}
-        >
-          <div {...getTemplateProps({ className: "dropzone" })}>
+      <div className="flex flex-col gap-1.5 mb-4">
+        <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">1. Upload Template Image</label>
+        <div className="flex flex-col gap-2.5">
+          <div {...getTemplateProps({ 
+            className: "border-[1.5px] border-dashed border-border-custom rounded-xl py-5 px-4 text-center bg-bg-elevated text-text-muted cursor-pointer transition-all duration-200 text-xs hover:border-accent hover:bg-accent-bg-glow hover:text-accent flex flex-col items-center justify-center" 
+          })}>
             <input {...getTemplateInputProps()} />
             <p>
               <b>Front Side:</b> Drag 'n' drop, or click
             </p>
             {template && (
-              <div className="file-chip">
-                <span className="file-name">{template.name}</span>
+              <div className="flex items-center justify-between p-2 bg-accent/10 border border-accent/20 rounded-lg mt-2 w-full max-w-full overflow-hidden">
+                <span className="text-xs font-semibold text-accent truncate max-w-[80%]">{template.name}</span>
                 <button
                   type="button"
-                  className="file-remove-button"
+                  className="border-none bg-transparent text-text-muted cursor-pointer px-1.5 py-0.5 text-sm transition-all duration-150 rounded-md hover:text-danger hover:bg-danger/10"
                   onClick={(event) => {
                     event.stopPropagation();
                     event.preventDefault();
@@ -86,36 +69,36 @@ const LayerPanel = ({
             )}
           </div>
 
-          <div className="or-divider">
+          <div className="flex items-center justify-center text-[10px] font-bold text-text-muted uppercase tracking-wider my-1.5 before:content-[''] before:flex-1 before:border-b before:border-border-light before:mr-2.5 after:content-[''] after:flex-1 after:border-b after:border-border-light after:ml-2.5">
             <span>OR</span>
           </div>
 
           {!isCanvaConnected ? (
             <button
               type="button"
-              className="canva-button"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-bg-primary font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer text-xs"
               onClick={handleConnectCanva}
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '20px', height: '20px' }}>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                 <path d="M12.9 2.1c.1 0 .2.1.2.2v4.8c0 .1-.1.2-.2.2h-1.8c-.1 0-.2-.1-.2-.2v-4.8c0-.1.1-.2.2-.2h1.8M21.9 11.1c0 .1-.1.2-.2.2h-4.8c-.1 0-.2-.1-.2-.2v-1.8c0-.1.1-.2.2-.2h4.8c.1 0 .2.1.2.2v1.8M2.1 11.1c0-.1.1-.2.2-.2h4.8c.1 0 .2.1.2.2v1.8c0 .1-.1.2-.2.2h-4.8c-.1 0-.2-.1-.2-.2v-1.8m9 9c-.1 0-.2-.1-.2-.2v-4.8c0-.1.1-.2.2-.2h1.8c.1 0 .2.1.2.2v4.8c0 .1-.1.2-.2.2h-1.8m4.9-3.2c-.1.1-.1.2-.1.2s0 .2.1.2l3.4 3.4c.1.1.2.1.2.1s.2 0 .2-.1l1.3-1.3c.1-.1.1-.2.1-.2s0-.2-.1-.2l-3.4-3.4c-.1-.1-.2-.1-.2-.1s-.2 0-.2.1l-1.3 1.3m-10.8 0c.1.1.1.2.1.2s0 .2-.1.2l-3.4 3.4c-.1.1-.2.1-.2.1s-.2 0-.2-.1l-1.3-1.3c-.1-.1-.1-.2-.1-.2s0-.2.1-.2l3.4-3.4c.1-.1.2-.1.2-.1s.2 0 .2.1l1.3 1.3M17.1 2.1c.1 0 .2.1.2.2l1.3 1.3c.1.1.1.2.1.2s0 .2-.1.2l-3.4 3.4c-.1.1-.2.1-.2.1s-.2 0-.2-.1l-1.3-1.3c-.1-.1-.1-.2-.1-.2s0-.2.1-.2l3.4-3.4c.1-.1.2-.1.2-.1M5.6 2.1c-.1 0-.2.1-.2.2l-3.4 3.4c-.1.1-.1.2-.1.2s0 .2.1.2l1.3 1.3c.1.1.2.1.2.1s.2 0 .2-.1l3.4-3.4c.1-.1.1-.2.1-.2s0-.2-.1-.2l-1.3-1.3c0-.1-.1-.1-.2-.1" />
               </svg>
               Connect Canva
             </button>
           ) : (
-            <div className="canva-connected-group">
+            <div className="flex flex-col items-center gap-2 w-full">
               <button
                 type="button"
-                className="canva-button"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-bg-primary font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer text-xs"
                 onClick={() => setIsCanvaModalOpen(true)}
               >
-                <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '20px', height: '20px' }}>
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                   <path d="M12.9 2.1c.1 0 .2.1.2.2v4.8c0 .1-.1.2-.2.2h-1.8c-.1 0-.2-.1-.2-.2v-4.8c0-.1.1-.2.2-.2h1.8M21.9 11.1c0 .1-.1.2-.2.2h-4.8c-.1 0-.2-.1-.2-.2v-1.8c0-.1.1-.2.2-.2h4.8c.1 0 .2.1.2.2v1.8M2.1 11.1c0-.1.1-.2.2-.2h4.8c.1 0 .2.1.2.2v1.8c0 .1-.1.2-.2.2h-4.8c-.1 0-.2-.1-.2-.2v-1.8m9 9c-.1 0-.2-.1-.2-.2v-4.8c0-.1.1-.2.2-.2h1.8c.1 0 .2.1.2.2v4.8c0 .1-.1.2-.2.2h-1.8m4.9-3.2c-.1.1-.1.2-.1.2s0 .2.1.2l3.4 3.4c.1.1.2.1.2.1s.2 0 .2-.1l1.3-1.3c.1-.1.1-.2.1-.2s0-.2-.1-.2l-3.4-3.4c-.1-.1-.2-.1-.2-.1s-.2 0-.2.1l-1.3 1.3m-10.8 0c.1.1.1.2.1.2s0 .2-.1.2l-3.4 3.4c-.1.1-.2.1-.2.1s-.2 0-.2-.1l-1.3-1.3c-.1-.1-.1-.2-.1-.2s0-.2.1-.2l3.4-3.4c.1-.1.2-.1.2-.1s.2 0 .2.1l1.3 1.3M17.1 2.1c.1 0 .2.1.2.2l1.3 1.3c.1.1.1.2.1.2s0 .2-.1.2l-3.4 3.4c-.1.1-.2.1-.2.1s-.2 0-.2-.1l-1.3-1.3c-.1-.1-.1-.2-.1-.2s0-.2.1-.2l3.4-3.4c.1-.1.2-.1.2-.1M5.6 2.1c-.1 0-.2.1-.2.2l-3.4 3.4c-.1.1-.1.2-.1.2s0 .2.1.2l1.3 1.3c.1.1.2.1.2.1s.2 0 .2-.1l3.4-3.4c.1-.1.1-.2.1-.2s0-.2-.1-.2l-1.3-1.3c0-.1-.1-.1-.2-.1" />
                 </svg>
                 Browse Canva Designs
               </button>
               <button 
                 type="button" 
-                className="canva-disconnect-link"
+                className="bg-transparent border border-border-custom text-xs font-medium text-text-muted cursor-pointer py-1 px-3 rounded-md transition-all duration-150 inline-flex items-center gap-1.5 hover:border-danger hover:text-danger hover:bg-danger/10"
                 onClick={handleDisconnectCanva}
                 title="Securely unlink your Canva account"
               >
@@ -126,12 +109,7 @@ const LayerPanel = ({
 
           <div
             {...getTemplateBackProps({
-              className: "dropzone",
-              style: {
-                borderStyle: "dashed",
-                opacity: 0.8,
-                minHeight: "80px",
-              },
+              className: "border-[1.5px] border-dashed border-border-custom rounded-xl py-4 px-4 text-center bg-bg-elevated text-text-muted cursor-pointer transition-all duration-200 text-xs hover:border-accent hover:bg-accent-bg-glow hover:text-accent flex flex-col items-center justify-center opacity-80 min-h-[80px]"
             })}
           >
             <input {...getTemplateBackInputProps()} />
@@ -139,11 +117,11 @@ const LayerPanel = ({
               <b>Back Side (Optional):</b> Drag 'n' drop, or click
             </p>
             {templateBack && (
-              <div className="file-chip">
-                <span className="file-name">{templateBack.name}</span>
+              <div className="flex items-center justify-between p-2 bg-accent/10 border border-accent/20 rounded-lg mt-2 w-full max-w-full overflow-hidden">
+                <span className="text-xs font-semibold text-accent truncate max-w-[80%]">{templateBack.name}</span>
                 <button
                   type="button"
-                  className="file-remove-button"
+                  className="border-none bg-transparent text-text-muted cursor-pointer px-1.5 py-0.5 text-sm transition-all duration-150 rounded-md hover:text-danger hover:bg-danger/10"
                   onClick={(event) => {
                     event.stopPropagation();
                     event.preventDefault();
@@ -159,17 +137,19 @@ const LayerPanel = ({
         </div>
       </div>
 
-      <div className="control-group">
-        <label>2. Upload Data File (.xlsx)</label>
-        <div {...getDataProps({ className: "dropzone" })}>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">2. Upload Data File (.xlsx)</label>
+        <div {...getDataProps({ 
+          className: "border-[1.5px] border-dashed border-border-custom rounded-xl py-5 px-4 text-center bg-bg-elevated text-text-muted cursor-pointer transition-all duration-200 text-xs hover:border-accent hover:bg-accent-bg-glow hover:text-accent flex flex-col items-center justify-center" 
+        })}>
           <input {...getDataInputProps()} />
           <p>Drag 'n' drop, or click</p>
           {dataFile && (
-            <div className="file-chip">
-              <span className="file-name">{dataFile.name}</span>
+            <div className="flex items-center justify-between p-2 bg-accent/10 border border-accent/20 rounded-lg mt-2 w-full max-w-full overflow-hidden">
+              <span className="text-xs font-semibold text-accent truncate max-w-[80%]">{dataFile.name}</span>
               <button
                 type="button"
-                className="file-remove-button"
+                className="border-none bg-transparent text-text-muted cursor-pointer px-1.5 py-0.5 text-sm transition-all duration-150 rounded-md hover:text-danger hover:bg-danger/10"
                 onClick={(event) => {
                   event.stopPropagation();
                   event.preventDefault();

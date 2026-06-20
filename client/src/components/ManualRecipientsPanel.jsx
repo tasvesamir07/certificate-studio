@@ -30,14 +30,14 @@ const ManualRecipientsPanel = ({
   const layoutReady = !!layout && isLayoutLocked;
 
   return (
-    <div className="control-group">
-      <label>5. Quick Recipients (Max {MAX_MANUAL_RECIPIENTS})</label>
-      <p className="layout-hint">
+    <div className="flex flex-col gap-2 mb-4">
+      <label className="text-xs font-bold text-text-primary uppercase tracking-wide">5. Quick Recipients (Max {MAX_MANUAL_RECIPIENTS})</label>
+      <p className="text-xs text-text-muted mb-2 leading-relaxed">
         Use this for quick testing or sending certificates to a small, fixed
         list without uploading an Excel file.
       </p>
       {manualRecipients.map((recipient, index) => (
-        <div key={recipient.id} className="manual-recipient-row">
+        <div key={recipient.id} className="flex flex-col gap-1.5 p-2.5 bg-bg-elevated border border-border-light rounded-lg mb-2">
           <input
             type="text"
             placeholder={`Recipient Name ${index + 1}`}
@@ -45,8 +45,9 @@ const ManualRecipientsPanel = ({
             onChange={(e) =>
               handleManualRecipientChange(recipient.id, "name", e.target.value)
             }
+            className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-surface text-text-primary text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
           />
-          <div className="manual-recipient-email-row">
+          <div className="flex gap-2 items-center w-full">
             <input
               type="email"
               placeholder={`Email Address ${index + 1}`}
@@ -58,12 +59,13 @@ const ManualRecipientsPanel = ({
                   e.target.value
                 )
               }
+              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-surface text-text-primary text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
             />
             <button
               type="button"
-              className="ghost-button"
               onClick={() => removeManualRecipient(recipient.id)}
               disabled={manualRecipients.length === 1}
+              className="px-3 py-2 bg-transparent border border-border-light text-text-muted hover:border-danger hover:text-danger hover:bg-danger/10 text-xs font-semibold rounded-lg transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Remove
             </button>
@@ -71,24 +73,23 @@ const ManualRecipientsPanel = ({
         </div>
       ))}
 
-      <div className="manual-recipient-actions">
+      <div className="flex items-center justify-between mt-1 mb-3">
         <button
           type="button"
-          className="add-manual-button"
           onClick={addManualRecipient}
           disabled={manualRecipientLimitReached}
+          className="text-xs font-bold text-accent bg-transparent hover:text-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-50"
         >
           + Add Recipient
         </button>
         {manualRecipientLimitReached && (
-          <span className="manual-limit-hint">
+          <span className="text-[10px] text-text-muted font-medium">
             Limit: {MAX_MANUAL_RECIPIENTS} recipients
           </span>
         )}
       </div>
 
       <button
-        className="manual-generate-button"
         onClick={handleManualGenerate}
         disabled={
           !template ||
@@ -96,6 +97,7 @@ const ManualRecipientsPanel = ({
           isManualGenerating ||
           !layoutReady
         }
+        className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer flex items-center justify-center"
       >
         {isManualGenerating
           ? "Generating..."

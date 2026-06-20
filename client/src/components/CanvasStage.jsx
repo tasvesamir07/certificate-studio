@@ -82,8 +82,8 @@ const CanvasStage = memo(({
 
   if (!templateURL) {
     return (
-      <div className="editor-panel">
-        <h3 className="empty-template-hint">
+      <div className="flex-1 flex flex-col items-center bg-bg-primary p-7 h-[calc(100vh-56px)] overflow-auto relative">
+        <h3 className="text-text-muted text-sm font-semibold mt-10">
           Upload a template to begin designing
         </h3>
       </div>
@@ -91,14 +91,14 @@ const CanvasStage = memo(({
   }
 
   return (
-    <div className="editor-panel">
-      <div className="preview-zoom-controls">
-        <div className="preview-zoom-header">
+    <div className="flex-1 flex flex-col items-center bg-bg-primary p-7 h-[calc(100vh-56px)] overflow-auto relative">
+      <div className="w-full max-w-[600px] bg-bg-surface border border-border-light rounded-xl p-4 mb-4 flex flex-col gap-2 shadow-sm">
+        <div className="flex items-center justify-between text-xs font-bold text-text-primary">
           <label htmlFor="zoomSlider">
             Zoom: {Math.round(previewScale * 100)}%
           </label>
           <button
-            className="preview-zoom-reset"
+            className="bg-transparent border-none text-accent hover:text-accent-hover text-xs font-semibold cursor-pointer transition-colors duration-150"
             onClick={handleResetZoom}
           >
             Reset to Auto-Fit
@@ -106,7 +106,7 @@ const CanvasStage = memo(({
         </div>
         <input
           id="zoomSlider"
-          className="preview-zoom-slider"
+          className="w-full accent-accent cursor-pointer h-1.5 bg-bg-elevated rounded-lg appearance-none"
           type="range"
           min="0.1"
           max="1.5"
@@ -116,15 +116,17 @@ const CanvasStage = memo(({
         />
       </div>
 
-      <div className="preview-top-bar">
-        <div className="preview-pill">
+      <div className="w-full max-w-[600px] flex items-center justify-between mb-4 gap-4">
+        <div className="px-3.5 py-1.5 bg-bg-surface border border-border-light rounded-full text-xs text-text-secondary shadow-sm font-medium">
           Previewing: <strong>{previewName || "Your Name Here"}</strong>
         </div>
 
-        <div className="preview-top-actions">
+        <div className="flex items-center gap-2">
           <button
-            className={`grid-toggle-button canvas-mode ${
-              showGrid ? "active" : ""
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150 ${
+              showGrid 
+                ? "bg-accent text-bg-primary shadow-sm" 
+                : "bg-bg-surface border border-border-light text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
             }`}
             onClick={() => setShowGrid(!showGrid)}
             disabled={!template}
@@ -134,18 +136,18 @@ const CanvasStage = memo(({
           </button>
 
           {templateBackURL && (
-            <div className="preview-side-toggle">
+            <div className="flex items-center bg-bg-elevated rounded-full p-0.5 border border-border-light">
               <button
-                className={`side-toggle-button ${
-                  previewSide === "front" ? "active" : ""
+                className={`px-3.5 py-1 text-[11px] font-semibold rounded-full cursor-pointer transition-all duration-150 ${
+                  previewSide === "front" ? "bg-bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary"
                 }`}
                 onClick={() => setPreviewSide("front")}
               >
                 Front Side
               </button>
               <button
-                className={`side-toggle-button ${
-                  previewSide === "back" ? "active" : ""
+                className={`px-3.5 py-1 text-[11px] font-semibold rounded-full cursor-pointer transition-all duration-150 ${
+                  previewSide === "back" ? "bg-bg-surface text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary"
                 }`}
                 onClick={() => setPreviewSide("back")}
               >
@@ -158,11 +160,11 @@ const CanvasStage = memo(({
 
       <div 
         ref={containerRef}
-        className="preview-container-3d"
+        className="flex-1 w-full flex items-center justify-center overflow-auto max-h-[80vh] py-6 select-none"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ touchAction: "none", overflow: "auto" }}
+        style={{ touchAction: "none" }}
       >
         <div
           className={`preview-card-3d ${
@@ -176,7 +178,7 @@ const CanvasStage = memo(({
             }`}
           >
             <div
-              className="editor-canvas"
+              className="relative border border-border-custom shadow-lg bg-bg-surface overflow-hidden rounded-lg flex-shrink-0"
               style={{
                 width: `${templateSize.width}px`,
                 height: `${templateSize.height}px`,
@@ -196,13 +198,13 @@ const CanvasStage = memo(({
                   {showGrid && (
                     <>
                       <div
-                        className={`center-snap-line-v ${
-                          isSnapXActive ? "active" : ""
+                        className={`absolute top-0 bottom-0 left-1/2 w-[1px] h-full bg-red-500/60 pointer-events-none z-[110] transition-all duration-150 -translate-x-1/2 ${
+                          isSnapXActive ? "opacity-100 !w-[2px]" : "opacity-0"
                         }`}
                       />
                       <div
-                        className={`center-snap-line-h ${
-                          isSnapYActive ? "active" : ""
+                        className={`absolute left-0 right-0 top-1/2 w-full h-[1px] bg-red-500/60 pointer-events-none z-[110] transition-all duration-150 -translate-y-1/2 ${
+                          isSnapYActive ? "opacity-100 !h-[2px]" : "opacity-0"
                         }`}
                       />
                     </>
@@ -255,14 +257,14 @@ const CanvasStage = memo(({
                     >
                       <canvas
                         ref={previewCanvasRef}
-                        className="preview-text-canvas"
+                        className="block pointer-events-none !bg-transparent"
                         aria-label="Certificate name preview"
                       />
                     </div>
                   </Rnd>
                 </>
               ) : (
-                <h3 className="layout-placeholder">Preparing layout box...</h3>
+                <h3 className="text-text-muted text-sm font-semibold text-center mt-20">Preparing layout box...</h3>
               )}
             </div>
           </div>
@@ -275,7 +277,7 @@ const CanvasStage = memo(({
           >
             {templateBackURL && (
               <div
-                className="editor-canvas"
+                className="relative border border-border-custom shadow-lg bg-bg-surface overflow-hidden rounded-lg flex-shrink-0"
                 style={{
                   width: `${templateSize.width}px`,
                   height: `${templateSize.height}px`,

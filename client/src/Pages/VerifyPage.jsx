@@ -43,13 +43,13 @@ const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
   };
 
   return (
-    <div className="verify-page">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-bg-primary text-text-primary p-6 box-border transition-all duration-300">
       <Toaster position="bottom-right" />
       
       {/* Floating Theme Switcher */}
       <button 
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        className="verify-theme-btn"
+        className="absolute top-5 right-6 bg-bg-elevated border border-border-custom rounded-md px-4 py-2.5 cursor-pointer text-text-primary text-xs font-bold transition-all duration-200 flex items-center gap-2 hover:bg-bg-surface hover:border-accent"
       >
         {theme === "dark" ? (
           <>
@@ -76,83 +76,83 @@ const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
         )}
       </button>
  
-      <div className="verify-card">
+      <div className="bg-bg-surface/80 backdrop-blur-md border border-border-custom rounded-xl p-10 max-w-[500px] w-full shadow-2xl text-center box-border relative">
         {loading ? (
-          <div className="verify-loading-container">
-            <div className="verify-spinner"></div>
-            <p className="verify-loading-text">
+          <div className="py-10">
+            <div className="w-10 h-10 border-3 border-border-light border-t-accent rounded-full mx-auto mb-4 animate-spin"></div>
+            <p className="text-text-muted m-0 font-medium">
               Verifying authenticity...
             </p>
           </div>
         ) : error ? (
-          <div className="verify-error-container">
-            <div className="verify-badge-icon error">
+          <div className="py-5">
+            <div className="w-[72px] h-[72px] rounded-full bg-danger/10 text-danger flex items-center justify-center text-3xl mx-auto mb-6 border border-danger/20">
               <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" />
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
             </div>
-            <h2>Verification Failed</h2>
-            <p className="verify-error-desc">
+            <h2 className="text-xl font-bold text-text-primary mb-2">Verification Failed</h2>
+            <p className="text-sm m-0 mb-6 leading-relaxed text-text-secondary">
               {error}
             </p>
             <button 
               onClick={() => navigate("/user/login")}
-              className="verify-btn"
+              className="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-md font-bold text-xs uppercase tracking-wider transition-all duration-200 border-none cursor-pointer hover:-translate-y-0.5 shadow-xs"
             >
               Go to Studio
             </button>
           </div>
         ) : (
           <div>
-            <div className="verify-badge-icon">
+            <div className="w-[72px] h-[72px] rounded-full bg-accent/10 text-accent flex items-center justify-center text-3xl mx-auto mb-6 border border-accent/20">
               <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h2>Verified Authentic</h2>
-            <p className="verify-secured-text">
+            <h2 className="text-xl font-bold text-text-primary mb-2">Verified Authentic</h2>
+            <p className="text-accent text-[13px] font-bold uppercase tracking-wider m-0 mb-8">
               Certificate Studio Secured
             </p>
  
-            <div className="verify-details-grid">
+            <div className="grid gap-4 bg-bg-elevated p-6 rounded-md border border-border-custom text-left mb-8">
               <div>
-                <span className="verify-label">Recipient Name</span>
-                <p className="verify-value">{cert.recipientName}</p>
+                <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">Recipient Name</span>
+                <p className="text-base font-bold mt-1 text-text-primary">{cert.recipientName}</p>
               </div>
  
               <div>
-                <span className="verify-label">Recipient Email</span>
-                <p className="verify-value muted">{maskEmail(cert.recipientEmail)}</p>
+                <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">Recipient Email</span>
+                <p className="text-base font-medium mt-1 text-text-primary">{maskEmail(cert.recipientEmail)}</p>
               </div>
  
-              <div className="verify-details-row">
+              <div className="flex justify-between gap-4">
                 <div>
-                  <span className="verify-label">Issue Date</span>
-                  <p className="verify-value muted secondary">
+                  <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">Issue Date</span>
+                  <p className="text-sm font-medium mt-1 text-text-primary">
                     {new Date(cert.issueDate).toLocaleDateString(undefined, { dateStyle: "long" })}
                   </p>
                 </div>
                 <div>
-                  <span className="verify-label">Issuer</span>
-                  <p className="verify-value muted secondary">{cert.issuerName || "Certificate Studio User"}</p>
+                  <span className="text-[11px] text-text-muted uppercase font-bold tracking-wider">Issuer</span>
+                  <p className="text-sm font-medium mt-1 text-text-primary">{cert.issuerName || "Certificate Studio User"}</p>
                 </div>
               </div>
             </div>
  
-            <div className="verify-actions">
+            <div className="flex gap-3 justify-center">
               <a 
                 href={cert.certificateUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="verify-btn"
+                className="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-md font-bold text-xs uppercase tracking-wider transition-all duration-200 border-none cursor-pointer hover:-translate-y-0.5 shadow-xs"
               >
                 View Certificate File
               </a>
               <button 
                 onClick={() => navigate("/user/login")}
-                className="verify-btn secondary"
+                className="bg-bg-elevated text-text-primary border border-border-custom hover:bg-bg-surface hover:border-accent px-6 py-3 rounded-md font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-none"
               >
                 Create Certificate
               </button>

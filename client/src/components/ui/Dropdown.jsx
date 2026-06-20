@@ -28,16 +28,16 @@ const Dropdown = ({
   return (
     <div
       ref={dropdownRef}
-      className={`dropdown-container ${className}`}
+      className={`relative inline-block w-full ${className}`}
       style={style}
       {...props}
     >
-      <div onClick={toggleDropdown} style={{ width: "100%" }}>
+      <div onClick={toggleDropdown} className="w-full">
         {trigger}
       </div>
       {isOpen && (
         <div
-          className="dropdown-menu"
+          className="absolute top-full mt-1.5 bg-bg-surface border border-border-custom rounded-md shadow-md z-[1000] min-w-[200px] max-h-[300px] overflow-y-auto py-1.5 animate-[dropdownFadeIn_0.2s_cubic-bezier(0.16,1,0.3,1)]"
           style={{ [align]: 0 }}
           onClick={() => setIsOpen(false)}
         >

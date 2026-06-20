@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
 const pool = require("../models/db");
 const { createTransporter } = require("../services/mailer");
+const { wrapEmailInTemplate } = require("../utils/helpers");
 
 const otpStore = new Map();
 const resetTokenStore = new Map();
@@ -100,13 +101,17 @@ const signup = async (req, res) => {
         from: process.env.PURCHASE_EMAIL_USER,
         to: email.trim(),
         subject: "Welcome to Certificate Studio",
-        html: `
-          <h1>Welcome to Certificate Studio!</h1>
-          <p>Your account has been created successfully. You now have full access to all features.</p>
-          <p><strong>Email:</strong> ${email.trim()}</p>
-          <p><strong>Name:</strong> ${displayName.trim()}</p>
-          <p>Login at: <a href="${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/user/login">Certificate Studio</a></p>
-        `,
+        html: wrapEmailInTemplate(
+          "Welcome to Certificate Studio",
+          `<h2>Welcome to Certificate Studio, ${displayName.trim()}!</h2>
+           <p>Your account has been created successfully. You now have full access to all features.</p>
+           <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; margin: 20px 0;">
+             <p style="margin: 0; font-size: 14px; color: #64748b;"><strong>Registered Email:</strong> ${email.trim()}</p>
+           </div>
+           <p>Click the button below to log in and start generating certificates:</p>
+           <a href="${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/user/login" class="btn">Log in to Studio</a>`,
+          "You received this welcome email because you registered an account on Certificate Studio."
+        ),
       });
 
       res.status(201).send(userResult.rows[0]);
@@ -262,7 +267,16 @@ const forgotPassword = async (req, res) => {
       from: process.env.PURCHASE_EMAIL_USER,
       to: email.trim(),
       subject: "Password Reset OTP",
-      html: `<div>OTP: ${otp}</div>`
+      html: wrapEmailInTemplate(
+        "Password Reset OTP",
+        `<h2>Password Reset Request</h2>
+         <p>We received a request to reset your password. Use the verification code below to proceed:</p>
+         <div style="background-color: #f8fafc; border: 1px dashed #e2e8f0; padding: 24px; border-radius: 8px; text-align: center; margin: 24px 0;">
+           <span style="font-size: 32px; font-weight: 700; letter-spacing: 4px; color: #4f46e5;">${otp}</span>
+         </div>
+         <p>This OTP is valid for 2 minutes. If you did not make this request, you can safely ignore this email.</p>`,
+        "If you did not request a password reset, please ignore this email."
+      )
     });
 
     res.send({ message: "OTP sent." });
