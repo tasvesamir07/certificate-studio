@@ -12,18 +12,18 @@ const EditorHeader = ({ navigate, onLogout }) => {
   };
 
   return (
-    <div className="sticky top-0 z-[100] flex items-center justify-between px-6 h-14 bg-bg-surface/80 backdrop-blur-xl border-b border-border-custom shadow-sm">
+    <div className="sticky top-0 z-[100] flex items-center justify-between px-6 h-14 bg-canvas border-b border-hairline">
       <div className="flex items-center gap-5 h-full">
         <span
-          className="font-sans text-[1.2rem] font-[800] gradient-text cursor-pointer select-none tracking-[-0.03em]"
+          className="font-sans text-lg font-[540] tracking-[-0.01em] text-ink cursor-pointer select-none"
           onClick={() => navigate("/generate-certifcate")}
         >
           Certificate Studio
         </span>
         <button
           type="button"
-          className={`border-none bg-transparent px-3.5 py-1.5 font-sans font-medium text-sm text-text-secondary cursor-pointer transition-all duration-200 rounded-lg hover:text-accent hover:bg-accent-bg-glow ${
-            currentPath === "/generate-certifcate" ? "text-accent font-bold bg-accent-bg-glow border border-border-custom" : ""
+          className={`border-none bg-transparent px-3.5 py-1.5 font-sans text-sm font-[480] text-ink cursor-pointer transition-all duration-100 rounded-[var(--radius-pill)] ${
+            currentPath === "/generate-certifcate" ? "bg-ink text-canvas" : "opacity-50 hover:opacity-100 hover:bg-surface-soft"
           }`}
           onClick={() => navigate("/generate-certifcate")}
         >
@@ -31,8 +31,8 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className={`border-none bg-transparent px-3.5 py-1.5 font-sans font-medium text-sm text-text-secondary cursor-pointer transition-all duration-200 rounded-lg hover:text-accent hover:bg-accent-bg-glow ${
-            currentPath === "/profile" ? "text-accent font-bold bg-accent-bg-glow border border-border-custom" : ""
+          className={`border-none bg-transparent px-3.5 py-1.5 font-sans text-sm font-[480] text-ink cursor-pointer transition-all duration-100 rounded-[var(--radius-pill)] ${
+            currentPath === "/profile" ? "bg-ink text-canvas" : "opacity-50 hover:opacity-100 hover:bg-surface-soft"
           }`}
           onClick={() => navigate("/profile")}
         >
@@ -40,14 +40,14 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-sm font-medium text-text-secondary hidden sm:inline">{authUser || "Signed in"}</span>
+        <span className="text-sm font-[450] text-ink opacity-50 hidden sm:inline">{authUser || "Signed in"}</span>
         <button
           type="button"
-          className="btn-outline px-2.5 py-1.5 text-xs rounded-lg inline-flex items-center gap-1.5"
+          className="bg-transparent border border-hairline text-ink opacity-60 hover:opacity-100 cursor-pointer px-2.5 py-1.5 text-xs font-[480] rounded-[var(--radius-pill)] transition-all duration-100 inline-flex items-center gap-1.5 hover:border-ink"
           onClick={toggleLanguage}
           title="Toggle Language"
         >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="2" y1="12" x2="22" y2="12" />
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -56,13 +56,13 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className="btn-outline px-2.5 py-1.5 text-xs rounded-lg inline-flex items-center gap-1.5"
+          className="bg-transparent border border-hairline text-ink opacity-60 hover:opacity-100 cursor-pointer px-2.5 py-1.5 text-xs font-[480] rounded-[var(--radius-pill)] transition-all duration-100 inline-flex items-center gap-1.5 hover:border-ink"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           title="Toggle color theme"
         >
           {theme === "dark" ? (
             <>
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="5" />
                 <line x1="12" y1="1" x2="12" y2="3" />
                 <line x1="12" y1="21" x2="12" y2="23" />
@@ -77,7 +77,7 @@ const EditorHeader = ({ navigate, onLogout }) => {
             </>
           ) : (
             <>
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
               <span className="hidden sm:inline">Dark</span>
@@ -86,7 +86,7 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className="bg-transparent border-none text-text-muted font-semibold text-sm cursor-pointer transition-all duration-200 underline px-2 py-1 hover:text-danger"
+          className="bg-transparent border-none text-ink opacity-50 hover:opacity-100 font-[480] text-sm cursor-pointer transition-all duration-100 underline px-2 py-1"
           onClick={onLogout}
         >
           {t("logout")}

@@ -192,7 +192,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 Cancel
               </button>
               <button 
-                className="px-4 py-2 bg-gradient-to-br from-accent to-accent-hover text-white rounded-lg text-xs font-bold shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer disabled:opacity-50" 
+                className="px-4 py-2 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] text-xs shadow-sm hover:opacity-85 transition-all duration-150 cursor-pointer disabled:opacity-40" 
                 onClick={handleUpdateProfile} 
                 disabled={isSaving}
               >
@@ -392,7 +392,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
           <button
             type="submit"
             disabled={isChanging}
-            className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+            className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
           >
             {isChanging ? "Updating..." : "Update Password"}
           </button>

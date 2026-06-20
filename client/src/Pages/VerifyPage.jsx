@@ -81,7 +81,7 @@ const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
       </button>
  
       <div className="relative z-10 bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-2xl p-8 md:p-10 max-w-[500px] w-full shadow-2xl text-center box-border transition-all duration-300 hover:shadow-[0_0_50px_rgba(99,102,241,0.15)] hover:border-accent/30">
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent rounded-t-2xl" />
+        <div className="absolute top-0 inset-x-0 h-1 border-b border-hairline" />
         {loading ? (
           <div className="py-10">
             <div className="w-10 h-10 border-3 border-border-light border-t-accent rounded-full mx-auto mb-4 animate-spin"></div>

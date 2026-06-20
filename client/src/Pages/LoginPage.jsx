@@ -16,38 +16,30 @@ const PasswordStrengthIndicator = ({ password }) => {
   const score = password.length === 0 ? 0 : Math.round((passed / PASSWORD_RULES.length) * 100);
   const hasValue = password.length > 0;
 
-  let barColor = "var(--border-light)";
-  let label = "";
-  if (score > 0 && score <= 20) { barColor = "var(--danger)"; label = "Weak"; }
-  else if (score <= 40) { barColor = "var(--accent)"; label = "Fair"; }
-  else if (score <= 60) { barColor = "var(--accent)"; label = "Good"; }
-  else if (score <= 80) { barColor = "var(--accent)"; label = "Strong"; }
-  else if (score === 100) { barColor = "var(--accent)"; label = "Very strong"; }
+  let bar = "";
+  if (score > 0 && score <= 20) bar = "bg-[var(--danger)]";
+  else if (score <= 60) bar = "bg-[var(--ink)]";
+  else if (score <= 100) bar = "bg-[var(--semantic-success)]";
 
   if (!hasValue) return null;
 
   return (
     <div className="mt-2">
-      <div className="h-[4px] bg-border-light rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-300 ease-in-out" style={{ width: `${score}%`, backgroundColor: barColor }} />
+      <div className="h-1 bg-hairline-soft rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-300 ${bar}`} style={{ width: `${score}%` }} />
       </div>
       <div className="flex gap-1.5 flex-wrap mt-2.5">
         {PASSWORD_RULES.map((rule) => {
           const ok = rule.test(password);
           return (
-            <span key={rule.label} className={`text-[10px] px-2 py-0.5 rounded-full border transition-all duration-200 inline-flex items-center gap-1 ${
-              ok ? "bg-success/15 border-success/30 text-success" : "bg-bg-elevated border-border-light text-text-muted"
+            <span key={rule.label} className={`text-[11px] px-2 py-0.5 rounded-full border transition-all duration-200 ${
+              ok ? "bg-[var(--semantic-success)]/10 border-[var(--semantic-success)]/30 text-[var(--semantic-success)]" : "border-hairline text-ink opacity-40"
             }`}>
-              {ok ? (
-                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : "\u2022"} {rule.label}
+              {ok ? "\u2713" : "\u2022"} {rule.label}
             </span>
           );
         })}
       </div>
-      {label && <span style={{ fontSize: 11, color: barColor, marginTop: 4, display: "block" }} className="font-semibold">{label}</span>}
     </div>
   );
 };
@@ -152,36 +144,27 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
   };
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center bg-bg-primary p-6 box-border font-sans relative overflow-hidden">
-      {/* Decorative background glows */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-violet-500/10 rounded-full blur-[140px] pointer-events-none" />
-      
+    <div className="w-full min-h-screen flex items-center justify-center bg-canvas p-6 box-border font-sans relative">
       <Toaster position="bottom-right" />
       
-      <div className="relative z-10 w-full max-w-[440px] bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-2xl p-8 md:p-10 shadow-2xl flex flex-col transition-all duration-300 hover:shadow-[0_0_50px_rgba(99,102,241,0.15)] hover:border-accent/30">
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent rounded-t-2xl" />
-        
-        {/* Brand Logo & Header */}
+      <div className="relative z-10 w-full max-w-[420px] bg-canvas border border-hairline rounded-[var(--radius-lg)] p-8 md:p-10 flex flex-col">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-accent to-accent-hover flex items-center justify-center shadow-lg shadow-accent/20 mb-3 animate-pulse">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="w-12 h-12 rounded-full bg-ink flex items-center justify-center mb-4">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <polyline points="9 11 11 13 15 9"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-text-primary">Certificate Studio</h1>
-          <p className="text-xs text-text-secondary mt-1 text-center">Design, verify, and email professional credentials</p>
+          <h1 className="text-[26px] font-[540] tracking-[-0.01em] text-ink m-0">Certificate Studio</h1>
+          <p className="text-sm font-[330] text-ink opacity-50 mt-1 text-center">Design, verify, and email credentials</p>
         </div>
 
-        {/* Tab switchers */}
-        <div className="flex mb-6 bg-bg-elevated rounded-xl p-1 gap-1 border border-border-light">
+        <div className="flex mb-6 bg-surface-soft rounded-[var(--radius-pill)] p-1 gap-1">
           <button 
             type="button" 
-            className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg cursor-pointer transition-all duration-200 ${
+            className={`flex-1 py-2 text-center text-sm font-[480] tracking-[-0.01em] rounded-[var(--radius-pill)] cursor-pointer transition-all duration-100 ${
               tab === "login" 
-                ? "bg-bg-surface text-text-primary shadow-sm border border-border-light" 
-                : "text-text-muted hover:text-text-primary"
+                ? "bg-canvas text-ink border border-hairline" 
+                : "text-ink opacity-40 hover:opacity-70"
             }`} 
             onClick={() => { setTab("login"); setError(""); }}
           >
@@ -189,10 +172,10 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
           </button>
           <button 
             type="button" 
-            className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg cursor-pointer transition-all duration-200 ${
+            className={`flex-1 py-2 text-center text-sm font-[480] tracking-[-0.01em] rounded-[var(--radius-pill)] cursor-pointer transition-all duration-100 ${
               tab === "signup" 
-                ? "bg-bg-surface text-text-primary shadow-sm border border-border-light" 
-                : "text-text-muted hover:text-text-primary"
+                ? "bg-canvas text-ink border border-hairline" 
+                : "text-ink opacity-40 hover:opacity-70"
             }`} 
             onClick={() => { setTab("signup"); setError(""); }}
           >
@@ -203,7 +186,7 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
         {tab === "login" ? (
           <form onSubmit={handleLogin} className="grid gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="loginEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email</label>
+              <label htmlFor="loginEmail" className="text-[11px] font-[400] tracking-[0.54px] uppercase text-ink opacity-40">Email</label>
               <input 
                 id="loginEmail" 
                 type="email" 
@@ -212,11 +195,11 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                 autoComplete="email" 
                 required 
                 disabled={isLoading}
-                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow" 
+                className="w-full px-3.5 py-3 border border-hairline rounded-[var(--radius-md)] bg-canvas text-ink text-base font-[330] outline-none transition-all duration-100 focus:border-ink" 
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="loginPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Password</label>
+              <label htmlFor="loginPassword" className="text-[11px] font-[400] tracking-[0.54px] uppercase text-ink opacity-40">Password</label>
               <div className="relative">
                 <input 
                   id="loginPassword" 
@@ -226,20 +209,20 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                   autoComplete="current-password" 
                   required 
                   disabled={isLoading}
-                  className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11" 
+                  className="w-full px-3.5 py-3 border border-hairline rounded-[var(--radius-md)] bg-canvas text-ink text-base font-[330] outline-none transition-all duration-100 focus:border-ink pr-11" 
                 />
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md hover:bg-accent-subtle"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-ink opacity-30 hover:opacity-60 cursor-pointer p-1"
                 >
                   {showPassword ? (
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                       <line x1="1" y1="1" x2="23" y2="23" />
                     </svg>
                   ) : (
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -247,20 +230,20 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                 </button>
               </div>
             </div>
-            {error && <p className="text-danger m-0 text-[13px]">{error}</p>}
+            {error && <p className="text-[var(--danger)] m-0 text-sm font-[450]">{error}</p>}
             <button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full py-3.5 bg-gradient-to-r from-accent to-accent-hover text-white font-bold rounded-xl shadow-lg hover:shadow-accent/25 uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 bg-ink text-canvas rounded-[var(--radius-pill)] text-base font-[480] tracking-[-0.01em] hover:opacity-85 active:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer"
             >
               {isLoading ? "Logging In..." : "Login"}
             </button>
-            <p className="mt-1 text-center text-[13px] text-text-muted">
+            <p className="mt-1 text-center text-sm font-[330] text-ink opacity-40">
               Forgot your password?{" "}
               <button 
                 type="button" 
                 onClick={() => navigate("/forgot-password")}
-                className="bg-transparent border-none text-accent cursor-pointer text-[13px] font-bold p-0 underline hover:text-accent-hover"
+                className="bg-transparent border-none text-ink cursor-pointer text-sm font-[480] p-0 underline underline-offset-2 hover:opacity-70"
               >
                 Reset it here
               </button>
@@ -269,7 +252,7 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
         ) : (
           <form onSubmit={handleSignup} className="grid gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="signupName" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Display Name</label>
+              <label htmlFor="signupName" className="text-[11px] font-[400] tracking-[0.54px] uppercase text-ink opacity-40">Display Name</label>
               <input 
                 id="signupName" 
                 type="text" 
@@ -278,11 +261,11 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                 autoComplete="name" 
                 required 
                 disabled={isLoading}
-                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow" 
+                className="w-full px-3.5 py-3 border border-hairline rounded-[var(--radius-md)] bg-canvas text-ink text-base font-[330] outline-none transition-all duration-100 focus:border-ink" 
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="signupEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email</label>
+              <label htmlFor="signupEmail" className="text-[11px] font-[400] tracking-[0.54px] uppercase text-ink opacity-40">Email</label>
               <input 
                 id="signupEmail" 
                 type="email" 
@@ -291,11 +274,11 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                 autoComplete="email" 
                 required 
                 disabled={isLoading}
-                className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow" 
+                className="w-full px-3.5 py-3 border border-hairline rounded-[var(--radius-md)] bg-canvas text-ink text-base font-[330] outline-none transition-all duration-100 focus:border-ink" 
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="signupPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Password</label>
+              <label htmlFor="signupPassword" className="text-[11px] font-[400] tracking-[0.54px] uppercase text-ink opacity-40">Password</label>
               <div className="relative">
                 <input 
                   id="signupPassword" 
@@ -305,20 +288,20 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                   autoComplete="new-password" 
                   required 
                   disabled={isLoading}
-                  className="w-full px-3.5 py-2.5 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11" 
+                  className="w-full px-3.5 py-3 border border-hairline rounded-[var(--radius-md)] bg-canvas text-ink text-base font-[330] outline-none transition-all duration-100 focus:border-ink pr-11" 
                 />
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md hover:bg-accent-subtle"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-ink opacity-30 hover:opacity-60 cursor-pointer p-1"
                 >
                   {showPassword ? (
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                       <line x1="1" y1="1" x2="23" y2="23" />
                     </svg>
                   ) : (
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -328,7 +311,7 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
               <PasswordStrengthIndicator password={password} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="signupConfirm" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Confirm Password</label>
+              <label htmlFor="signupConfirm" className="text-[11px] font-[400] tracking-[0.54px] uppercase text-ink opacity-40">Confirm Password</label>
               <div className="relative">
                 <input 
                   id="signupConfirm" 
@@ -338,34 +321,17 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
                   autoComplete="new-password" 
                   required 
                   disabled={isLoading}
-                  className={`w-full px-3.5 py-2.5 border rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow pr-11 ${
-                    confirmPassword && password !== confirmPassword ? "border-danger focus:border-danger focus:ring-danger/20" : "border-border-light focus:border-accent"
+                  className={`w-full px-3.5 py-3 border rounded-[var(--radius-md)] bg-canvas text-ink text-base font-[330] outline-none transition-all duration-100 pr-11 ${
+                    confirmPassword && password !== confirmPassword ? "border-[var(--danger)]" : "border-hairline focus:border-ink"
                   }`} 
                 />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-accent rounded-md hover:bg-accent-subtle"
-                >
-                  {showPassword ? (
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
               </div>
             </div>
-            {error && <p className="text-danger m-0 text-[13px]">{error}</p>}
+            {error && <p className="text-[var(--danger)] m-0 text-sm font-[450]">{error}</p>}
             <button 
               type="submit" 
               disabled={isLoading || !allRulesPass} 
-              className="w-full py-3.5 bg-gradient-to-r from-accent to-accent-hover text-white font-bold rounded-xl shadow-lg hover:shadow-accent/25 uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 bg-ink text-canvas rounded-[var(--radius-pill)] text-base font-[480] tracking-[-0.01em] hover:opacity-85 active:opacity-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer"
             >
               {isLoading ? "Creating Account..." : "Create Account"}
             </button>

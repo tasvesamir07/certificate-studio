@@ -84,7 +84,7 @@ const PreviewGrid = ({
             Ready to see what everyone's certificate will look like?
           </p>
           <button
-            className="w-full py-2 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer text-center mb-4 flex items-center justify-center"
+            className="w-full py-2 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer text-center mb-4 flex items-center justify-center"
             onClick={handleGeneratePreviews}
             disabled={!layoutReady || !data.length || !templateImageRef.current}
           >

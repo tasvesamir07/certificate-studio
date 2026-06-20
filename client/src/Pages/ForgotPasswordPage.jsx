@@ -219,7 +219,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
       </div>
 
       <div className="relative z-10 bg-bg-surface/80 backdrop-blur-xl border border-border-custom rounded-2xl p-8 md:p-10 max-w-[420px] w-full shadow-2xl transition-all duration-300 hover:shadow-[0_0_50px_rgba(99,102,241,0.15)] hover:border-accent/30">
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent rounded-t-2xl" />
+        <div className="absolute top-0 inset-x-0 h-1 border-b border-hairline" />
         {/* Step indicators */}
         <div className="flex items-center justify-center gap-0 mb-6">
           <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all duration-200 ${
@@ -264,7 +264,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+                className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
               >
                 {isLoading ? "Sending..." : "Send OTP"}
               </button>
@@ -334,7 +334,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
                 type="button"
                 onClick={handleVerifyOTP}
                 disabled={isLoading || timerExpired || otp.join("").length !== 6}
-                className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+                className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
               >
                 {isLoading ? "Verifying..." : "Verify OTP"}
               </button>
@@ -407,7 +407,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+                className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
               >
                 {isLoading ? "Resetting..." : "Reset Password"}
               </button>
@@ -424,7 +424,7 @@ const ForgotPasswordPage = ({ navigate, apiBaseUrl = "" }) => {
             <button
               type="button"
               onClick={() => navigate("/user/login")}
-              className="w-full py-3 bg-gradient-to-br from-accent to-accent-hover text-white font-bold rounded-lg shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
+              className="w-full py-3 bg-ink text-canvas font-[480] rounded-[var(--radius-pill)] shadow-sm hover:shadow-md uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-all duration-150 cursor-pointer"
             >
               Go to Login
             </button>
