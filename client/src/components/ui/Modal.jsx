@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import Button from "./Button";
 
 const Modal = ({
   isOpen,
@@ -26,11 +25,11 @@ const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[2000] p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[2000] p-4"
       onClick={onClose}
     >
       <div
-        className={`bg-bg-surface border border-border-custom rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl text-text-primary animate-[modalFadeIn_0.3s_cubic-bezier(0.16,1,0.3,1)] ${className}`}
+        className={`bg-bg-surface border border-border-custom rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl text-text-primary animate-[modalFadeIn_0.3s_cubic-bezier(0.16,1,0.3,1)] ${className}`}
         onClick={(e) => e.stopPropagation()}
         style={style}
         {...props}
@@ -38,14 +37,14 @@ const Modal = ({
         {(title || showClose) && (
           <div className="p-5 border-b border-border-light flex justify-between items-center">
             {title && (
-              <h3 className="m-0 font-sans text-lg font-bold text-text-primary">
+              <h3 className="m-0 font-sans text-lg font-bold gradient-text">
                 {title}
               </h3>
             )}
             {showClose && (
               <button
                 type="button"
-                className="bg-transparent border-none text-text-muted cursor-pointer p-1 flex items-center justify-center transition-colors duration-150 hover:text-danger"
+                className="bg-transparent border-none text-text-muted cursor-pointer p-1.5 flex items-center justify-center rounded-lg transition-all duration-200 hover:bg-danger/10 hover:text-danger"
                 onClick={onClose}
                 aria-label="Close modal"
               >
