@@ -1667,17 +1667,10 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
 
           <React.Suspense fallback={<div className="flex items-center justify-center p-6 text-sm text-text-secondary animate-pulse">Loading recipients...</div>}>
             <ManualRecipientsPanel
-              MAX_MANUAL_RECIPIENTS={MAX_MANUAL_RECIPIENTS}
-              manualRecipients={manualRecipients}
               handleManualRecipientChange={handleManualRecipientChange}
               removeManualRecipient={removeManualRecipient}
               addManualRecipient={addManualRecipient}
-              manualRecipientLimitReached={manualRecipientLimitReached}
               handleManualGenerate={handleManualGenerate}
-              template={template}
-              manualReadyRecipients={manualReadyRecipients}
-              isManualGenerating={isManualGenerating}
-              layoutReady={layoutReady}
             />
           </React.Suspense>
 
