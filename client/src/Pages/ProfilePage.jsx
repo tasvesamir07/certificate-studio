@@ -241,19 +241,19 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
         </div>
       </div>
 
-      <div className="profile-card subscription-card" style={{ borderLeft: "4px solid #1ed760" }}>
+      <div className="profile-card subscription-card">
         <div>
-          <h2 style={{ marginBottom: "8px" }}>Account Status</h2>
-          <p style={{ margin: 0, color: "#4b5563" }}>
+          <h2>Account Status</h2>
+          <p style={{ margin: 0 }}>
             <strong>Status:</strong>{" "}
-            <span style={{ color: "#059669", background: "#d1fae5", padding: "2px 8px", borderRadius: "12px", fontSize: "0.85rem", fontWeight: "600" }}>Active - Full Access</span>
+            <span className="subscription-status">Active - Full Access</span>
           </p>
         </div>
       </div>
 
       <div className="profile-card change-password-card">
         <h2>Change Password</h2>
-        <p className="profile-note" style={{ marginBottom: "16px" }}>
+        <p className="profile-note">
           Update your password by filling in the fields below.
         </p>
         <form className="change-password-form" onSubmit={handleChangePassword}>
@@ -275,7 +275,17 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 onClick={() => setShowCurrent(!showCurrent)}
                 tabIndex={-1}
               >
-                {showCurrent ? "🙈" : "👁️"}
+                {showCurrent ? (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -298,7 +308,17 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 onClick={() => setShowNew(!showNew)}
                 tabIndex={-1}
               >
-                {showNew ? "🙈" : "👁️"}
+                {showNew ? (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -321,7 +341,17 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 onClick={() => setShowConfirm(!showConfirm)}
                 tabIndex={-1}
               >
-                {showConfirm ? "🙈" : "👁️"}
+                {showConfirm ? (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>

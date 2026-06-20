@@ -36,7 +36,7 @@ const Button = React.forwardRef(({
       {...props}
     >
       {loading ? (
-        <span className="button-loading-container" style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+        <span className="button-loading-container">
           <span className="spinner-mini"></span>
           {children}
         </span>

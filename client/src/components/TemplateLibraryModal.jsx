@@ -99,7 +99,12 @@ const TemplateLibraryModal = ({
       <div className="modal-content template-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Template Library</h3>
-          <button className="close-button" onClick={onClose}>&times;</button>
+          <button className="close-button" onClick={onClose}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
 
         <div className="modal-body">
@@ -139,7 +144,14 @@ const TemplateLibraryModal = ({
               </button>
             </div>
             {!currentTemplateUrl && (
-              <p className="form-warning">⚠️ Upload a template image in the studio to save it here.</p>
+              <p className="form-warning">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, display: "inline-block", verticalAlign: "middle" }}>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <span>Upload a template image in the studio to save it here.</span>
+              </p>
             )}
           </form>
 
@@ -164,7 +176,12 @@ const TemplateLibraryModal = ({
                       onClick={(e) => handleDeleteTemplate(temp.id, e)}
                       title="Delete template"
                     >
-                      🗑️
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle" }}>
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
                     </button>
                   </div>
                   <div className="template-info">
@@ -177,223 +194,6 @@ const TemplateLibraryModal = ({
           )}
         </div>
       </div>
-
-      <style>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 2000;
-        }
-        .modal-content.template-modal {
-          background: #181818;
-          color: #ffffff;
-          border-radius: 20px;
-          border: 1px solid rgba(255,255,255,0.08);
-          width: 90%;
-          max-width: 800px;
-          max-height: 85vh;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-        .template-modal .modal-header {
-          padding: 20px 24px;
-          border-bottom: 1px solid rgba(255,255,255,0.08);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .template-modal .modal-header h3 {
-          margin: 0;
-          font-weight: 800;
-          font-size: 1.3rem;
-        }
-        .template-modal .close-button {
-          background: none;
-          border: none;
-          font-size: 1.6rem;
-          color: #a3a3a3;
-          cursor: pointer;
-          transition: color 0.2s;
-        }
-        .template-modal .close-button:hover {
-          color: #f3727f;
-        }
-        .template-modal .modal-body {
-          padding: 24px;
-          overflow-y: auto;
-          flex: 1;
-        }
-        .save-template-form {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.05);
-          padding: 20px;
-          border-radius: 14px;
-          margin-bottom: 24px;
-        }
-        .save-template-form h4 {
-          margin: 0 0 16px 0;
-          font-size: 1rem;
-          font-weight: 700;
-        }
-        .form-grid {
-          display: flex;
-          gap: 12px;
-          align-items: flex-end;
-          flex-wrap: wrap;
-        }
-        .form-field {
-          flex: 1;
-          min-width: 180px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .form-field label {
-          font-size: 11px;
-          font-weight: 700;
-          color: #b3b3b3;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-        .form-field input, .form-field select {
-          background: #121212;
-          border: 1px solid rgba(255,255,255,0.1);
-          color: #ffffff;
-          border-radius: 8px;
-          padding: 10px 14px;
-          font-size: 13px;
-          outline: none;
-          box-sizing: border-box;
-        }
-        .save-btn {
-          background: #1ed760;
-          color: #000000;
-          border: none;
-          padding: 11px 24px;
-          border-radius: 8px;
-          font-weight: 700;
-          font-size: 13px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .save-btn:hover {
-          background: #1db954;
-          transform: translateY(-1px);
-        }
-        .save-btn:disabled {
-          background: #2a2a2a;
-          color: #727272;
-          cursor: not-allowed;
-          transform: none;
-        }
-        .form-warning {
-          color: #ffa42b;
-          font-size: 12px;
-          margin: 10px 0 0 0;
-          font-weight: 500;
-        }
-        .modal-divider {
-          border: 0;
-          height: 1px;
-          background: rgba(255,255,255,0.08);
-          margin: 24px 0;
-        }
-        .templates-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-          gap: 20px;
-          margin-top: 16px;
-        }
-        .template-card {
-          background: #1f1f1f;
-          border-radius: 12px;
-          overflow: hidden;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          border: 1px solid rgba(255,255,255,0.05);
-        }
-        .template-card:hover {
-          transform: translateY(-4px);
-          border-color: #1ed760;
-          box-shadow: 0 8px 20px rgba(30, 215, 96, 0.15);
-        }
-        .template-thumbnail {
-          aspect-ratio: 4/3;
-          background: #121212;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          position: relative;
-        }
-        .template-thumbnail img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .delete-card-btn {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          background: rgba(0,0,0,0.6);
-          border: none;
-          color: #ffffff;
-          width: 28px;
-          height: 28px;
-          border-radius: 999px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          font-size: 13px;
-          transition: background 0.2s;
-        }
-        .delete-card-btn:hover {
-          background: #f3727f;
-        }
-        .template-info {
-          padding: 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .template-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: #ffffff;
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .template-badge {
-          font-size: 10px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: #1ed760;
-          background: rgba(30, 215, 96, 0.1);
-          padding: 2px 8px;
-          border-radius: 4px;
-          width: fit-content;
-        }
-        .empty-library {
-          text-align: center;
-          padding: 40px;
-          color: #727272;
-          font-size: 14px;
-        }
-      `}</style>
     </div>
   );
 };

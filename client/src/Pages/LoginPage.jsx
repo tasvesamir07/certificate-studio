@@ -16,32 +16,31 @@ const PasswordStrengthIndicator = ({ password }) => {
   const score = password.length === 0 ? 0 : Math.round((passed / PASSWORD_RULES.length) * 100);
   const hasValue = password.length > 0;
 
-  let barColor = "#1f1f1f";
+  let barColor = "var(--border-light)";
   let label = "";
-  if (score > 0 && score <= 20) { barColor = "#f3727f"; label = "Weak"; }
-  else if (score <= 40) { barColor = "#ffa42b"; label = "Fair"; }
-  else if (score <= 60) { barColor = "#ffa42b"; label = "Good"; }
-  else if (score <= 80) { barColor = "#1ed760"; label = "Strong"; }
-  else if (score === 100) { barColor = "#1ed760"; label = "Very strong"; }
+  if (score > 0 && score <= 20) { barColor = "var(--danger)"; label = "Weak"; }
+  else if (score <= 40) { barColor = "var(--accent)"; label = "Fair"; }
+  else if (score <= 60) { barColor = "var(--accent)"; label = "Good"; }
+  else if (score <= 80) { barColor = "var(--accent)"; label = "Strong"; }
+  else if (score === 100) { barColor = "var(--accent)"; label = "Very strong"; }
 
   if (!hasValue) return null;
 
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={{ height: 4, background: "#1f1f1f", borderRadius: 2, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${score}%`, background: barColor, borderRadius: 2, transition: "all 0.3s" }} />
+      <div className="strength-bar-bg">
+        <div className="strength-bar" style={{ width: `${score}%`, backgroundColor: barColor }} />
       </div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+      <div className="strength-badges-list">
         {PASSWORD_RULES.map((rule) => {
           const ok = rule.test(password);
           return (
-            <span key={rule.label} style={{
-              fontSize: 11, padding: "2px 8px", borderRadius: 999,
-              background: ok ? "rgba(30, 215, 96, 0.15)" : "#1f1f1f",
-              color: ok ? "#1ed760" : "#b3b3b3",
-              transition: "all 0.2s",
-            }}>
-              {ok ? "\u2713" : "\u2022"} {rule.label}
+            <span key={rule.label} className={`strength-badge ${ok ? "ok" : ""}`}>
+              {ok ? (
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, display: "inline-block", verticalAlign: "middle" }}>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : "\u2022"} {rule.label}
             </span>
           );
         })}
@@ -150,132 +149,131 @@ const LoginPage = ({ defaultEmail = "", onSuccess, apiBaseUrl, navigate }) => {
     }
   };
 
-  const inputStyle = {
-    width: "100%", padding: "12px 16px", borderRadius: 999, border: "none",
-    background: "#1f1f1f", color: "#fff", fontSize: 14, outline: "none",
-    boxSizing: "border-box", transition: "all 0.2s",
-    boxShadow: "rgb(18,18,18) 0px 1px 0px, rgb(124,124,124) 0px 0px 0px 1px inset",
-  };
-
-  const labelStyle = { fontSize: 12, fontWeight: 700, color: "#b3b3b3", textTransform: "uppercase", letterSpacing: "1.4px", marginBottom: 6, display: "block" };
-
-  const btnStyle = {
-    width: "100%", padding: "12px 32px", border: "none", borderRadius: 999,
-    background: "#1ed760", color: "#000", fontWeight: 700, fontSize: 14,
-    textTransform: "uppercase", letterSpacing: "1.4px", cursor: isLoading ? "not-allowed" : "pointer",
-    opacity: isLoading ? 0.6 : 1, transition: "all 0.2s", marginTop: 8,
-  };
-
-  const tabStyle = (isActive) => ({
-    flex: 1, padding: "10px 0", border: "none", borderRadius: 999,
-    background: isActive ? "#1f1f1f" : "transparent",
-    color: isActive ? "#fff" : "#b3b3b3",
-    fontWeight: 700, fontSize: 14, cursor: "pointer",
-    textTransform: "uppercase", letterSpacing: "1.4px",
-    transition: "all 0.2s",
-  });
-
   return (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "center",
-      minHeight: "100vh", width: "100%", padding: 24,
-      background: "#121212", position: "relative", boxSizing: "border-box",
-    }}>
+    <div className="login-page">
       <Toaster position="bottom-right" />
-      <div style={{
-        background: "#181818", borderRadius: 8, padding: 32,
-        maxWidth: 420, width: "100%", boxShadow: "rgba(0,0,0,0.5) 0px 8px 24px",
-        boxSizing: "border-box",
-      }}>
-        <div style={{ display: "flex", gap: 4, background: "#121212", borderRadius: 999, padding: 4, marginBottom: 24 }}>
-          <button type="button" style={tabStyle(tab === "login")} onClick={() => { setTab("login"); setError(""); }}>Login</button>
-          <button type="button" style={tabStyle(tab === "signup")} onClick={() => { setTab("signup"); setError(""); }}>Sign Up</button>
+      <div className="login-card-container">
+        <div className="login-tabs">
+          <button type="button" className={`login-tab-btn ${tab === "login" ? "active" : ""}`} onClick={() => { setTab("login"); setError(""); }}>Login</button>
+          <button type="button" className={`login-tab-btn ${tab === "signup" ? "active" : ""}`} onClick={() => { setTab("signup"); setError(""); }}>Sign Up</button>
         </div>
 
         {tab === "login" ? (
-          <form onSubmit={handleLogin} style={{ display: "grid", gap: 16 }}>
-            <div>
-              <label htmlFor="loginEmail" style={labelStyle}>Email</label>
+          <form onSubmit={handleLogin} className="login-form-container">
+            <div className="login-field-group">
+              <label htmlFor="loginEmail">Email</label>
               <input id="loginEmail" type="email" value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email" required disabled={isLoading}
-                style={inputStyle} />
+                className="custom-input" />
             </div>
-            <div>
-              <label htmlFor="loginPassword" style={labelStyle}>Password</label>
+            <div className="login-field-group">
+              <label htmlFor="loginPassword">Password</label>
               <div style={{ position: "relative" }}>
                 <input id="loginPassword" type={showPassword ? "text" : "password"} value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password" required disabled={isLoading}
-                  style={{ ...inputStyle, paddingRight: 44 }} />
+                  className="custom-input" style={{ paddingRight: 44 }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#b3b3b3", fontSize: 16, padding: 4 }}>
-                  {showPassword ? "\u{1F648}" : "\u{1F441}"}
+                  className="password-toggle-btn"
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
-            {error && <p style={{ color: "#f3727f", margin: 0, fontSize: 13 }}>{error}</p>}
-            <button type="submit" disabled={isLoading} style={btnStyle}>
+            {error && <p style={{ color: "var(--danger)", margin: 0, fontSize: 13 }}>{error}</p>}
+            <button type="submit" disabled={isLoading} className="login-button">
               {isLoading ? "Logging In..." : "Login"}
             </button>
-            <p style={{ margin: "4px 0 0", textAlign: "center", fontSize: 13, color: "#b3b3b3" }}>
+            <p style={{ margin: "4px 0 0", textAlign: "center", fontSize: 13, color: "var(--text-muted)" }}>
               Forgot your password?{" "}
               <button type="button" onClick={() => navigate("/forgot-password")}
-                style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700, padding: 0, textDecoration: "underline" }}>
+                style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 13, fontWeight: 700, padding: 0, textDecoration: "underline" }}>
                 Reset it here
               </button>
             </p>
           </form>
         ) : (
-          <form onSubmit={handleSignup} style={{ display: "grid", gap: 16 }}>
-            <div>
-              <label htmlFor="signupName" style={labelStyle}>Display Name</label>
+          <form onSubmit={handleSignup} className="login-form-container">
+            <div className="login-field-group">
+              <label htmlFor="signupName">Display Name</label>
               <input id="signupName" type="text" value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 autoComplete="name" required disabled={isLoading}
-                style={inputStyle} />
+                className="custom-input" />
             </div>
-            <div>
-              <label htmlFor="signupEmail" style={labelStyle}>Email</label>
+            <div className="login-field-group">
+              <label htmlFor="signupEmail">Email</label>
               <input id="signupEmail" type="email" value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email" required disabled={isLoading}
-                style={inputStyle} />
+                className="custom-input" />
             </div>
-            <div>
-              <label htmlFor="signupPassword" style={labelStyle}>Password</label>
+            <div className="login-field-group">
+              <label htmlFor="signupPassword">Password</label>
               <div style={{ position: "relative" }}>
                 <input id="signupPassword" type={showPassword ? "text" : "password"} value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password" required disabled={isLoading}
-                  style={{ ...inputStyle, paddingRight: 44 }} />
+                  className="custom-input" style={{ paddingRight: 44 }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#b3b3b3", fontSize: 16, padding: 4 }}>
-                  {showPassword ? "\u{1F648}" : "\u{1F441}"}
+                  className="password-toggle-btn"
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
                 </button>
               </div>
               <PasswordStrengthIndicator password={password} />
             </div>
-            <div>
-              <label htmlFor="signupConfirm" style={labelStyle}>Confirm Password</label>
+            <div className="login-field-group">
+              <label htmlFor="signupConfirm">Confirm Password</label>
               <div style={{ position: "relative" }}>
                 <input id="signupConfirm" type={showPassword ? "text" : "password"} value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   autoComplete="new-password" required disabled={isLoading}
+                  className="custom-input"
                   style={{
-                    ...inputStyle, paddingRight: 44,
-                    boxShadow: confirmPassword && password !== confirmPassword
-                      ? "0 0 0 1px #f3727f"
-                      : "rgb(18,18,18) 0px 1px 0px, rgb(124,124,124) 0px 0px 0px 1px inset",
+                    paddingRight: 44,
+                    borderColor: confirmPassword && password !== confirmPassword ? "var(--danger)" : ""
                   }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#b3b3b3", fontSize: 16, padding: 4 }}>
-                  {showPassword ? "\u{1F648}" : "\u{1F441}"}
+                  className="password-toggle-btn"
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
-            {error && <p style={{ color: "#f3727f", margin: 0, fontSize: 13 }}>{error}</p>}
-            <button type="submit" disabled={isLoading || !allRulesPass} style={btnStyle}>
+            {error && <p style={{ color: "var(--danger)", margin: 0, fontSize: 13 }}>{error}</p>}
+            <button type="submit" disabled={isLoading || !allRulesPass} className="login-button">
               {isLoading ? "Creating Account..." : "Create Account"}
             </button>
           </form>

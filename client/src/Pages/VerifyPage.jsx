@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Toaster, toast } from "react-hot-toast";
+import { useAppStore } from "../shared/store/useAppStore";
 
 const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
   const [cert, setCert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [theme, setTheme] = useState("dark");
+  const { theme, setTheme } = useAppStore();
 
   useEffect(() => {
     const fetchCert = async () => {
@@ -42,151 +43,116 @@ const VerifyPage = ({ code, apiBaseUrl, navigate }) => {
   };
 
   return (
-    <div style={{
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      minHeight: "100vh", width: "100%", padding: 24,
-      background: theme === "dark" ? "#121212" : "#f8fafc",
-      color: theme === "dark" ? "#ffffff" : "#0f172a",
-      fontFamily: "'Inter', sans-serif",
-      boxSizing: "border-box",
-      transition: "background 0.3s, color 0.3s",
-    }}>
+    <div className="verify-page">
       <Toaster position="bottom-right" />
       
       {/* Floating Theme Switcher */}
       <button 
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        style={{
-          position: "absolute", top: 20, right: 24,
-          background: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
-          border: theme === "dark" ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)",
-          borderRadius: 999, padding: "10px 16px", cursor: "pointer",
-          color: "inherit", fontWeight: 700, fontSize: 13,
-          transition: "all 0.2s ease",
-        }}
+        className="verify-theme-btn"
       >
-        {theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode"}
+        {theme === "dark" ? (
+          <>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+            <span>Light Mode</span>
+          </>
+        ) : (
+          <>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            <span>Dark Mode</span>
+          </>
+        )}
       </button>
-
-      <div style={{
-        background: theme === "dark" ? "rgba(24, 24, 24, 0.85)" : "rgba(255, 255, 255, 0.85)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        border: theme === "dark" ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.06)",
-        borderRadius: 24, padding: 40,
-        maxWidth: 500, width: "100%",
-        boxShadow: theme === "dark" ? "0 24px 60px rgba(0, 0, 0, 0.5)" : "0 24px 60px rgba(0, 0, 0, 0.05)",
-        textAlign: "center", boxSizing: "border-box",
-        position: "relative",
-      }}>
-        
+ 
+      <div className="verify-card">
         {loading ? (
-          <div style={{ padding: "40px 0" }}>
-            <div className="spinner-mini" style={{ width: 40, height: 40, borderThickness: 3, margin: "0 auto 16px auto" }}></div>
-            <p style={{ color: theme === "dark" ? "#b3b3b3" : "#64748b", margin: 0, fontWeight: 500 }}>
+          <div className="verify-loading-container">
+            <div className="verify-spinner"></div>
+            <p className="verify-loading-text">
               Verifying authenticity...
             </p>
           </div>
         ) : error ? (
-          <div style={{ padding: "20px 0" }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 999,
-              background: "rgba(243, 114, 127, 0.1)",
-              color: "#f3727f", display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 32, margin: "0 auto 20px auto",
-            }}>
-              ⚠️
+          <div className="verify-error-container">
+            <div className="verify-badge-icon error">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
             </div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 12px 0" }}>Verification Failed</h2>
-            <p style={{ color: theme === "dark" ? "#b3b3b3" : "#64748b", fontSize: 14, margin: "0 0 24px 0", lineHeight: "1.6" }}>
+            <h2>Verification Failed</h2>
+            <p className="verify-error-desc">
               {error}
             </p>
             <button 
               onClick={() => navigate("/user/login")}
-              style={{
-                background: "linear-gradient(135deg, #6d28d9 0%, #3b82f6 100%)",
-                border: "none", color: "#fff", padding: "12px 28px", borderRadius: 999,
-                fontWeight: 700, cursor: "pointer", fontSize: 13, textTransform: "uppercase",
-                letterSpacing: "1.2px", boxShadow: "0 8px 24px rgba(59, 130, 246, 0.25)",
-              }}
+              className="verify-btn"
             >
               Go to Studio
             </button>
           </div>
         ) : (
           <div>
-            <div style={{
-              width: 72, height: 72, borderRadius: 999,
-              background: "rgba(30, 215, 96, 0.1)",
-              color: "#1ed760", display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 36, margin: "0 auto 24px auto",
-              border: "1px solid rgba(30, 215, 96, 0.2)",
-            }}>
-              ✓
+            <div className="verify-badge-icon">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             </div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px 0" }}>Verified Authentic</h2>
-            <p style={{ color: "#1ed760", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.5px", margin: "0 0 32px 0" }}>
+            <h2>Verified Authentic</h2>
+            <p className="verify-secured-text">
               Certificate Studio Secured
             </p>
-
-            <div style={{
-              display: "grid", gap: 16,
-              background: theme === "dark" ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.02)",
-              padding: 24, borderRadius: 16, border: theme === "dark" ? "1px solid rgba(255,255,255,0.03)" : "1px solid rgba(0,0,0,0.03)",
-              textAlign: "left", marginBottom: 32,
-            }}>
+ 
+            <div className="verify-details-grid">
               <div>
-                <span style={{ fontSize: 11, color: theme === "dark" ? "#727272" : "#94a3b8", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Recipient Name</span>
-                <p style={{ fontSize: 16, fontWeight: 700, margin: "4px 0 0 0" }}>{cert.recipientName}</p>
+                <span className="verify-label">Recipient Name</span>
+                <p className="verify-value">{cert.recipientName}</p>
               </div>
-
+ 
               <div>
-                <span style={{ fontSize: 11, color: theme === "dark" ? "#727272" : "#94a3b8", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Recipient Email</span>
-                <p style={{ fontSize: 16, fontWeight: 500, margin: "4px 0 0 0" }}>{maskEmail(cert.recipientEmail)}</p>
+                <span className="verify-label">Recipient Email</span>
+                <p className="verify-value muted">{maskEmail(cert.recipientEmail)}</p>
               </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
+ 
+              <div className="verify-details-row">
                 <div>
-                  <span style={{ fontSize: 11, color: theme === "dark" ? "#727272" : "#94a3b8", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Issue Date</span>
-                  <p style={{ fontSize: 14, fontWeight: 600, margin: "4px 0 0 0" }}>
+                  <span className="verify-label">Issue Date</span>
+                  <p className="verify-value muted secondary">
                     {new Date(cert.issueDate).toLocaleDateString(undefined, { dateStyle: "long" })}
                   </p>
                 </div>
                 <div>
-                  <span style={{ fontSize: 11, color: theme === "dark" ? "#727272" : "#94a3b8", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Issuer</span>
-                  <p style={{ fontSize: 14, fontWeight: 600, margin: "4px 0 0 0" }}>{cert.issuerName || "Certificate Studio User"}</p>
+                  <span className="verify-label">Issuer</span>
+                  <p className="verify-value muted secondary">{cert.issuerName || "Certificate Studio User"}</p>
                 </div>
               </div>
             </div>
-
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+ 
+            <div className="verify-actions">
               <a 
                 href={cert.certificateUrl}
                 target="_blank"
                 rel="noreferrer"
-                style={{
-                  background: "linear-gradient(135deg, #1ed760 0%, #1db954 100%)",
-                  color: "#000000", padding: "12px 24px", borderRadius: 999,
-                  fontWeight: 700, textDecoration: "none", fontSize: 13, textTransform: "uppercase",
-                  letterSpacing: "1.2px", display: "inline-block",
-                  boxShadow: "0 8px 24px rgba(30, 215, 96, 0.2)",
-                  transition: "transform 0.2s",
-                }}
-                onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                className="verify-btn"
               >
                 View Certificate File
               </a>
               <button 
                 onClick={() => navigate("/user/login")}
-                style={{
-                  background: theme === "dark" ? "#1f1f1f" : "#e2e8f0",
-                  border: "none", color: "inherit", padding: "12px 24px", borderRadius: 999,
-                  fontWeight: 700, cursor: "pointer", fontSize: 13, textTransform: "uppercase",
-                  letterSpacing: "1.2px", transition: "transform 0.2s",
-                }}
-                onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                className="verify-btn secondary"
               >
                 Create Certificate
               </button>
