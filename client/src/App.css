@@ -37,11 +37,48 @@
 }
 
 body.theme-light {
+  --color-ink: #121212;
+  --color-canvas: #fafafa;
+  --color-inverse-canvas: #121212;
+  --color-inverse-ink: #ffffff;
+  --on-inverse-soft: rgba(255,255,255,0.16);
+  --color-hairline: #e0e0e0;
+  --color-hairline-soft: #f5f5f5;
+  --color-surface-soft: #ffffff;
+  --color-block-lime: #dceeb1;
+  --color-block-lilac: #c5b0f4;
+  --color-block-cream: #f4ecd6;
+  --color-block-pink: #efd4d4;
+  --color-block-mint: #c8e6cd;
+  --color-block-coral: #f3c9b6;
+  --color-block-navy: #1f1d3d;
+  --color-accent-magenta: #1db954;
+  --color-success: #1db954;
+  --color-danger: #ef4444;
+  --overlay-scrim: rgba(0,0,0,0.6);
+  --radius-pill: 9999px;
+  --radius-full: 9999px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
+  --color-accent: #1db954; /* Spotify Green */
+  --color-accent-hover: #1aa34a;
+  --color-bg-primary: #fafafa;
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #f0f0f0;
+  --color-bg-hover: #e5e5e5;
+  --color-text-primary: #121212;
+  --color-text-secondary: #535353;
+  --color-text-muted: #7c7c7c;
+  --color-border-custom: #e0e0e0;
+  --color-border-light: #f5f5f5;
+  --accent-bg-glow: rgba(29, 185, 84, 0.08);
+
+  /* Legacy fallbacks for compatibility */
   --ink: #121212;
   --canvas: #fafafa;
   --inverse-canvas: #121212;
   --inverse-ink: #ffffff;
-  --on-inverse-soft: rgba(255,255,255,0.16);
   --hairline: #e0e0e0;
   --hairline-soft: #f5f5f5;
   --surface-soft: #ffffff;
@@ -55,13 +92,7 @@ body.theme-light {
   --accent-magenta: #1db954;
   --semantic-success: #1db954;
   --danger: #ef4444;
-  --overlay-scrim: rgba(0,0,0,0.6);
-  --radius-pill: 9999px;
-  --radius-full: 9999px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --shadow-card: 0 4px 16px rgba(0,0,0,0.06);
-  --accent: #1db954; /* Spotify Green */
+  --accent: #1db954;
   --accent-hover: #1aa34a;
   --bg-primary: #fafafa;
   --bg-surface: #ffffff;
@@ -72,16 +103,52 @@ body.theme-light {
   --text-muted: #7c7c7c;
   --border: #e0e0e0;
   --border-light: #f5f5f5;
-  --accent-bg-glow: rgba(29, 185, 84, 0.08);
   --success: #1db954;
 }
 
 body.theme-dark {
+  --color-ink: #ffffff;
+  --color-canvas: #121212;
+  --color-inverse-canvas: #ffffff;
+  --color-inverse-ink: #121212;
+  --on-inverse-soft: rgba(0,0,0,0.16);
+  --color-hairline: #282828;
+  --color-hairline-soft: #1f1f1f;
+  --color-surface-soft: #181818;
+  --color-block-lime: #3a4a2a;
+  --color-block-lilac: #3a2a5a;
+  --color-block-cream: #4a3a2a;
+  --color-block-pink: #4a2a3a;
+  --color-block-mint: #2a4a3a;
+  --color-block-coral: #4a3a2a;
+  --color-block-navy: #0a0a1a;
+  --color-accent-magenta: #ff3d8b;
+  --color-success: #1ed760;
+  --color-danger: #f3727f;
+  --overlay-scrim: rgba(0,0,0,0.8);
+  --radius-pill: 9999px;
+  --radius-full: 9999px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.5);
+  --color-accent: #1ed760; /* Spotify Green */
+  --color-accent-hover: #1db954;
+  --color-bg-primary: #121212; /* Deepest black */
+  --color-bg-surface: #181818; /* Dark Surface */
+  --color-bg-elevated: #1f1f1f; /* Mid Dark button bg */
+  --color-bg-hover: #2a2a2a;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #cbcbcb;
+  --color-text-muted: #b3b3b3;
+  --color-border-custom: #282828;
+  --color-border-light: #1f1f1f;
+  --accent-bg-glow: rgba(30, 215, 96, 0.08);
+
+  /* Legacy fallbacks for compatibility */
   --ink: #ffffff;
   --canvas: #121212;
   --inverse-canvas: #ffffff;
   --inverse-ink: #121212;
-  --on-inverse-soft: rgba(0,0,0,0.16);
   --hairline: #282828;
   --hairline-soft: #1f1f1f;
   --surface-soft: #181818;
@@ -95,24 +162,17 @@ body.theme-dark {
   --accent-magenta: #ff3d8b;
   --semantic-success: #1ed760;
   --danger: #f3727f;
-  --overlay-scrim: rgba(0,0,0,0.8);
-  --radius-pill: 9999px;
-  --radius-full: 9999px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --shadow-card: 0 8px 24px rgba(0,0,0,0.5);
-  --accent: #1ed760; /* Spotify Green */
+  --accent: #1ed760;
   --accent-hover: #1db954;
-  --bg-primary: #121212; /* Deepest black */
-  --bg-surface: #181818; /* Dark Surface */
-  --bg-elevated: #1f1f1f; /* Mid Dark button bg */
+  --bg-primary: #121212;
+  --bg-surface: #181818;
+  --bg-elevated: #1f1f1f;
   --bg-hover: #2a2a2a;
   --text-primary: #ffffff;
   --text-secondary: #cbcbcb;
   --text-muted: #b3b3b3;
   --border: #282828;
   --border-light: #1f1f1f;
-  --accent-bg-glow: rgba(30, 215, 96, 0.08);
   --success: #1ed760;
 }
 

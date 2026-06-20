@@ -22,8 +22,10 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </span>
         <button
           type="button"
-          className={`border-none bg-transparent px-3.5 py-1.5 font-sans text-sm font-bold text-text-primary cursor-pointer transition-all duration-150 rounded-full ${
-            currentPath === "/generate-certifcate" ? "bg-accent text-black" : "opacity-60 hover:opacity-100 hover:bg-bg-hover"
+          className={`border-none px-3.5 py-1.5 font-sans text-sm font-bold cursor-pointer transition-all duration-150 rounded-full ${
+            currentPath === "/generate-certifcate" 
+              ? "bg-accent text-black" 
+              : "bg-transparent text-text-primary opacity-60 hover:opacity-100 hover:bg-bg-hover"
           }`}
           onClick={() => navigate("/generate-certifcate")}
         >
@@ -31,8 +33,10 @@ const EditorHeader = ({ navigate, onLogout }) => {
         </button>
         <button
           type="button"
-          className={`border-none bg-transparent px-3.5 py-1.5 font-sans text-sm font-bold text-text-primary cursor-pointer transition-all duration-150 rounded-full ${
-            currentPath === "/profile" ? "bg-accent text-black" : "opacity-60 hover:opacity-100 hover:bg-bg-hover"
+          className={`border-none px-3.5 py-1.5 font-sans text-sm font-bold cursor-pointer transition-all duration-150 rounded-full ${
+            currentPath === "/profile" 
+              ? "bg-accent text-black" 
+              : "bg-transparent text-text-primary opacity-60 hover:opacity-100 hover:bg-bg-hover"
           }`}
           onClick={() => navigate("/profile")}
         >
