@@ -484,8 +484,10 @@ const FontPicker = ({ activeFontFamily, onChange, serverFonts = [] }) => {
               <button 
                 key={cat}
                 type="button"
-                className={`px-3 py-1.5 border border-border-light bg-bg-elevated rounded-full text-xs text-text-secondary cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-accent hover:text-accent ${
-                  activeCategory === cat ? 'bg-accent border-accent !text-bg-primary shadow-sm' : ''
+                className={`px-3 py-1.5 border rounded-full text-xs cursor-pointer transition-all duration-200 whitespace-nowrap hover:border-accent hover:text-accent ${
+                  activeCategory === cat 
+                    ? 'bg-accent border-accent text-black font-bold shadow-sm' 
+                    : 'bg-bg-elevated border-border-light text-text-secondary'
                 }`}
                 onClick={() => setActiveCategory(cat)}
               >

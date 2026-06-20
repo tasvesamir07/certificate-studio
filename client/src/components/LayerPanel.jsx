@@ -30,7 +30,7 @@ const LayerPanel = ({
         <button
           type="button"
           onClick={onOpenTemplateLibrary}
-          className="bg-white/5 border border-white/10 rounded-full text-white py-1 px-3 text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all duration-200 hover:bg-white/10 hover:border-white/20"
+          className="bg-bg-elevated border border-border-custom rounded-full text-text-primary py-1 px-3 text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all duration-200 hover:bg-bg-hover hover:border-accent hover:text-accent"
         >
           📚 Library
         </button>
