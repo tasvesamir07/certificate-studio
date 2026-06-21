@@ -11,9 +11,17 @@
     ],
     "routes": [
         {
+            "src": "/api/(.*)",
+            "dest": "https://certificate-studio.vercel.app/api/$1"
+        },
+        {
             "src": "/(.*)",
             "dest": "/$1",
             "check": true
+        },
+        {
+            "src": "/(.*)\\.(js|css|png|jpg|jpeg|gif|ico|svg|json|woff|woff2|ttf|map)$",
+            "status": 404
         },
         {
             "src": "/(.*)",

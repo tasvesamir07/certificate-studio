@@ -21,6 +21,7 @@ const templateRoutes = require("./routes/templateRoutes");
 const verifyRoutes = require("./routes/verifyRoutes");
 
 const app = express();
+app.set("trust proxy", 1);
 const port = process.env.PORT || 5000;
 
 // Setup Fonts
@@ -54,6 +55,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
   "https://certificate-studio-69kt.vercel.app",
+  "https://tasvescertificatestudio.vercel.app",
 ].filter(Boolean);
 
 app.use(cors({
