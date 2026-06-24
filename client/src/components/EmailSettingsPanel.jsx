@@ -399,14 +399,14 @@ const EmailSettingsPanel = ({
         )}
         {detectedProvider === "brevo" && (
           <div className="p-3.5 rounded-lg border text-xs leading-relaxed flex flex-col gap-1 mt-1 bg-bg-elevated border-border-light">
-            {userProfile?.brevoEmail && userProfile?.brevoSmtpKey ? (
+            {userProfile?.brevoEmail && userProfile?.brevoSenderEmail && userProfile?.brevoSmtpKey ? (
               <p className="text-success font-semibold m-0 flex items-center gap-1.5">
                 <span>✓ Brevo SMTP configured in your Profile</span>
               </p>
             ) : (
               <p className="text-danger font-semibold m-0 flex flex-col gap-1">
                 <span>⚠️ Brevo SMTP not configured in your Profile yet.</span>
-                <span className="text-[11px] text-text-muted font-normal">Go to your Profile to add your Brevo Login Email and SMTP Key.</span>
+                <span className="text-[11px] text-text-muted font-normal">Go to your Profile to add your Brevo Login, Sender Email, and SMTP Key.</span>
               </p>
             )}
             <p className="text-[11px] text-accent mt-1 leading-relaxed m-0">

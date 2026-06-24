@@ -13,6 +13,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     email: authUser || "",
     phone: "",
     brevoEmail: "",
+    brevoSenderEmail: "",
     brevoSmtpKey: "",
     gmailEmail: "",
     gmailAppPassword: "",
@@ -21,6 +22,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
     displayName: "",
     phone: "",
     brevoEmail: "",
+    brevoSenderEmail: "",
     brevoSmtpKey: "",
     gmailEmail: "",
     gmailAppPassword: "",
@@ -28,7 +30,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isValidPhone, setIsValidPhone] = useState(false);
-
+  
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -52,6 +54,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
         displayName: response.data.displayName || "",
         phone: response.data.phone || "",
         brevoEmail: response.data.brevoEmail || "",
+        brevoSenderEmail: response.data.brevoSenderEmail || "",
         brevoSmtpKey: response.data.brevoSmtpKey || "",
         gmailEmail: response.data.gmailEmail || "",
         gmailAppPassword: response.data.gmailAppPassword || ""
@@ -99,6 +102,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
         displayName: editData.displayName,
         phone: editData.phone,
         brevoEmail: editData.brevoEmail,
+        brevoSenderEmail: editData.brevoSenderEmail,
         brevoSmtpKey: editData.brevoSmtpKey,
         gmailEmail: editData.gmailEmail,
         gmailAppPassword: editData.gmailAppPassword
@@ -207,6 +211,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                     displayName: profileData.displayName || "",
                     phone: profileData.phone || "",
                     brevoEmail: profileData.brevoEmail || "",
+                    brevoSenderEmail: profileData.brevoSenderEmail || "",
                     brevoSmtpKey: profileData.brevoSmtpKey || "",
                     gmailEmail: profileData.gmailEmail || "",
                     gmailAppPassword: profileData.gmailAppPassword || ""
@@ -348,13 +353,13 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
           <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-3">Brevo SMTP Settings</h3>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Brevo Sender Email</label>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Brevo SMTP Login (Username)</label>
               {isEditing ? (
                 <input
-                  type="email"
+                  type="text"
                   value={editData.brevoEmail}
                   onChange={(e) => setEditData({ ...editData, brevoEmail: e.target.value })}
-                  placeholder="your.brevo.login@example.com"
+                  placeholder="e.g., afd234001@smtp-brevo.com"
                   disabled={isSaving}
                   className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
                 />
@@ -362,6 +367,26 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                 <input 
                   type="text" 
                   value={profileData.brevoEmail || "Not configured"} 
+                  readOnly 
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+                />
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Brevo Sender Email (From)</label>
+              {isEditing ? (
+                <input
+                  type="email"
+                  value={editData.brevoSenderEmail}
+                  onChange={(e) => setEditData({ ...editData, brevoSenderEmail: e.target.value })}
+                  placeholder="e.g., your.verified.email@example.com"
+                  disabled={isSaving}
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
+                />
+              ) : (
+                <input 
+                  type="text" 
+                  value={profileData.brevoSenderEmail || "Not configured"} 
                   readOnly 
                   className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
                 />

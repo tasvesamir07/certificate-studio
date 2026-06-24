@@ -221,6 +221,8 @@ const sendSingle = async (req, res) => {
       senderName,
     } = req.body;
 
+    let fromEmail = emailUser;
+
     // Load credentials from database if using Gmail or Brevo and credentials are empty in body
     if (emailService === "gmail" && (!emailUser || !emailPass)) {
       const userRes = await pool.query("SELECT gmail_email, gmail_app_password FROM users WHERE id = $1", [req.user.id]);
@@ -228,13 +230,22 @@ const sendSingle = async (req, res) => {
         emailUser = emailUser || userRes.rows[0].gmail_email;
         emailPass = emailPass || userRes.rows[0].gmail_app_password;
       }
+      fromEmail = emailUser;
     }
     const isBrevo = (emailService === "brevo" || (smtpHost && smtpHost.includes("brevo")));
-    if (isBrevo && (!emailUser || !emailPass)) {
-      const userRes = await pool.query("SELECT brevo_email, brevo_smtp_key FROM users WHERE id = $1", [req.user.id]);
-      if (userRes.rows.length > 0) {
-        emailUser = emailUser || userRes.rows[0].brevo_email;
-        emailPass = emailPass || userRes.rows[0].brevo_smtp_key;
+    if (isBrevo) {
+      if (!emailUser || !emailPass) {
+        const userRes = await pool.query("SELECT brevo_email, brevo_sender_email, brevo_smtp_key FROM users WHERE id = $1", [req.user.id]);
+        if (userRes.rows.length > 0) {
+          emailUser = emailUser || userRes.rows[0].brevo_email;
+          emailPass = emailPass || userRes.rows[0].brevo_smtp_key;
+          fromEmail = userRes.rows[0].brevo_sender_email || emailUser;
+        }
+      } else {
+        const userRes = await pool.query("SELECT brevo_sender_email FROM users WHERE id = $1", [req.user.id]);
+        if (userRes.rows.length > 0 && userRes.rows[0].brevo_sender_email) {
+          fromEmail = userRes.rows[0].brevo_sender_email;
+        }
       }
     }
 
@@ -273,7 +284,7 @@ const sendSingle = async (req, res) => {
     }
 
     await transporter.sendMail({
-      from: senderName ? `"${senderName}" <${emailUser}>` : emailUser,
+      from: senderName ? `"${senderName}" <${fromEmail}>` : fromEmail,
       to: recipientEmail,
       subject: emailSubject || "Update from Certificate Studio",
       text: bodies.text,
@@ -325,6 +336,7 @@ const sendEmailBatch = async (job = {}) => {
     smtpPort,
     smtpSecure,
     senderName,
+    senderEmail,
     emailSubject,
     emailTemplate,
   } = emailConfig;
@@ -341,7 +353,8 @@ const sendEmailBatch = async (job = {}) => {
     smtpPort,
     smtpSecure,
   });
-  const formattedFrom = senderName ? `"${senderName}" <${emailUser}>` : emailUser;
+  const fromEmail = senderEmail || emailUser;
+  const formattedFrom = senderName ? `"${senderName}" <${fromEmail}>` : fromEmail;
   
   let successCount = 0;
   const failures = [];
@@ -437,6 +450,7 @@ const generateAndSend = async (req, res, next) => {
       senderName: (req.body.senderName || "").trim(),
       emailSubject: (req.body.emailSubject || "").trim(),
       emailTemplate: (req.body.emailTemplate || "").trim(),
+      senderEmail: (req.body.emailUser || "").trim(),
     };
 
     // Load credentials from database if using Gmail or Brevo and credentials are empty in body
@@ -446,13 +460,22 @@ const generateAndSend = async (req, res, next) => {
         emailConfig.emailUser = emailConfig.emailUser || userRes.rows[0].gmail_email;
         emailConfig.emailPass = emailConfig.emailPass || userRes.rows[0].gmail_app_password;
       }
+      emailConfig.senderEmail = emailConfig.emailUser;
     }
     const isBrevo = (emailConfig.emailService === "brevo" || (emailConfig.smtpHost && emailConfig.smtpHost.includes("brevo")));
-    if (isBrevo && (!emailConfig.emailUser || !emailConfig.emailPass)) {
-      const userRes = await pool.query("SELECT brevo_email, brevo_smtp_key FROM users WHERE id = $1", [req.user.id]);
-      if (userRes.rows.length > 0) {
-        emailConfig.emailUser = emailConfig.emailUser || userRes.rows[0].brevo_email;
-        emailConfig.emailPass = emailConfig.emailPass || userRes.rows[0].brevo_smtp_key;
+    if (isBrevo) {
+      if (!emailConfig.emailUser || !emailConfig.emailPass) {
+        const userRes = await pool.query("SELECT brevo_email, brevo_sender_email, brevo_smtp_key FROM users WHERE id = $1", [req.user.id]);
+        if (userRes.rows.length > 0) {
+          emailConfig.emailUser = emailConfig.emailUser || userRes.rows[0].brevo_email;
+          emailConfig.emailPass = emailConfig.emailPass || userRes.rows[0].brevo_smtp_key;
+          emailConfig.senderEmail = userRes.rows[0].brevo_sender_email || emailConfig.emailUser;
+        }
+      } else {
+        const userRes = await pool.query("SELECT brevo_sender_email FROM users WHERE id = $1", [req.user.id]);
+        if (userRes.rows.length > 0 && userRes.rows[0].brevo_sender_email) {
+          emailConfig.senderEmail = userRes.rows[0].brevo_sender_email;
+        }
       }
     }
 
