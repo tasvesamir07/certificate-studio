@@ -3,6 +3,7 @@ import axios from "axios";
 import { Toaster, toast } from "react-hot-toast";
 import { buildApiUrl } from "../utils/api";
 import PhoneInput from 'react-phone-input-2';
+const PhoneInputComponent = PhoneInput.default || PhoneInput;
 import 'react-phone-input-2/lib/style.css';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 
@@ -263,7 +264,7 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
           <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Phone</label>
           {isEditing ? (
             <div className="relative flex items-center w-full">
-              <PhoneInput
+              <PhoneInputComponent
                 country={'bd'}
                 value={editData.phone}
                 onChange={handlePhoneChange}
