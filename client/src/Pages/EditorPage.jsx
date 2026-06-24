@@ -171,6 +171,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
   const [isBottomSheetOpen, setIsBottomSheetOpen] = React.useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = React.useState(false);
+  const [userProfile, setUserProfile] = React.useState(null);
 
   const { fonts: serverFontsFromHook, preloadFonts } = useFonts(API_BASE_URL);
   const { uploadAttachment, cleanupAttachments, get: apiGet, post: apiPost, del: apiDel } = useApi(API_BASE_URL);
@@ -180,6 +181,39 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
       setServerFonts(serverFontsFromHook);
     }
   }, [serverFontsFromHook, setServerFonts]);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!authUser) return;
+      try {
+        const data = await apiGet(`api/auth/profile/${encodeURIComponent(authUser)}`);
+        setUserProfile(data);
+      } catch (err) {
+        console.error("Failed to fetch user profile in EditorPage:", err);
+      }
+    };
+    fetchUserProfile();
+  }, [authUser, apiGet]);
+
+  // Prefill default provider credentials on mount once profile is loaded
+  useEffect(() => {
+    if (userProfile) {
+      const provider = emailSettings.service === "gmail" ? "gmail" : (emailSettings.smtpHost?.includes("brevo") ? "brevo" : "");
+      if (provider === "gmail" && !emailSettings.email && !emailSettings.password) {
+        setEmailSettings((prev) => ({
+          ...prev,
+          email: userProfile.gmailEmail || "",
+          password: userProfile.gmailAppPassword || ""
+        }));
+      } else if (provider === "brevo" && !emailSettings.email && !emailSettings.password) {
+        setEmailSettings((prev) => ({
+          ...prev,
+          email: userProfile.brevoEmail || "",
+          password: userProfile.brevoSmtpKey || ""
+        }));
+      }
+    }
+  }, [userProfile, setEmailSettings]);
 
   const templateImageRef = useRef(null);
   const templateBackImageRef = useRef(null);
@@ -578,11 +612,25 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
 
   const handleProviderChange = useCallback((providerKey) => {
     const config = PROVIDER_CONFIGS[providerKey] || PROVIDER_CONFIGS.gmail;
+    
+    let emailVal = "";
+    let passwordVal = "";
+
+    if (providerKey === "gmail") {
+      emailVal = userProfile?.gmailEmail || "";
+      passwordVal = userProfile?.gmailAppPassword || "";
+    } else if (providerKey === "brevo") {
+      emailVal = userProfile?.brevoEmail || "";
+      passwordVal = userProfile?.brevoSmtpKey || "";
+    }
+
     setEmailSettings((prev) => ({
       ...prev,
       ...config,
+      email: emailVal,
+      password: passwordVal,
     }));
-  }, [setEmailSettings]);
+  }, [setEmailSettings, userProfile]);
 
   // PRESETS LOGIC
   const fetchPresets = useCallback(async () => {

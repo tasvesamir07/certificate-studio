@@ -10,11 +10,19 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
   const [profileData, setProfileData] = useState({
     displayName: "",
     email: authUser || "",
-    phone: ""
+    phone: "",
+    brevoEmail: "",
+    brevoSmtpKey: "",
+    gmailEmail: "",
+    gmailAppPassword: "",
   });
   const [editData, setEditData] = useState({
     displayName: "",
-    phone: ""
+    phone: "",
+    brevoEmail: "",
+    brevoSmtpKey: "",
+    gmailEmail: "",
+    gmailAppPassword: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -41,7 +49,11 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
       setProfileData(response.data);
       setEditData({
         displayName: response.data.displayName || "",
-        phone: response.data.phone || ""
+        phone: response.data.phone || "",
+        brevoEmail: response.data.brevoEmail || "",
+        brevoSmtpKey: response.data.brevoSmtpKey || "",
+        gmailEmail: response.data.gmailEmail || "",
+        gmailAppPassword: response.data.gmailAppPassword || ""
       });
       validatePhone(response.data.phone || "");
     } catch (err) {
@@ -84,7 +96,11 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
       const response = await axios.post(updateProfileUrl, {
         email: authUser,
         displayName: editData.displayName,
-        phone: editData.phone
+        phone: editData.phone,
+        brevoEmail: editData.brevoEmail,
+        brevoSmtpKey: editData.brevoSmtpKey,
+        gmailEmail: editData.gmailEmail,
+        gmailAppPassword: editData.gmailAppPassword
       });
 
       setProfileData(response.data.user);
@@ -188,7 +204,11 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
                   setIsEditing(false);
                   setEditData({
                     displayName: profileData.displayName || "",
-                    phone: profileData.phone || ""
+                    phone: profileData.phone || "",
+                    brevoEmail: profileData.brevoEmail || "",
+                    brevoSmtpKey: profileData.brevoSmtpKey || "",
+                    gmailEmail: profileData.gmailEmail || "",
+                    gmailAppPassword: profileData.gmailAppPassword || ""
                   });
                   validatePhone(profileData.phone || "");
                 }} 
@@ -273,6 +293,100 @@ const ProfilePage = ({ authUser, onLogout, apiBaseUrl = "", navigate }) => {
               className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
             />
           )}
+        </div>
+
+        {/* Gmail SMTP Configuration */}
+        <div className="mt-6 border-t border-border-custom pt-4">
+          <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-3">Google SMTP Settings</h3>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Gmail Sender Email</label>
+              {isEditing ? (
+                <input
+                  type="email"
+                  value={editData.gmailEmail}
+                  onChange={(e) => setEditData({ ...editData, gmailEmail: e.target.value })}
+                  placeholder="your.gmail@gmail.com"
+                  disabled={isSaving}
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
+                />
+              ) : (
+                <input 
+                  type="text" 
+                  value={profileData.gmailEmail || "Not configured"} 
+                  readOnly 
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+                />
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Gmail App Password</label>
+              {isEditing ? (
+                <input
+                  type="password"
+                  value={editData.gmailAppPassword}
+                  onChange={(e) => setEditData({ ...editData, gmailAppPassword: e.target.value })}
+                  placeholder="xxxx xxxx xxxx xxxx"
+                  disabled={isSaving}
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
+                />
+              ) : (
+                <input 
+                  type="text" 
+                  value={profileData.gmailAppPassword ? "••••••••••••••••" : "Not configured"} 
+                  readOnly 
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Brevo SMTP Configuration */}
+        <div className="mt-6 border-t border-border-custom pt-4">
+          <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-3">Brevo SMTP Settings</h3>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Brevo Sender Email</label>
+              {isEditing ? (
+                <input
+                  type="email"
+                  value={editData.brevoEmail}
+                  onChange={(e) => setEditData({ ...editData, brevoEmail: e.target.value })}
+                  placeholder="your.brevo.login@example.com"
+                  disabled={isSaving}
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
+                />
+              ) : (
+                <input 
+                  type="text" 
+                  value={profileData.brevoEmail || "Not configured"} 
+                  readOnly 
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+                />
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Brevo SMTP Key (Password)</label>
+              {isEditing ? (
+                <input
+                  type="password"
+                  value={editData.brevoSmtpKey}
+                  onChange={(e) => setEditData({ ...editData, brevoSmtpKey: e.target.value })}
+                  placeholder="masterkey or smtp key"
+                  disabled={isSaving}
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none transition-all duration-200 shadow-inner focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow"
+                />
+              ) : (
+                <input 
+                  type="text" 
+                  value={profileData.brevoSmtpKey ? "••••••••••••••••" : "Not configured"} 
+                  readOnly 
+                  className="w-full px-3.5 py-2.5 border border-border-custom rounded-md bg-bg-elevated text-text-primary text-sm font-sans outline-none opacity-70 cursor-not-allowed shadow-inner"
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

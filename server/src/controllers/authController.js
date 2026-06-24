@@ -117,6 +117,8 @@ const getProfile = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, email, display_name as "displayName", phone,
+              brevo_email as "brevoEmail", brevo_smtp_key as "brevoSmtpKey",
+              gmail_email as "gmailEmail", gmail_app_password as "gmailAppPassword",
               NULL as "accessExpiresAt", TRUE as "isActive"
        FROM users
        WHERE email = $1`,
@@ -130,7 +132,7 @@ const getProfile = async (req, res) => {
 };
 
 const updateProfile = async (req, res) => {
-  const { email, displayName, phone } = req.body;
+  const { email, displayName, phone, brevoEmail, brevoSmtpKey, gmailEmail, gmailAppPassword } = req.body;
   if (!email || !isValidEmailFormat(email)) {
     return res.status(400).send({ message: "Valid email is required." });
   }
@@ -142,8 +144,19 @@ const updateProfile = async (req, res) => {
 
   try {
     const result = await pool.query(
-      'UPDATE users SET display_name = $1, phone = $2 WHERE email = $3 RETURNING display_name as "displayName", phone, email',
-      [sanitizedDisplayName, phone, email.trim()]
+      `UPDATE users 
+       SET display_name = $1, phone = $2, brevo_email = $3, brevo_smtp_key = $4, gmail_email = $5, gmail_app_password = $6 
+       WHERE email = $7 
+       RETURNING display_name as "displayName", phone, email, brevo_email as "brevoEmail", brevo_smtp_key as "brevoSmtpKey", gmail_email as "gmailEmail", gmail_app_password as "gmailAppPassword"`,
+      [
+        sanitizedDisplayName,
+        phone,
+        brevoEmail ? brevoEmail.trim() : null,
+        brevoSmtpKey ? brevoSmtpKey.trim() : null,
+        gmailEmail ? gmailEmail.trim() : null,
+        gmailAppPassword ? gmailAppPassword.trim() : null,
+        email.trim()
+      ]
     );
     if (result.rows.length === 0) return res.status(404).send({ message: "User not found." });
     res.send({ message: "Profile updated successfully.", user: result.rows[0] });

@@ -140,6 +140,32 @@ const EmailSettingsPanel = ({
     return "custom";
   }, [emailSettings.service, emailSettings.smtpHost]);
 
+  const emailLabel = React.useMemo(() => {
+    if (detectedProvider === "gmail") return "Gmail Address";
+    if (detectedProvider === "brevo") return "Brevo Login Email";
+    return "Sender Email Address";
+  }, [detectedProvider]);
+
+  const emailPlaceholder = React.useMemo(() => {
+    if (detectedProvider === "gmail") return "your.gmail@gmail.com";
+    if (detectedProvider === "brevo") return "your.brevo.login@example.com";
+    return "you@example.com";
+  }, [detectedProvider]);
+
+  const passwordLabel = React.useMemo(() => {
+    if (detectedProvider === "gmail") return "Gmail App Password";
+    if (detectedProvider === "brevo") return "Brevo SMTP Key";
+    if (detectedProvider === "custom") return "SMTP Password";
+    return "Email App Password";
+  }, [detectedProvider]);
+
+  const passwordPlaceholder = React.useMemo(() => {
+    if (detectedProvider === "gmail") return "Enter your 16-character Gmail App Password";
+    if (detectedProvider === "brevo") return "Enter your Brevo SMTP key";
+    if (detectedProvider === "custom") return "Enter SMTP connection password";
+    return "Enter the app password from your provider";
+  }, [detectedProvider]);
+
   const emailReadyRows = React.useMemo(() => {
     if (!data.length) return [];
     const seen = new Set();
@@ -404,25 +430,25 @@ const EmailSettingsPanel = ({
           disabled={!emailDeliveryEnabled || isSending}
           className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
-        <label htmlFor="senderEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Sender Email Address</label>
+        <label htmlFor="senderEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">{emailLabel}</label>
         <input
           id="senderEmail"
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={emailPlaceholder}
           value={emailSettings.email}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
           className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
-        <label htmlFor="emailPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email App Password</label>
+        <label htmlFor="emailPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">{passwordLabel}</label>
         <input
           id="emailPassword"
           name="password"
           type="password"
           autoComplete="off"
-          placeholder="Enter the app password from your provider"
+          placeholder={passwordPlaceholder}
           value={emailSettings.password}
           onChange={handleEmailSettingsChange}
           disabled={!emailDeliveryEnabled || isSending}
