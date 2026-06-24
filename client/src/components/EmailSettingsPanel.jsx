@@ -99,6 +99,8 @@ const EmailSettingsPanel = ({
   handleDownloadFailedEntries,
   handleProviderChange,
   userProfile,
+  canAttemptEmailSend,
+  sendButtonLabel,
 }) => {
   const {
     emailDeliveryEnabled,
@@ -197,20 +199,7 @@ const EmailSettingsPanel = ({
   const hasExcelRecipients = emailReadyRows.length > 0;
   const excelDataReady = hasExcelRecipients ? !!dataFile : true;
 
-  const canAttemptEmailSend =
-    emailDeliveryEnabled &&
-    totalReadyRecipients > 0 &&
-    (emailAttachmentType !== "certificate" || templateAssetsReady) &&
-    (emailAttachmentType !== "shared" || sharedAttachmentFiles.length > 0) &&
-    excelDataReady &&
-    emailSettings.service.trim().length > 0 &&
-    emailSettings.email.trim().length > 0 &&
-    emailSettings.password.trim().length > 0 &&
-    emailSettings.subject.trim().length > 0 &&
-    emailSettings.template.trim().length > 0 &&
-    !isSending &&
-    !isLoading &&
-    !isPreviewLoading;
+  // canAttemptEmailSend is now passed down as a prop from EditorPage
 
   const rowsMissingEmails = React.useMemo(() => {
     if (!data.length) return [];
@@ -242,13 +231,7 @@ const EmailSettingsPanel = ({
     });
   }, [data]);
 
-  const sendButtonLabel = isSending
-    ? sendProgress
-      ? `Sending (${sendProgress.processed}/${sendProgress.total})...`
-      : "Sending..."
-    : totalReadyRecipients
-      ? `Send ${totalReadyRecipients} Email${totalReadyRecipients === 1 ? "" : "s"}`
-      : "Generate & Send Emails";
+  // sendButtonLabel is now passed down as a prop from EditorPage
 
   return (
     <div className="flex flex-col gap-2 mb-4">
