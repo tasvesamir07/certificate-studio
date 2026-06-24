@@ -1,6 +1,7 @@
 import React from "react";
 import { useAppStore } from "../shared/store/useAppStore";
 import { isValidEmail } from "../utils/textHelpers";
+import Select from "./ui/Select";
 
 const sanitizeHtml = (htmlString) => {
   if (!htmlString) return "";
@@ -328,19 +329,18 @@ const EmailSettingsPanel = ({
           <p className="text-xs text-amber-500 font-semibold mb-2">No attachments will be sent.</p>
         )}
 
-        <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email Provider</label>
-        <select
+        <Select
+          label="Email Service"
           value={detectedProvider}
           onChange={(e) => handleProviderChange(e.target.value)}
           disabled={!emailDeliveryEnabled || isSending}
-          className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         >
           <option value="gmail">Gmail</option>
           <option value="outlook">Outlook / Hotmail</option>
           <option value="yahoo">Yahoo Mail</option>
           <option value="brevo">Brevo (Sendinblue)</option>
           <option value="custom">Custom SMTP</option>
-        </select>
+        </Select>
         {detectedProvider === "custom" && (
           <div className="flex flex-col gap-2 p-3 bg-bg-elevated border border-border-light rounded-lg">
             <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">SMTP Host</label>
