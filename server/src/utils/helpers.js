@@ -46,7 +46,7 @@ const wrapEmailInTemplate = (title, contentBody, footerText = "") => {
   return `<!DOCTYPE html>
 <html>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1e293b; margin: 0; padding: 20px; text-align: left;">
-  <div style="max-width: 600px; margin: 0; text-align: left;">
+  <div style="max-width: 600px; margin: 0 auto; text-align: left;">
     ${contentBody}
   </div>
 </body>
