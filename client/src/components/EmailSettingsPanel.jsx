@@ -98,6 +98,7 @@ const EmailSettingsPanel = ({
   handleRetryFailed,
   handleDownloadFailedEntries,
   handleProviderChange,
+  userProfile,
 }) => {
   const {
     emailDeliveryEnabled,
@@ -414,10 +415,35 @@ const EmailSettingsPanel = ({
           </div>
         )}
         {detectedProvider === "brevo" && (
-          <p className="text-[11px] text-accent mt-1 leading-relaxed">
-            Brevo (free: 300 emails/day). Use your Brevo login email and an SMTP key from 
-            Brevo Dashboard → SMTP & API → SMTP keys.
-          </p>
+          <div className="p-3.5 rounded-lg border text-xs leading-relaxed flex flex-col gap-1 mt-1 bg-bg-elevated border-border-light">
+            {userProfile?.brevoEmail && userProfile?.brevoSmtpKey ? (
+              <p className="text-success font-semibold m-0 flex items-center gap-1.5">
+                <span>✓ Brevo SMTP configured in your Profile</span>
+              </p>
+            ) : (
+              <p className="text-danger font-semibold m-0 flex flex-col gap-1">
+                <span>⚠️ Brevo SMTP not configured in your Profile yet.</span>
+                <span className="text-[11px] text-text-muted font-normal">Go to your Profile to add your Brevo Login Email and SMTP Key.</span>
+              </p>
+            )}
+            <p className="text-[11px] text-accent mt-1 leading-relaxed m-0">
+              Brevo (free: 300 emails/day). SMTP keys are under SMTP & API → SMTP keys in your Brevo Dashboard.
+            </p>
+          </div>
+        )}
+        {detectedProvider === "gmail" && (
+          <div className="p-3.5 rounded-lg border text-xs leading-relaxed flex flex-col gap-1 mt-1 bg-bg-elevated border-border-light">
+            {userProfile?.gmailEmail && userProfile?.gmailAppPassword ? (
+              <p className="text-success font-semibold m-0 flex items-center gap-1.5">
+                <span>✓ Gmail SMTP configured in your Profile</span>
+              </p>
+            ) : (
+              <p className="text-danger font-semibold m-0 flex flex-col gap-1">
+                <span>⚠️ Gmail SMTP not configured in your Profile yet.</span>
+                <span className="text-[11px] text-text-muted font-normal">Go to your Profile to add your Gmail address and App Password.</span>
+              </p>
+            )}
+          </div>
         )}
         <label htmlFor="senderName" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Sender Name (optional)</label>
         <input
@@ -430,30 +456,34 @@ const EmailSettingsPanel = ({
           disabled={!emailDeliveryEnabled || isSending}
           className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
-        <label htmlFor="senderEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">{emailLabel}</label>
-        <input
-          id="senderEmail"
-          name="email"
-          type="email"
-          autoComplete="email"
-          placeholder={emailPlaceholder}
-          value={emailSettings.email}
-          onChange={handleEmailSettingsChange}
-          disabled={!emailDeliveryEnabled || isSending}
-          className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
-        />
-        <label htmlFor="emailPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">{passwordLabel}</label>
-        <input
-          id="emailPassword"
-          name="password"
-          type="password"
-          autoComplete="off"
-          placeholder={passwordPlaceholder}
-          value={emailSettings.password}
-          onChange={handleEmailSettingsChange}
-          disabled={!emailDeliveryEnabled || isSending}
-          className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
-        />
+        {detectedProvider !== "gmail" && detectedProvider !== "brevo" && (
+          <>
+            <label htmlFor="senderEmail" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">{emailLabel}</label>
+            <input
+              id="senderEmail"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder={emailPlaceholder}
+              value={emailSettings.email}
+              onChange={handleEmailSettingsChange}
+              disabled={!emailDeliveryEnabled || isSending}
+              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
+            />
+            <label htmlFor="emailPassword" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">{passwordLabel}</label>
+            <input
+              id="emailPassword"
+              name="password"
+              type="password"
+              autoComplete="off"
+              placeholder={passwordPlaceholder}
+              value={emailSettings.password}
+              onChange={handleEmailSettingsChange}
+              disabled={!emailDeliveryEnabled || isSending}
+              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
+            />
+          </>
+        )}
         <label htmlFor="emailSubject" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email Subject</label>
         <input
           id="emailSubject"

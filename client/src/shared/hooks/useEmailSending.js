@@ -440,23 +440,28 @@ export function useEmailSending({ templateImageRef, templateBackImageRef }) {
     const subject = emailSettings.subject.trim();
     const templateMessage = emailSettings.template.trim();
 
-    if (!service) {
-      toast.error("Enter the email service (e.g., gmail, outlook).");
-      return;
-    }
-    if (!senderEmail) {
-      toast.error("Enter the sender email address.");
-      return;
-    }
-    if (!isValidEmail(senderEmail)) {
-      toast.error(
-        "Sender email looks invalid. Please use a valid email address."
-      );
-      return;
-    }
-    if (!password) {
-      toast.error("Enter the email app password.");
-      return;
+    const provider = service === "gmail" ? "gmail" : (emailSettings.smtpHost?.includes("brevo") ? "brevo" : "");
+    const isProfileProvider = (provider === "gmail" || provider === "brevo");
+
+    if (!isProfileProvider) {
+      if (!service) {
+        toast.error("Enter the email service (e.g., gmail, outlook).");
+        return;
+      }
+      if (!senderEmail) {
+        toast.error("Enter the sender email address.");
+        return;
+      }
+      if (!isValidEmail(senderEmail)) {
+        toast.error(
+          "Sender email looks invalid. Please use a valid email address."
+        );
+        return;
+      }
+      if (!password) {
+        toast.error("Enter the email app password.");
+        return;
+      }
     }
     if (!subject) {
       toast.error("Add an email subject line.");

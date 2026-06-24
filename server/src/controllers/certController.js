@@ -8,6 +8,7 @@ const { drawTextOnCanvas, drawTextOnPDF } = require("../services/canvasService")
 const { getColumnValue, sanitizeFileName, stripExtension, parseBoolean, toTitleCase, buildEmailBodies } = require("../utils/helpers");
 const { createTransporter } = require("../services/mailer");
 const { storeFile, getFile, deleteFile } = require("../services/fileStore");
+const pool = require("../models/db");
 
 const activeJobs = new Map();
 const sharedFileStore = new Map();
@@ -206,7 +207,7 @@ const sendSingle = async (req, res) => {
   let autoCleanupRemoteAttachments = false;
 
   try {
-    const {
+    let {
       emailService,
       emailUser,
       emailPass,
@@ -219,6 +220,24 @@ const sendSingle = async (req, res) => {
       recipientName,
       senderName,
     } = req.body;
+
+    // Load credentials from database if using Gmail or Brevo and credentials are empty in body
+    if (emailService === "gmail" && (!emailUser || !emailPass)) {
+      const userRes = await pool.query("SELECT gmail_email, gmail_app_password FROM users WHERE id = $1", [req.user.id]);
+      if (userRes.rows.length > 0) {
+        emailUser = emailUser || userRes.rows[0].gmail_email;
+        emailPass = emailPass || userRes.rows[0].gmail_app_password;
+      }
+    }
+    const isBrevo = (emailService === "brevo" || (smtpHost && smtpHost.includes("brevo")));
+    if (isBrevo && (!emailUser || !emailPass)) {
+      const userRes = await pool.query("SELECT brevo_email, brevo_smtp_key FROM users WHERE id = $1", [req.user.id]);
+      if (userRes.rows.length > 0) {
+        emailUser = emailUser || userRes.rows[0].brevo_email;
+        emailPass = emailPass || userRes.rows[0].brevo_smtp_key;
+      }
+    }
+
     remoteAttachments = parseJsonArrayField(req.body.remoteAttachments);
     autoCleanupRemoteAttachments = parseBoolean(
       req.body.autoCleanupRemoteAttachments,
@@ -419,6 +438,23 @@ const generateAndSend = async (req, res, next) => {
       emailSubject: (req.body.emailSubject || "").trim(),
       emailTemplate: (req.body.emailTemplate || "").trim(),
     };
+
+    // Load credentials from database if using Gmail or Brevo and credentials are empty in body
+    if (emailConfig.emailService === "gmail" && (!emailConfig.emailUser || !emailConfig.emailPass)) {
+      const userRes = await pool.query("SELECT gmail_email, gmail_app_password FROM users WHERE id = $1", [req.user.id]);
+      if (userRes.rows.length > 0) {
+        emailConfig.emailUser = emailConfig.emailUser || userRes.rows[0].gmail_email;
+        emailConfig.emailPass = emailConfig.emailPass || userRes.rows[0].gmail_app_password;
+      }
+    }
+    const isBrevo = (emailConfig.emailService === "brevo" || (emailConfig.smtpHost && emailConfig.smtpHost.includes("brevo")));
+    if (isBrevo && (!emailConfig.emailUser || !emailConfig.emailPass)) {
+      const userRes = await pool.query("SELECT brevo_email, brevo_smtp_key FROM users WHERE id = $1", [req.user.id]);
+      if (userRes.rows.length > 0) {
+        emailConfig.emailUser = emailConfig.emailUser || userRes.rows[0].brevo_email;
+        emailConfig.emailPass = emailConfig.emailPass || userRes.rows[0].brevo_smtp_key;
+      }
+    }
 
     if ((!emailConfig.emailService && !emailConfig.smtpHost) || !emailConfig.emailUser || !emailConfig.emailPass) {
       return res.status(400).send({ message: "Email configuration is required." });

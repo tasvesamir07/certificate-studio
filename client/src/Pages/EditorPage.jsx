@@ -1066,15 +1066,19 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
   const excelDataReady = hasExcelRecipients ? !!dataFile : true;
   const previewNameIsValid = !!previewName?.trim();
 
+  const provider = emailSettings.service === "gmail" ? "gmail" : (emailSettings.smtpHost?.includes("brevo") ? "brevo" : "");
+  const isProfileProvider = (provider === "gmail" || provider === "brevo");
+  const profileCredentialsReady = 
+    (provider === "gmail" && userProfile?.gmailEmail && userProfile?.gmailAppPassword) ||
+    (provider === "brevo" && userProfile?.brevoEmail && userProfile?.brevoSmtpKey);
+
   const canAttemptEmailSend =
     emailDeliveryEnabled &&
     totalReadyRecipients > 0 &&
     (emailAttachmentType !== "certificate" || templateAssetsReady) &&
     (emailAttachmentType !== "shared" || sharedAttachmentFiles.length > 0) &&
     excelDataReady &&
-    emailSettings.service.trim().length > 0 &&
-    emailSettings.email.trim().length > 0 &&
-    emailSettings.password.trim().length > 0 &&
+    (isProfileProvider ? profileCredentialsReady : (emailSettings.email.trim().length > 0 && emailSettings.password.trim().length > 0)) &&
     emailSettings.subject.trim().length > 0 &&
     emailSettings.template.trim().length > 0 &&
     !isSending &&
@@ -1816,6 +1820,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
               handleRetryFailed={handleRetryFailed}
               handleDownloadFailedEntries={handleDownloadFailedEntries}
               handleProviderChange={handleProviderChange}
+              userProfile={userProfile}
             />
           </React.Suspense>
         </div>
