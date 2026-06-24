@@ -196,6 +196,9 @@ export function useEmailSending({ templateImageRef, templateBackImageRef }) {
               formData.append("emailService", emailService);
               formData.append("emailUser", emailUser);
               formData.append("emailPass", emailPass);
+              formData.append("smtpHost", emailSettings.smtpHost || "");
+              formData.append("smtpPort", emailSettings.smtpPort || "587");
+              formData.append("smtpSecure", emailSettings.smtpSecure ? "true" : "false");
               formData.append("senderName", senderName);
               formData.append("emailSubject", emailSubject);
               formData.append("emailTemplate", emailTemplate);
@@ -257,8 +260,7 @@ export function useEmailSending({ templateImageRef, templateBackImageRef }) {
             } catch (error) {
               const reason = error.response?.data?.message || error.message || "Unknown error";
               failures.push({
-                name: rName,
-                email: rEmail,
+                ...recipientSnapshot,
                 reason: reason,
               });
               if (recipientRemoteAttachments.length) {

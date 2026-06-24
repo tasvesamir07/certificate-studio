@@ -1,8 +1,16 @@
 const nodemailer = require("nodemailer");
 
 const createTransporter = (config) => {
+  const transportOptions = config.smtpHost
+    ? {
+        host: config.smtpHost,
+        port: Number(config.smtpPort) || 587,
+        secure: config.smtpSecure === true || config.smtpSecure === "true",
+      }
+    : { service: config.service };
+
   return nodemailer.createTransport({
-    service: config.service,
+    ...transportOptions,
     auth: {
       user: config.user,
       pass: config.pass,
@@ -10,6 +18,4 @@ const createTransporter = (config) => {
   });
 };
 
-module.exports = {
-  createTransporter,
-};
+module.exports = { createTransporter };

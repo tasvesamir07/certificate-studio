@@ -95,6 +95,8 @@ const EmailSettingsPanel = ({
   isPaused,
   onTogglePause,
   handleRetryFailed,
+  handleDownloadFailedEntries,
+  handleProviderChange,
 }) => {
   const {
     emailDeliveryEnabled,
@@ -128,6 +130,14 @@ const EmailSettingsPanel = ({
     lastGenerationInfo,
     emailSummary,
   } = useAppStore();
+
+  const detectedProvider = React.useMemo(() => {
+    if (emailSettings.service === "gmail") return "gmail";
+    if (emailSettings.service === "outlook") return "outlook";
+    if (emailSettings.service === "yahoo") return "yahoo";
+    if (emailSettings.smtpHost?.includes("brevo")) return "brevo";
+    return "custom";
+  }, [emailSettings.service, emailSettings.smtpHost]);
 
   const emailReadyRows = React.useMemo(() => {
     if (!data.length) return [];
@@ -318,17 +328,71 @@ const EmailSettingsPanel = ({
           <p className="text-xs text-amber-500 font-semibold mb-2">No attachments will be sent.</p>
         )}
 
-        <label htmlFor="emailService" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email Service</label>
-        <input
-          id="emailService"
-          name="service"
-          type="text"
-          placeholder="gmail, outlook, yahoo..."
-          value={emailSettings.service}
-          onChange={handleEmailSettingsChange}
+        <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Email Provider</label>
+        <select
+          value={detectedProvider}
+          onChange={(e) => handleProviderChange(e.target.value)}
           disabled={!emailDeliveryEnabled || isSending}
           className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
-        />
+        >
+          <option value="gmail">Gmail</option>
+          <option value="outlook">Outlook / Hotmail</option>
+          <option value="yahoo">Yahoo Mail</option>
+          <option value="brevo">Brevo (Sendinblue)</option>
+          <option value="custom">Custom SMTP</option>
+        </select>
+        {detectedProvider === "custom" && (
+          <div className="flex flex-col gap-2 p-3 bg-bg-elevated border border-border-light rounded-lg">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">SMTP Host</label>
+            <input
+              name="smtpHost"
+              type="text"
+              placeholder="smtp.example.com"
+              value={emailSettings.smtpHost}
+              onChange={handleEmailSettingsChange}
+              disabled={!emailDeliveryEnabled || isSending}
+              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-surface text-text-primary text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
+            />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Port</label>
+                <input
+                  name="smtpPort"
+                  type="number"
+                  placeholder="587"
+                  value={emailSettings.smtpPort}
+                  onChange={handleEmailSettingsChange}
+                  disabled={!emailDeliveryEnabled || isSending}
+                  className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-surface text-text-primary text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
+                />
+              </div>
+              <div className="flex items-end pb-2">
+                <label className="flex items-center gap-2 text-xs font-bold text-text-primary cursor-pointer">
+                  <input
+                    name="smtpSecure"
+                    type="checkbox"
+                    checked={emailSettings.smtpSecure}
+                    onChange={(e) =>
+                      setEmailSettings((prev) => ({
+                        ...prev,
+                        smtpSecure: e.target.checked,
+                      }))
+                    }
+                    disabled={!emailDeliveryEnabled || isSending}
+                    className="w-4 h-4 rounded border-border-light text-accent bg-bg-elevated focus:ring-2 focus:ring-accent-bg-glow cursor-pointer"
+                  />
+                  SSL/TLS
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+        {detectedProvider === "brevo" && (
+          <p className="text-[11px] text-accent mt-1 leading-relaxed">
+            Brevo (free: 300 emails/day). Use your Brevo login email and an SMTP key from 
+            Brevo Dashboard → SMTP & API → SMTP keys.
+          </p>
+        )}
         <label htmlFor="senderName" className="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-0.5">Sender Name (optional)</label>
         <input
           id="senderName"
@@ -853,6 +917,13 @@ const EmailSettingsPanel = ({
                   className="mt-3 w-full py-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg text-xs font-bold hover:bg-amber-500/20 hover:border-amber-500/40 transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   🔄 Retry Failed Deliveries ({emailSummary.failureCount})
+                </button>
+                <button
+                  onClick={handleDownloadFailedEntries}
+                  type="button"
+                  className="mt-2 w-full py-2 bg-danger/10 border border-danger/20 text-danger rounded-lg text-xs font-bold hover:bg-danger/20 hover:border-danger/40 transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  📥 Download Failed Entries ({emailSummary.failureCount})
                 </button>
               </>
             )}

@@ -210,6 +210,9 @@ const sendSingle = async (req, res) => {
       emailService,
       emailUser,
       emailPass,
+      smtpHost,
+      smtpPort,
+      smtpSecure,
       recipientEmail,
       emailSubject,
       emailTemplate,
@@ -221,7 +224,14 @@ const sendSingle = async (req, res) => {
       req.body.autoCleanupRemoteAttachments,
       false
     );
-    const transporter = createTransporter({ service: emailService, user: emailUser, pass: emailPass });
+    const transporter = createTransporter({
+      service: emailService,
+      user: emailUser,
+      pass: emailPass,
+      smtpHost,
+      smtpPort,
+      smtpSecure,
+    });
     const bodies = buildEmailBodies(emailTemplate, recipientName, recipientEmail);
 
     const localAttachments = (req.files || []).map(f => ({
@@ -292,16 +302,26 @@ const sendEmailBatch = async (job = {}) => {
     emailService,
     emailUser,
     emailPass,
+    smtpHost,
+    smtpPort,
+    smtpSecure,
     senderName,
     emailSubject,
     emailTemplate,
   } = emailConfig;
 
-  if (!recipients.length || !emailService || !emailUser || !emailPass) {
+  if (!recipients.length || (!emailService && !smtpHost) || !emailUser || !emailPass) {
     return { error: { status: 400, message: "Missing recipients or email configuration." } };
   }
 
-  const transporter = createTransporter({ service: emailService, user: emailUser, pass: emailPass });
+  const transporter = createTransporter({
+    service: emailService,
+    user: emailUser,
+    pass: emailPass,
+    smtpHost,
+    smtpPort,
+    smtpSecure,
+  });
   const formattedFrom = senderName ? `"${senderName}" <${emailUser}>` : emailUser;
   
   let successCount = 0;
@@ -392,12 +412,15 @@ const generateAndSend = async (req, res, next) => {
       emailService: (req.body.emailService || "").trim(),
       emailUser: (req.body.emailUser || "").trim(),
       emailPass: (req.body.emailPass || "").trim(),
+      smtpHost: (req.body.smtpHost || "").trim(),
+      smtpPort: (req.body.smtpPort || "587").trim(),
+      smtpSecure: req.body.smtpSecure === "true",
       senderName: (req.body.senderName || "").trim(),
       emailSubject: (req.body.emailSubject || "").trim(),
       emailTemplate: (req.body.emailTemplate || "").trim(),
     };
 
-    if (!emailConfig.emailService || !emailConfig.emailUser || !emailConfig.emailPass) {
+    if ((!emailConfig.emailService && !emailConfig.smtpHost) || !emailConfig.emailUser || !emailConfig.emailPass) {
       return res.status(400).send({ message: "Email configuration is required." });
     }
 

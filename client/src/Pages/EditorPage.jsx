@@ -568,6 +568,22 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
     }));
   }, [setEmailSettings]);
 
+  const PROVIDER_CONFIGS = {
+    gmail:   { service: "gmail",   smtpHost: "",              smtpPort: "587", smtpSecure: false },
+    outlook: { service: "outlook", smtpHost: "",              smtpPort: "587", smtpSecure: false },
+    yahoo:   { service: "yahoo",   smtpHost: "",              smtpPort: "465", smtpSecure: true  },
+    brevo:   { service: "",        smtpHost: "smtp-relay.brevo.com", smtpPort: "587", smtpSecure: false },
+    custom:  { service: "",        smtpHost: "",               smtpPort: "587", smtpSecure: false },
+  };
+
+  const handleProviderChange = useCallback((providerKey) => {
+    const config = PROVIDER_CONFIGS[providerKey] || PROVIDER_CONFIGS.gmail;
+    setEmailSettings((prev) => ({
+      ...prev,
+      ...config,
+    }));
+  }, [setEmailSettings]);
+
   // PRESETS LOGIC
   const fetchPresets = useCallback(async () => {
     if (!authUser) return;
@@ -1082,6 +1098,24 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
     });
     saveAs(dataBlob, `duplicate-emails-unique-${Date.now()}.xlsx`);
     toast.success(`Downloaded ${rowsWithDuplicateEmails.length} unique duplicate emails.`);
+  };
+
+  const handleDownloadFailedEntries = () => {
+    if (!emailSummary || !emailSummary.failures || !emailSummary.failures.length) {
+      toast("No failed entries to download.");
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(
+      prepareRowsForExport(emailSummary.failures)
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Failed Entries");
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const dataBlob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(dataBlob, `failed-entries-${Date.now()}.xlsx`);
+    toast.success(`Downloaded ${emailSummary.failures.length} failed entries.`);
   };
 
   const sendButtonLabel = isSending
@@ -1732,6 +1766,8 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
                 setIsSendingPaused(isSendingPausedRef.current);
               }}
               handleRetryFailed={handleRetryFailed}
+              handleDownloadFailedEntries={handleDownloadFailedEntries}
+              handleProviderChange={handleProviderChange}
             />
           </React.Suspense>
         </div>
