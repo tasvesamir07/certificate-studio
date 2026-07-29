@@ -78,8 +78,18 @@ const fitFontSizeToBox = (
 
 async function drawTextOnCanvas(templateBuffer, layout, fullName, options = {}) {
   const { drawName = true } = options;
+  if (!templateBuffer) {
+    throw new Error("Template image buffer is required to draw text.");
+  }
   const templateImage = await loadImage(templateBuffer);
-  const { width: templateWidth, height: templateHeight } = templateImage;
+  if (!templateImage) {
+    throw new Error("Failed to load certificate template image.");
+  }
+  const templateWidth = templateImage.width || templateImage.naturalWidth || 0;
+  const templateHeight = templateImage.height || templateImage.naturalHeight || 0;
+  if (!templateWidth || !templateHeight) {
+    throw new Error("Invalid template image dimensions.");
+  }
 
   const canvas = createCanvas(templateWidth, templateHeight);
   const ctx = canvas.getContext("2d");
@@ -137,7 +147,11 @@ async function drawTextOnCanvas(templateBuffer, layout, fullName, options = {}) 
 async function drawTextOnPDF(templateBuffer, layout, fullName, options = {}) {
   const pngBuffer = await drawTextOnCanvas(templateBuffer, layout, fullName, options);
   const templateImage = await loadImage(templateBuffer);
-  const { width, height } = templateImage;
+  if (!templateImage) {
+    throw new Error("Failed to load certificate template image for PDF export.");
+  }
+  const width = templateImage.width || templateImage.naturalWidth || 0;
+  const height = templateImage.height || templateImage.naturalHeight || 0;
   const orientation = width > height ? "l" : "p";
 
   const doc = new jsPDF({

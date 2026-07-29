@@ -24,6 +24,7 @@ export function useEmailSending({ templateImageRef, templateBackImageRef }) {
     manualRecipients,
     skipDuplicates,
     template,
+    templateURL,
     layout,
     isLayoutLocked,
     emailDeliveryEnabled,
@@ -209,12 +210,46 @@ export function useEmailSending({ templateImageRef, templateBackImageRef }) {
               let filePublicUrl = "";
 
               if (attachmentMode === "certificate") {
+                let activeTemplateImg = templateImageRef?.current;
+                if (!activeTemplateImg && templateURL) {
+                  try {
+                    activeTemplateImg = await new Promise((resolve, reject) => {
+                      const img = new Image();
+                      img.crossOrigin = "anonymous";
+                      img.onload = () => resolve(img);
+                      img.onerror = () => reject(new Error("Failed to load template image"));
+                      img.src = templateURL;
+                    });
+                    if (templateImageRef) templateImageRef.current = activeTemplateImg;
+                  } catch (e) {
+                    console.error("Error auto-loading template URL:", e);
+                  }
+                }
+                if (!activeTemplateImg && template) {
+                  try {
+                    const objectUrl = URL.createObjectURL(template);
+                    activeTemplateImg = await new Promise((resolve, reject) => {
+                      const img = new Image();
+                      img.onload = () => resolve(img);
+                      img.onerror = () => reject(new Error("Failed to load template file"));
+                      img.src = objectUrl;
+                    });
+                    if (templateImageRef) templateImageRef.current = activeTemplateImg;
+                  } catch (e) {
+                    console.error("Error auto-loading template file:", e);
+                  }
+                }
+
+                if (!activeTemplateImg) {
+                  throw new Error("Certificate template background image is not loaded. Please select or re-upload your template image.");
+                }
+
                 const pdfBlob = await generateCertificatePDF(
-                  templateImageRef.current,
+                  activeTemplateImg,
                   layout,
                   rName,
                   { drawName: personalizeWithNames },
-                  templateBackImageRef.current
+                  templateBackImageRef?.current
                 );
                 const pdfFile = new File(
                   [pdfBlob],

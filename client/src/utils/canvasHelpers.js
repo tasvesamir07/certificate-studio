@@ -262,7 +262,14 @@ export const generateCertificatePDF = async (
   options = {},
   templateBackImage = null
 ) => {
-  const { width, height } = templateImage;
+  if (!templateImage) {
+    throw new Error("Certificate template background image is missing or invalid.");
+  }
+  const width = templateImage.naturalWidth || templateImage.width || 0;
+  const height = templateImage.naturalHeight || templateImage.height || 0;
+  if (!width || !height) {
+    throw new Error("Failed to read dimensions of template image.");
+  }
   const orientation = width > height ? "l" : "p";
 
   const canvas = document.createElement("canvas");
