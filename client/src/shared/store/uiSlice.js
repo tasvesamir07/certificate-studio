@@ -1,7 +1,7 @@
 const update = (val, current) => typeof val === "function" ? val(current) : val;
 
 export const createUiSlice = (set, get) => ({
-  theme: typeof window !== "undefined" ? localStorage.getItem("certificate-studio-theme") || "dark" : "dark",
+  theme: typeof window !== "undefined" ? localStorage.getItem("certificate-studio-theme") || "light" : "light",
   isLoading: false,
   isSending: false,
   emailSummary: null,

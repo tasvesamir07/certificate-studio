@@ -14,7 +14,7 @@ describe('App Store (Zustand)', () => {
 
   test('initializes with default values', () => {
     const state = useAppStore.getState();
-    expect(state.theme).toBe('dark');
+    expect(state.theme).toBe('light');
     expect(state.previewScale).toBe(0.35);
     expect(state.showGrid).toBe(false);
     expect(state.previewName).toBe('Your Name Here');
