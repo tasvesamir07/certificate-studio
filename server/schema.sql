@@ -1,6 +1,10 @@
 -- ==========================================
 -- Certificate Studio - Database Schema
--- Last Updated: 2026-06-21
+-- Last Updated: 2026-09-22
+--
+-- NOTE: this file is documentation only. The applied schema is
+-- managed by versioned migrations in server/migrations/ and is
+-- applied automatically on push (npm run migrate in CI).
 -- ==========================================
 
 -- Users table to store authentication details
@@ -10,6 +14,11 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     display_name VARCHAR(255),
     phone VARCHAR(20),
+    gmail_email VARCHAR(255),
+    gmail_app_password VARCHAR(255),
+    brevo_email VARCHAR(255),
+    brevo_sender_email VARCHAR(255),
+    brevo_smtp_key VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

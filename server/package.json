@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "node scripts/migrate.js"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.0",

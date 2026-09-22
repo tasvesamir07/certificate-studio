@@ -1,6 +1,10 @@
 -- ==========================================
 -- Certificate Studio - Supabase Schema Setup
--- Paste this into Supabase SQL Editor
+--
+-- OBSOLETE: do NOT paste manually. The live schema is now managed
+-- by versioned migrations in server/migrations/ and is applied
+-- automatically on push (server/scripts/migrate.js via GitHub Actions).
+-- This file is kept as reference only.
 -- ==========================================
 
 -- Users table
