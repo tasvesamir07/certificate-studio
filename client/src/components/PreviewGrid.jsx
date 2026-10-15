@@ -78,7 +78,7 @@ const PreviewGrid = ({
 
       {/* Workflow setup steps – shown only when no previews exist yet */}
       {previewImages.length === 0 && !isPreviewGridLoading && (
-        <div className="mb-4 shrink-0">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Step list */}
           <div className="flex flex-col gap-2 mb-3">
             {[
@@ -129,7 +129,7 @@ const PreviewGrid = ({
           {canGenerate ? (
             <button
               type="button"
-              className="w-full py-2.5 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 mb-4"
+              className="w-full py-2.5 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover uppercase tracking-wider text-xs hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 mb-3"
               onClick={handleGeneratePreviews}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -141,14 +141,14 @@ const PreviewGrid = ({
             <button
               type="button"
               disabled
-              className="w-full py-2.5 bg-bg-elevated border border-border-light text-text-muted font-bold rounded-full opacity-50 cursor-not-allowed text-xs uppercase tracking-wider flex items-center justify-center mb-4"
+              className="w-full py-2.5 bg-bg-elevated border border-border-light text-text-muted font-bold rounded-full opacity-50 cursor-not-allowed text-xs uppercase tracking-wider flex items-center justify-center mb-3"
             >
               Generate Previews
             </button>
           )}
 
           {/* Empty-state filler — fills the leftover vertical space gracefully */}
-          <div className="flex-1 flex flex-col items-center justify-center text-center py-6 px-2 mt-2 rounded-2xl border border-dashed border-border-light bg-bg-elevated/30 min-h-[180px]">
+          <div className="flex-1 flex flex-col items-center justify-center text-center py-6 px-2 mt-2 rounded-2xl border border-dashed border-border-light bg-bg-elevated/30">
             {/* Stacked certificate illustration */}
             <div className="relative mb-4">
               <div className="absolute -bottom-2 left-2 right-2 h-full rounded-xl border border-border-custom bg-bg-surface opacity-40" />
