@@ -479,50 +479,64 @@ const EmailSettingsPanel = ({
           className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 disabled:opacity-50"
         />
 
-        <div className="mt-4 p-4 bg-accent/5 rounded-xl border border-accent/20">
-          <label className="text-xs font-bold text-text-primary uppercase tracking-wide mb-3 block">
-            Message Template Presets
-          </label>
-
-          <div className="flex flex-col gap-2 mb-3">
-            <select
-              value={selectedMessagePresetId}
-              onChange={(e) => handleLoadPreset(e, "message")}
-              disabled={isSavingMessagePreset || isSending}
-              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
-            >
-              <option value="">-- Load a saved message --</option>
-              {presets
-                .filter((p) => p.presetType === "message")
-                .map((p) => (
-                  <option key={p.id} value={p.id} className="bg-bg-surface text-text-primary">
-                    {p.presetName}
-                  </option>
-                ))}
-            </select>
-            <button
-              type="button"
-              onClick={() =>
-                handleDeletePreset(selectedMessagePresetId, "message")
-              }
-              disabled={
-                !selectedMessagePresetId || isSavingMessagePreset || isSending
-              }
-              className="self-start px-4 py-2 bg-danger text-white rounded-lg text-xs font-bold shadow-sm hover:bg-danger-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Delete selected preset"
-            >
-              Delete
-            </button>
+        <div className="mt-4 p-3.5 bg-bg-surface/70 rounded-2xl border border-border-custom shadow-xs">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[11px] font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+              Message Template Presets
+            </span>
+            <span className="text-[10px] font-semibold text-text-muted bg-bg-elevated px-2 py-0.5 rounded-full border border-border-custom">
+              {presets.filter((p) => p.presetType === "message").length} saved
+            </span>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="flex-1 min-w-0">
+              <Select
+                value={selectedMessagePresetId}
+                onChange={(e) => handleLoadPreset(e, "message")}
+                disabled={isSavingMessagePreset || isSending}
+                placeholder="-- Load a saved message --"
+              >
+                <option value="">-- Load a saved message --</option>
+                {presets
+                  .filter((p) => p.presetType === "message")
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.presetName}
+                    </option>
+                  ))}
+              </Select>
+            </div>
+            {selectedMessagePresetId && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleDeletePreset(selectedMessagePresetId, "message")
+                }
+                disabled={
+                  !selectedMessagePresetId || isSavingMessagePreset || isSending
+                }
+                className="h-[42px] px-3 bg-danger/10 hover:bg-danger text-danger hover:text-white border border-danger/30 hover:border-danger rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shrink-0 shadow-xs"
+                title="Delete selected preset"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-6 5v6m4-6v6" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="New message preset name..."
+              placeholder="Save message as preset..."
               value={newMessagePresetName}
               onChange={(e) => setNewMessagePresetName(e.target.value)}
               disabled={isSavingMessagePreset || isSending}
-              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-surface text-text-primary text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
+              className="flex-1 px-3 py-2 border border-border-custom rounded-xl bg-bg-surface text-text-primary text-xs outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all shadow-xs"
             />
             <button
               type="button"
@@ -532,9 +546,14 @@ const EmailSettingsPanel = ({
                 isSavingMessagePreset ||
                 isSending
               }
-              className="self-start px-4 py-2 bg-accent text-bg-primary rounded-lg text-xs font-bold shadow-sm hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3.5 py-2 bg-accent text-black rounded-xl text-xs font-bold shadow-xs hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1.5"
             >
-              {isSavingMessagePreset ? "Saving..." : "Save As Preset"}
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              <span>{isSavingMessagePreset ? "Saving..." : "Save Preset"}</span>
             </button>
           </div>
         </div>
@@ -626,52 +645,66 @@ const EmailSettingsPanel = ({
           className="w-full min-h-[120px] px-3 py-2 border border-border-light rounded-b-lg rounded-t-none bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150 resize-y"
         />
 
-        <div className="mt-4 p-4 bg-accent/5 rounded-xl border border-accent/20">
-          <label className="text-xs font-bold text-text-primary uppercase tracking-wide mb-3 block">
-            Email Signature Presets
-          </label>
-
-          <div className="flex flex-col gap-2 mb-3">
-            <select
-              value={selectedSignaturePresetId}
-              onChange={(e) => handleLoadPreset(e, "signature")}
-              disabled={isSavingSignaturePreset || isSending}
-              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
-            >
-              <option value="">-- Load a saved signature --</option>
-              {presets
-                .filter((p) => p.presetType === "signature")
-                .map((p) => (
-                  <option key={p.id} value={p.id} className="bg-bg-surface text-text-primary">
-                    {p.presetName}
-                  </option>
-                ))}
-            </select>
-            <button
-              type="button"
-              onClick={() =>
-                handleDeletePreset(selectedSignaturePresetId, "signature")
-              }
-              disabled={
-                !selectedSignaturePresetId ||
-                isSavingSignaturePreset ||
-                isSending
-              }
-              className="self-start px-4 py-2 bg-danger text-white rounded-lg text-xs font-bold shadow-sm hover:bg-danger-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Delete selected preset"
-            >
-              Delete
-            </button>
+        <div className="mt-4 p-3.5 bg-bg-surface/70 rounded-2xl border border-border-custom shadow-xs">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[11px] font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+              Email Signature Presets
+            </span>
+            <span className="text-[10px] font-semibold text-text-muted bg-bg-elevated px-2 py-0.5 rounded-full border border-border-custom">
+              {presets.filter((p) => p.presetType === "signature").length} saved
+            </span>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="flex-1 min-w-0">
+              <Select
+                value={selectedSignaturePresetId}
+                onChange={(e) => handleLoadPreset(e, "signature")}
+                disabled={isSavingSignaturePreset || isSending}
+                placeholder="-- Load a saved signature --"
+              >
+                <option value="">-- Load a saved signature --</option>
+                {presets
+                  .filter((p) => p.presetType === "signature")
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.presetName}
+                    </option>
+                  ))}
+              </Select>
+            </div>
+            {selectedSignaturePresetId && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleDeletePreset(selectedSignaturePresetId, "signature")
+                }
+                disabled={
+                  !selectedSignaturePresetId ||
+                  isSavingSignaturePreset ||
+                  isSending
+                }
+                className="h-[42px] px-3 bg-danger/10 hover:bg-danger text-danger hover:text-white border border-danger/30 hover:border-danger rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center shrink-0 shadow-xs"
+                title="Delete selected preset"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-6 5v6m4-6v6" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="New signature preset name..."
+              placeholder="Save signature as preset..."
               value={newSignaturePresetName}
               onChange={(e) => setNewSignaturePresetName(e.target.value)}
               disabled={isSavingSignaturePreset || isSending}
-              className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-surface text-text-primary text-sm outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
+              className="flex-1 px-3 py-2 border border-border-custom rounded-xl bg-bg-surface text-text-primary text-xs outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent/20 transition-all shadow-xs"
             />
             <button
               type="button"
@@ -681,9 +714,14 @@ const EmailSettingsPanel = ({
                 isSavingSignaturePreset ||
                 isSending
               }
-              className="self-start px-4 py-2 bg-accent text-bg-primary rounded-lg text-xs font-bold shadow-sm hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3.5 py-2 bg-accent text-black rounded-xl text-xs font-bold shadow-xs hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1.5"
             >
-              {isSavingSignaturePreset ? "Saving..." : "Save As Preset"}
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              <span>{isSavingSignaturePreset ? "Saving..." : "Save Preset"}</span>
             </button>
           </div>
         </div>

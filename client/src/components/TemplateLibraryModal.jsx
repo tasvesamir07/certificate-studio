@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import Select from "./ui/Select";
 
 const TemplateLibraryModal = ({
   isOpen,
@@ -125,22 +126,20 @@ const TemplateLibraryModal = ({
                   className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-xs outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="tempCat" className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Category</label>
-                <select
-                  id="tempCat"
-                  value={saveCategory}
-                  onChange={(e) => setSaveCategory(e.target.value)}
-                  disabled={isSaving}
-                  className="w-full px-3 py-2 border border-border-light rounded-md bg-bg-elevated text-text-primary text-xs outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent-bg-glow transition-all duration-150"
-                >
-                  <option value="Certificate" className="bg-bg-surface text-text-primary">Certificate</option>
-                  <option value="Diploma" className="bg-bg-surface text-text-primary">Diploma</option>
-                  <option value="Award" className="bg-bg-surface text-text-primary">Award</option>
-                  <option value="Badge" className="bg-bg-surface text-text-primary">Badge</option>
-                  <option value="Voucher" className="bg-bg-surface text-text-primary">Voucher</option>
-                </select>
-              </div>
+              <Select
+                id="tempCat"
+                label="Category"
+                value={saveCategory}
+                onChange={(e) => setSaveCategory(e.target.value)}
+                disabled={isSaving}
+              >
+                <option value="Certificate">Certificate</option>
+                <option value="Diploma">Diploma</option>
+                <option value="Award">Award</option>
+                <option value="Badge">Badge</option>
+                <option value="Voucher">Voucher</option>
+              </Select>
+
               <button type="submit" className="w-full py-2 px-4 bg-accent text-black font-bold rounded-full shadow-sm hover:bg-accent-hover uppercase tracking-wider text-[11px] transition-all duration-150 cursor-pointer border-none disabled:opacity-40 disabled:cursor-not-allowed h-9 flex items-center justify-center" disabled={isSaving || !currentTemplateUrl}>
                 {isSaving ? "Saving..." : "Save Configuration"}
               </button>
