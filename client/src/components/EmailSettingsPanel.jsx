@@ -529,14 +529,14 @@ const EmailSettingsPanel = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2">
             <input
               type="text"
-              placeholder="Save message as preset..."
+              placeholder="Preset name..."
               value={newMessagePresetName}
               onChange={(e) => setNewMessagePresetName(e.target.value)}
               disabled={isSavingMessagePreset || isSending}
-              className="flex-1 px-3 py-2 border border-border-custom rounded-xl bg-bg-surface text-text-primary text-xs outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all shadow-xs"
+              className="w-full px-3 py-2 border border-border-custom rounded-lg bg-bg-surface text-text-primary text-xs outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all"
             />
             <button
               type="button"
@@ -546,14 +546,9 @@ const EmailSettingsPanel = ({
                 isSavingMessagePreset ||
                 isSending
               }
-              className="px-3.5 py-2 bg-accent text-black rounded-xl text-xs font-bold shadow-xs hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1.5"
+              className="self-start px-4 py-1.5 bg-accent text-black rounded-lg text-xs font-bold hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
-              <span>{isSavingMessagePreset ? "Saving..." : "Save Preset"}</span>
+              {isSavingMessagePreset ? "Saving..." : "Save as Preset"}
             </button>
           </div>
         </div>
@@ -697,14 +692,14 @@ const EmailSettingsPanel = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2">
             <input
               type="text"
-              placeholder="Save signature as preset..."
+              placeholder="Preset name..."
               value={newSignaturePresetName}
               onChange={(e) => setNewSignaturePresetName(e.target.value)}
               disabled={isSavingSignaturePreset || isSending}
-              className="flex-1 px-3 py-2 border border-border-custom rounded-xl bg-bg-surface text-text-primary text-xs outline-none focus:border-accent focus:bg-bg-surface focus:ring-2 focus:ring-accent/20 transition-all shadow-xs"
+              className="w-full px-3 py-2 border border-border-custom rounded-lg bg-bg-surface text-text-primary text-xs outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all"
             />
             <button
               type="button"
@@ -714,14 +709,9 @@ const EmailSettingsPanel = ({
                 isSavingSignaturePreset ||
                 isSending
               }
-              className="px-3.5 py-2 bg-accent text-black rounded-xl text-xs font-bold shadow-xs hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1.5"
+              className="self-start px-4 py-1.5 bg-accent text-black rounded-lg text-xs font-bold hover:bg-accent-hover transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
-              <span>{isSavingSignaturePreset ? "Saving..." : "Save Preset"}</span>
+              {isSavingSignaturePreset ? "Saving..." : "Save as Preset"}
             </button>
           </div>
         </div>
