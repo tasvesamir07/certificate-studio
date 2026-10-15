@@ -146,6 +146,31 @@ const PreviewGrid = ({
               Generate Previews
             </button>
           )}
+
+          {/* Empty-state filler — fills the leftover vertical space gracefully */}
+          <div className="flex-1 flex flex-col items-center justify-center text-center py-6 px-2 mt-2 rounded-2xl border border-dashed border-border-light bg-bg-elevated/30 min-h-[180px]">
+            {/* Stacked certificate illustration */}
+            <div className="relative mb-4">
+              <div className="absolute -bottom-2 left-2 right-2 h-full rounded-xl border border-border-custom bg-bg-surface opacity-40" />
+              <div className="absolute -bottom-1 left-1 right-1 h-full rounded-xl border border-border-custom bg-bg-elevated opacity-70" />
+              <div className="relative w-[100px] h-[72px] rounded-xl border border-border-custom bg-bg-surface shadow-xs flex flex-col items-center justify-center gap-1.5 px-3 py-2">
+                <div className="w-5 h-5 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center text-accent">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="6"/>
+                    <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                  </svg>
+                </div>
+                <div className="w-full space-y-1">
+                  <div className="h-1.5 bg-accent/30 rounded-full w-3/4 mx-auto" />
+                  <div className="h-1 bg-border-custom rounded-full w-1/2 mx-auto" />
+                </div>
+              </div>
+            </div>
+            <p className="text-xs font-semibold text-text-secondary mb-1">Previews appear here</p>
+            <p className="text-[11px] text-text-muted leading-relaxed max-w-[170px]">
+              Complete {stepsComplete}/3 steps above and generate to see each recipient's certificate.
+            </p>
+          </div>
         </div>
       )}
 
