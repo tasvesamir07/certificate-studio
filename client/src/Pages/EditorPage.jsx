@@ -173,6 +173,17 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = React.useState(false);
   const [userProfile, setUserProfile] = React.useState(null);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsBottomSheetOpen(false);
+        setIsDrawerOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const { fonts: serverFontsFromHook, preloadFonts } = useFonts(API_BASE_URL);
   const { uploadAttachment, cleanupAttachments, get: apiGet, post: apiPost, del: apiDel } = useApi(API_BASE_URL);
 
@@ -1702,11 +1713,22 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
         onLogout={onLogout}
       />
 
-      <div className="flex flex-col xl:flex-row w-full flex-1 min-h-0 relative">
-        <div className={`fixed xl:static inset-x-0 bottom-0 z-40 bg-bg-surface border-t xl:border-t-0 border-border-custom rounded-t-2xl xl:rounded-none p-5 xl:p-7 xl:w-[360px] xl:shrink-0 xl:h-[calc(100vh-56px)] xl:sticky xl:top-[56px] xl:border-r flex flex-col gap-3 overflow-y-auto max-h-[85vh] xl:max-h-none transition-transform duration-300 ease-in-out ${
-          isBottomSheetOpen ? "translate-y-0" : "translate-y-full xl:translate-y-0"
+      <div className="flex flex-col lg:flex-row w-full flex-1 min-h-0 relative">
+        <div className={`fixed lg:static inset-x-0 bottom-0 z-40 bg-bg-surface border-t lg:border-t-0 border-border-custom rounded-t-2xl lg:rounded-none p-5 lg:p-6 lg:w-[340px] xl:w-[370px] lg:shrink-0 lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:border-r flex flex-col gap-3 overflow-y-auto max-h-[85vh] lg:max-h-none transition-transform duration-300 ease-in-out pb-20 lg:pb-6 shadow-2xl lg:shadow-none ${
+          isBottomSheetOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"
         }`}>
-          <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-2 cursor-pointer xl:hidden hover:bg-text-muted transition-colors" onClick={() => setIsBottomSheetOpen(false)} />
+          {/* Mobile Sheet Drag Handle and Close Header */}
+          <div className="lg:hidden flex items-center justify-between pb-2 mb-2 border-b border-border-light">
+            <span className="text-xs font-bold text-text-primary uppercase tracking-wider">Configuration</span>
+            <button
+              type="button"
+              className="bg-transparent border-none text-text-muted hover:text-text-primary text-2xl cursor-pointer p-1 leading-none"
+              onClick={() => setIsBottomSheetOpen(false)}
+              aria-label="Close configuration"
+            >
+              &times;
+            </button>
+          </div>
           <LayerPanel
             template={template}
             onOpenTemplateLibrary={() => setIsTemplateModalOpen(true)}
@@ -1866,9 +1888,9 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
           handlePreviewSelect={handlePreviewSelect}
           PREVIEW_THUMBNAIL_WIDTH={PREVIEW_THUMBNAIL_WIDTH}
           handleDownloadAllZIP={handleDownloadAllZIP}
-          className={`fixed xl:static inset-x-0 bottom-0 z-40 rounded-t-2xl xl:rounded-none border-t xl:border-t-0 p-5 xl:p-7 max-h-[85vh] xl:max-h-none transition-transform duration-300 ease-in-out ${
-            isDrawerOpen ? "translate-y-0" : "translate-y-full xl:translate-y-0"
-          }`}
+          className={
+            isDrawerOpen ? "translate-y-0" : "translate-y-full lg:translate-y-0"
+          }
           onCloseDrawer={() => setIsDrawerOpen(false)}
         />
       </div>
@@ -1896,7 +1918,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
       {/* Backdrop overlay for mobile bottom sheet / drawer */}
       {(isBottomSheetOpen || isDrawerOpen) && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity duration-300 xl:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity duration-300 lg:hidden"
           onClick={() => {
             setIsBottomSheetOpen(false);
             setIsDrawerOpen(false);
@@ -1905,14 +1927,14 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
       )}
 
       {/* Mobile Sticky Navigation Bar */}
-      <div className="fixed bottom-0 inset-x-0 h-16 bg-bg-surface border-t border-border-custom flex items-center justify-around z-50 xl:hidden shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
+      <div className="fixed bottom-0 inset-x-0 h-16 bg-bg-surface border-t border-border-custom flex items-center justify-around z-50 lg:hidden shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
         <button
           type="button"
           className={`flex-1 h-full flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all duration-150 ${
             isBottomSheetOpen ? "text-accent" : "text-text-secondary hover:text-text-primary"
           }`}
           onClick={() => {
-            setIsBottomSheetOpen(!isBottomSheetOpen);
+            setIsBottomSheetOpen((prev) => !prev);
             setIsDrawerOpen(false);
           }}
         >
@@ -1925,7 +1947,7 @@ export default function EditorPage({ authUser, onLogout, navigate }) {
             isDrawerOpen ? "text-accent" : "text-text-secondary hover:text-text-primary"
           }`}
           onClick={() => {
-            setIsDrawerOpen(!isDrawerOpen);
+            setIsDrawerOpen((prev) => !prev);
             setIsBottomSheetOpen(false);
           }}
         >

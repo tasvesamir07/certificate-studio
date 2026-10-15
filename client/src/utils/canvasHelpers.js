@@ -87,12 +87,19 @@ export const fitFontSizeToBox = (
 export const calculateAutoScale = (naturalWidth, naturalHeight) => {
   if (!naturalWidth || !naturalHeight) return DEFAULT_ZOOM_SCALE;
   
-  const isMobile = window.innerWidth <= 768;
-  const hPadding = isMobile ? 60 : (CONTROL_PANEL_WIDTH + DATA_PANEL_WIDTH + PREVIEW_PADDING * 2.5);
-  const vPadding = isMobile ? 120 : (PREVIEW_PADDING * 2.5 + 80);
+  const width = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const height = typeof window !== "undefined" ? window.innerHeight : 800;
   
-  const availableW = Math.max(MIN_PREVIEW_WIDTH, window.innerWidth - hPadding);
-  const availableH = Math.max(MIN_PREVIEW_HEIGHT, window.innerHeight - vPadding);
+  const isDesktop = width >= 1024;
+  const isWide = width >= 1280;
+  
+  const leftPanelW = isDesktop ? (isWide ? 360 : 320) : 0;
+  const rightPanelW = isWide ? 300 : 0;
+  const hPadding = leftPanelW + rightPanelW + (isDesktop ? 60 : 24);
+  const vPadding = isDesktop ? 180 : 220;
+  
+  const availableW = Math.max(260, width - hPadding);
+  const availableH = Math.max(200, height - vPadding);
   
   const scaleW = availableW / naturalWidth;
   const scaleH = availableH / naturalHeight;

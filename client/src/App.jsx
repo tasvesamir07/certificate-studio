@@ -64,7 +64,7 @@ function App() {
   const effAuth = isAuthenticated || (localStorage.getItem(AUTH_KEYS.auth) === "true" && localStorage.getItem(AUTH_KEYS.user));
 
   useEffect(() => {
-    if (effAuth && currentPath === "/") {
+    if (effAuth && (currentPath === "/" || currentPath === "/user/login" || currentPath === "/login")) {
       navigate("/generate-certificate");
     }
   }, [effAuth, currentPath]);

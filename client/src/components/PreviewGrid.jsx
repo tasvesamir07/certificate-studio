@@ -25,14 +25,17 @@ const PreviewGrid = ({
   const layoutReady = !!layout && isLayoutLocked;
 
   return (
-    <div className={`flex-[0_0_320px] bg-bg-surface p-7 h-[calc(100vh-56px)] sticky top-[56px] flex flex-col border-l border-border-custom overflow-y-auto ${className}`}>
+    <aside
+      className={`bg-bg-surface flex flex-col border-border-custom overflow-y-auto lg:static lg:w-[300px] xl:w-[320px] lg:shrink-0 lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:border-l lg:border-t-0 p-5 lg:p-6 fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t max-h-[85vh] shadow-2xl pb-20 lg:pb-6 transition-transform duration-300 ease-in-out ${className}`}
+    >
       <div className="flex items-center justify-between mb-4 pb-2 border-b border-border-light">
         <div className="flex items-center gap-2">
           {onCloseDrawer && (
             <button
               type="button"
               onClick={onCloseDrawer}
-              className="bg-transparent border-none text-text-muted hover:text-text-primary text-xl cursor-pointer p-1 rounded-md transition-colors duration-150"
+              className="lg:hidden bg-transparent border-none text-text-muted hover:text-text-primary text-2xl cursor-pointer p-1 rounded-md transition-colors duration-150 leading-none"
+              aria-label="Close previews drawer"
             >
               &times;
             </button>
@@ -135,7 +138,7 @@ const PreviewGrid = ({
           );
         })}
       </div>
-    </div>
+    </aside>
   );
 };
 

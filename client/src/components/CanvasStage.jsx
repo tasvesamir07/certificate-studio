@@ -82,7 +82,7 @@ const CanvasStage = memo(({
 
   if (!templateURL) {
     return (
-      <div className="flex-1 flex flex-col items-center bg-bg-primary p-7 h-[calc(100vh-56px)] overflow-auto relative">
+      <div className="flex-1 flex flex-col items-center bg-bg-primary p-4 sm:p-6 lg:p-7 min-h-[calc(100vh-56px)] lg:h-[calc(100vh-56px)] pb-24 lg:pb-7 overflow-auto relative min-w-0">
         <h3 className="text-text-muted text-sm font-semibold mt-10">
           Upload a template to begin designing
         </h3>
@@ -91,8 +91,8 @@ const CanvasStage = memo(({
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center bg-bg-primary p-7 h-[calc(100vh-56px)] overflow-auto relative">
-      <div className="w-full max-w-[600px] bg-bg-surface border border-border-custom rounded-lg p-4 mb-4 flex flex-col gap-2 shadow-card">
+    <div className="flex-1 flex flex-col items-center bg-bg-primary p-4 sm:p-6 lg:p-7 min-h-[calc(100vh-56px)] lg:h-[calc(100vh-56px)] pb-24 lg:pb-7 overflow-auto relative min-w-0">
+      <div className="w-full max-w-[600px] bg-bg-surface border border-border-custom rounded-lg p-3 sm:p-4 mb-4 flex flex-col gap-2 shadow-card">
         <div className="flex items-center justify-between text-xs font-bold text-text-primary">
           <label htmlFor="zoomSlider">
             Zoom: {Math.round(previewScale * 100)}%
@@ -116,8 +116,8 @@ const CanvasStage = memo(({
         />
       </div>
 
-      <div className="w-full max-w-[600px] flex items-center justify-between mb-4 gap-4">
-        <div className="px-3.5 py-1.5 bg-bg-surface border border-border-custom rounded-full text-xs text-text-secondary shadow-card font-medium">
+      <div className="w-full max-w-[600px] flex flex-wrap items-center justify-between mb-4 gap-2 sm:gap-4">
+        <div className="px-3.5 py-1.5 bg-bg-surface border border-border-custom rounded-full text-xs text-text-secondary shadow-card font-medium max-w-full truncate">
           Previewing: <strong>{previewName || "Your Name Here"}</strong>
         </div>
 

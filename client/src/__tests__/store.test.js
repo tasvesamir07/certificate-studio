@@ -5,7 +5,7 @@ describe('App Store (Zustand)', () => {
   beforeEach(() => {
     // Reset Zustand store state before each test if needed, or set default states
     useAppStore.setState({
-      theme: 'dark',
+      theme: 'light',
       previewScale: 0.35,
       showGrid: false,
       previewName: 'Your Name Here',
