@@ -41,7 +41,7 @@ const PreviewGrid = ({
 
   return (
     <aside
-      className={`bg-bg-surface flex flex-col border-border-custom overflow-y-auto lg:static lg:w-[300px] xl:w-[320px] lg:shrink-0 lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:border-l lg:border-t-0 p-5 lg:p-6 fixed inset-x-0 bottom-0 z-40 rounded-t-2xl border-t max-h-[85vh] shadow-2xl pb-20 lg:pb-6 transition-transform duration-300 ease-in-out ${className}`}
+      className={`fixed lg:static inset-x-0 bottom-0 z-40 bg-bg-surface border-t lg:border-t-0 border-border-custom rounded-t-2xl lg:rounded-none p-5 lg:p-6 lg:w-[300px] xl:w-[320px] lg:shrink-0 lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:border-l flex flex-col overflow-y-auto max-h-[85vh] lg:max-h-none transition-transform duration-300 ease-in-out pb-20 lg:pb-6 shadow-2xl lg:shadow-none ${className}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-light shrink-0">
@@ -221,9 +221,9 @@ const PreviewGrid = ({
       )}
 
       {/* Preview thumbnails */}
-      <div className={`grid grid-cols-1 gap-3 overflow-y-auto pr-1 content-start ${previewImages.length > 0 ? "flex-1" : ""}`}>
-        {previewImages.length > 0 ? (
-          filteredPreviews.length > 0 ? (
+      {previewImages.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 overflow-y-auto pr-1 content-start flex-1">
+          {filteredPreviews.length > 0 ? (
             filteredPreviews.map((img, i) => {
               const isActive = previewName && previewName.toLowerCase() === img.name.toLowerCase();
               return (
@@ -255,9 +255,9 @@ const PreviewGrid = ({
             <p className="text-xs text-text-muted text-center py-4">
               No results for "{searchFilter}"
             </p>
-          )
-        ) : null}
-      </div>
+          )}
+        </div>
+      )}
     </aside>
   );
 };
