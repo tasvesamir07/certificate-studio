@@ -221,7 +221,7 @@ const PreviewGrid = ({
       )}
 
       {/* Preview thumbnails */}
-      <div className="grid grid-cols-1 gap-3 overflow-y-auto pr-1 flex-1 content-start">
+      <div className={`grid grid-cols-1 gap-3 overflow-y-auto pr-1 content-start ${previewImages.length > 0 ? "flex-1" : ""}`}>
         {previewImages.length > 0 ? (
           filteredPreviews.length > 0 ? (
             filteredPreviews.map((img, i) => {
